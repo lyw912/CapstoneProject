@@ -124,7 +124,7 @@ class TavilyNewsAgency:
 
     # --- Agent 可用的工具方法 ---
 
-    def basic_search_news(self, query: str, max_results: int = 7) -> TavilyResponse:
+    def basic_search_news(self, query: str, max_results: int = 7, **kwargs) -> TavilyResponse:
         """
         【工具】基础新闻搜索: 执行一次标准、快速的新闻搜索。
         这是最常用的通用搜索工具，适用于不确定需要何种特定搜索时。
@@ -135,7 +135,8 @@ class TavilyNewsAgency:
             query=query,
             max_results=max_results,
             search_depth="basic",
-            include_answer=False
+            include_answer=False,
+            **kwargs
         )
 
     def deep_search_news(self, query: str) -> TavilyResponse:

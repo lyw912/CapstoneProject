@@ -3,7 +3,9 @@ Deep Search Agent主类
 整合所有模块，实现完整的深度搜索流程
 """
 
+import asyncio
 import json
+import logging
 import os
 import re
 from datetime import datetime
@@ -12,7 +14,7 @@ from typing import Optional, Dict, Any, List
 from .llms import LLMClient
 from .nodes import (
     ReportStructureNode,
-    FirstSearchNode, 
+    FirstSearchNode,
     ReflectionNode,
     FirstSummaryNode,
     ReflectionSummaryNode,
@@ -25,33 +27,36 @@ from loguru import logger
 
 class DeepSearchAgent:
     """Deep Search Agent主类"""
-    
+
     def __init__(self, config: Optional[Settings] = None):
         """
         初始化Deep Search Agent
-        
+
         Args:
             config: 配置对象，如果不提供则自动加载
         """
         # 加载配置
         from .utils.config import settings
         self.config = config or settings
-        
+
         # 初始化LLM客户端
         self.llm_client = self._initialize_llm()
-        
+
         # 初始化搜索工具集
         self.search_agency = TavilyNewsAgency(api_key=self.config.TAVILY_API_KEY)
-        
+
         # 初始化节点
         self._initialize_nodes()
-        
+
         # 状态
         self.state = State()
-        
+
         # 确保输出目录存在
         os.makedirs(self.config.OUTPUT_DIR, exist_ok=True)
-        
+
+        # LangGraph 子图（延迟初始化，避免 import 时加载）
+        self._query_graph = None
+
         logger.info(f"Query Agent已初始化")
         logger.info(f"使用LLM: {self.llm_client.get_model_info()}")
         logger.info(f"搜索工具集: TavilyNewsAgency (支持6种搜索工具)")
@@ -459,6 +464,87 @@ class DeepSearchAgent:
         """保存状态到文件"""
         self.state.save_to_file(filepath)
         logger.info(f"状态已保存到 {filepath}")
+
+    # =========================================================================
+    # Query Agent 新接口（Phase 1+）
+    # =========================================================================
+
+    @property
+    def query_graph(self):
+        """延迟初始化 LangGraph 子图，避免 import 时触发。"""
+        if self._query_graph is None:
+            from .graph.builder import build_query_agent_graph
+            self._query_graph = build_query_agent_graph()
+            logger.info("[QueryAgent] LangGraph 子图已初始化")
+        return self._query_graph
+
+    async def research_structured(self, query: str) -> Dict:
+        """
+        新接口（异步）：执行立场感知搜索，返回结构化 QueryAgentOutput。
+
+        Args:
+            query: 用户查询（中文或英文）
+
+        Returns:
+            QueryAgentOutput 字典，包含 stance_distribution、sources、
+            coverage_score 等字段。
+        """
+        initial_state = {
+            "original_query": query,
+            "analysis_type": "general",
+            "sub_queries": [],
+            "search_iterations": 0,
+            "max_iterations": 3,
+            "raw_sources": [],
+            "deduped_sources": [],
+            "scored_sources": [],
+            "classified_sources": [],
+            "stance_coverage": {},
+            "missing_stances": [],
+            "gap_queries": [],
+            "query_agent_output": None,
+            "trace_log": [],
+            "error_log": [],
+        }
+        logger.info(f"[QueryAgent] research_structured 开始: {query!r}")
+        final_state = await self.query_graph.ainvoke(initial_state)
+        output = final_state.get("query_agent_output")
+        logger.info(
+            f"[QueryAgent] 完成: 来源={output.get('total_sources_kept', 0)}, "
+            f"覆盖度={output.get('coverage_score', 0):.2f}"
+        )
+        return output
+
+    def research_structured_sync(self, query: str) -> Dict:
+        """
+        新接口（同步）：包装 research_structured()，兼容非 async 调用环境。
+        """
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # 已在 async 上下文中，使用 nest_asyncio 或新建线程
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as pool:
+                    future = pool.submit(asyncio.run, self.research_structured(query))
+                    return future.result()
+            else:
+                return loop.run_until_complete(self.research_structured(query))
+        except RuntimeError:
+            return asyncio.run(self.research_structured(query))
+
+    def _write_forum_finding(self, output: Dict):
+        """向 ForumEngine 写入研究发现（通过 logs/query.log）。"""
+        forum_logger = logging.getLogger("query_engine")
+        dist = output.get("stance_distribution", {})
+        forum_logger.info(
+            f"[FINDING] 立场分布: "
+            f"支持{dist.get('support', 0):.0%} / "
+            f"反对{dist.get('oppose', 0):.0%} / "
+            f"中立{dist.get('neutral', 0):.0%} / "
+            f"官方{dist.get('official', 0):.0%}"
+        )
+        for gap in output.get("knowledge_gaps", [])[:3]:
+            forum_logger.info(f"[REFLECTION] 知识缺口: {gap}")
 
 
 def create_agent() -> DeepSearchAgent:
