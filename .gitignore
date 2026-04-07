@@ -288,15 +288,15 @@ tmp/
 
 # ==== 配置和密钥 ====
 # 敏感配置文件
-/config.py
+#/config.py
 config.ini
 secrets.json
 .secrets
 *.key
 *.pem
 *.crt
-config.py
-MindSpider/config.py
+#config.py
+#MindSpider/config.py
 
 # API 密钥
 api_keys.txt
