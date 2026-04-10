@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from loguru import logger
 
-from ...utils import format_search_results_for_prompt
+from ...utils import build_search_results_from_response, format_search_results_for_prompt
 from ..state import MediaAgentState
 
 if TYPE_CHECKING:
@@ -44,21 +44,12 @@ def process_paragraph_node(agent: DeepSearchAgent, state: MediaAgentState) -> di
 
     search_response = agent.execute_search_tool(search_tool, search_query, **search_kwargs)
 
-    search_results = []
-    if search_response and search_response.webpages:
-        max_results = min(len(search_response.webpages), 10)
-        for result in search_response.webpages[:max_results]:
-            search_results.append({
-                "title": result.name,
-                "url": result.url,
-                "content": result.snippet,
-                "score": None,
-                "raw_content": result.snippet,
-                "published_date": result.date_last_crawled,
-            })
+    search_results = build_search_results_from_response(search_response, max_webpages=10, max_images=10)
 
     if search_results:
-        _message = f"  - 找到 {len(search_results)} 个搜索结果"
+        n_web = sum(1 for r in search_results if r.get("result_type") == "webpage")
+        n_img = sum(1 for r in search_results if r.get("result_type") == "image")
+        _message = f"  - 找到 {len(search_results)} 条素材（网页 {n_web}，图片 {n_img}）"
         for j, result in enumerate(search_results, 1):
             date_info = (
                 f" (发布于: {result.get('published_date', 'N/A')})"
@@ -112,21 +103,12 @@ def process_paragraph_node(agent: DeepSearchAgent, state: MediaAgentState) -> di
             r_kwargs["max_results"] = 10
 
         r_response = agent.execute_search_tool(rt, rq, **r_kwargs)
-        r_results = []
-        if r_response and r_response.webpages:
-            mr = min(len(r_response.webpages), 10)
-            for result in r_response.webpages[:mr]:
-                r_results.append({
-                    "title": result.name,
-                    "url": result.url,
-                    "content": result.snippet,
-                    "score": None,
-                    "raw_content": result.snippet,
-                    "published_date": result.date_last_crawled,
-                })
+        r_results = build_search_results_from_response(r_response, max_webpages=10, max_images=10)
 
         if r_results:
-            _message = f"    找到 {len(r_results)} 个反思搜索结果"
+            n_rw = sum(1 for r in r_results if r.get("result_type") == "webpage")
+            n_ri = sum(1 for r in r_results if r.get("result_type") == "image")
+            _message = f"    找到 {len(r_results)} 条反思素材（网页 {n_rw}，图片 {n_ri}）"
             for j, result in enumerate(r_results, 1):
                 date_info = (
                     f" (发布于: {result.get('published_date', 'N/A')})"

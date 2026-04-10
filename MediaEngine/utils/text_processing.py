@@ -5,7 +5,7 @@
 
 import re
 import json
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from json.decoder import JSONDecodeError
 
 
@@ -259,6 +259,74 @@ def validate_json_schema(data: Dict[str, Any], required_fields: List[str]) -> bo
         验证是否通过
     """
     return all(field in data for field in required_fields)
+
+
+def image_results_to_search_dicts(
+    images: Optional[List[Any]],
+    max_images: int = 10,
+) -> List[Dict[str, Any]]:
+    """
+    将搜索 API 返回的图片元数据转为与网页结果一致的结构，供 format_search_results_for_prompt 使用。
+    仅包含文字描述与链接，不包含像素数据。
+    """
+    if not images:
+        return []
+    out: List[Dict[str, Any]] = []
+    for img in images[:max_images]:
+        name = getattr(img, "name", None) or "图片"
+        content_url = (getattr(img, "content_url", None) or "").strip()
+        host = (getattr(img, "host_page_url", None) or "").strip() or None
+        thumb = (getattr(img, "thumbnail_url", None) or "").strip() or None
+        w, h = getattr(img, "width", None), getattr(img, "height", None)
+        lines = [f"[图片] {name}"]
+        lines.append(f"图片链接: {content_url}" if content_url else "图片链接: （无）")
+        if host:
+            lines.append(f"来源页面: {host}")
+        if thumb:
+            lines.append(f"缩略图: {thumb}")
+        if w and h:
+            lines.append(f"尺寸: {w}x{h}")
+        text = "\n".join(lines)
+        primary_url = content_url or host or ""
+        out.append({
+            "title": name,
+            "url": primary_url,
+            "content": text,
+            "raw_content": text,
+            "score": None,
+            "published_date": None,
+            "result_type": "image",
+        })
+    return out
+
+
+def build_search_results_from_response(
+    response: Any,
+    max_webpages: int = 10,
+    max_images: int = 10,
+) -> List[Dict[str, Any]]:
+    """
+    从搜索响应中组装网页片段 + 图片元数据，供段落总结与反思使用。
+    """
+    if not response:
+        return []
+    out: List[Dict[str, Any]] = []
+    webpages = getattr(response, "webpages", None) or []
+    for result in webpages[:max_webpages]:
+        out.append({
+            "title": result.name,
+            "url": result.url,
+            "content": result.snippet,
+            "score": None,
+            "raw_content": result.snippet,
+            "published_date": result.date_last_crawled,
+            "result_type": "webpage",
+        })
+    out.extend(image_results_to_search_dicts(
+        getattr(response, "images", None) or [],
+        max_images=max_images,
+    ))
+    return out
 
 
 def truncate_content(content: str, max_length: int = 20000) -> str:
