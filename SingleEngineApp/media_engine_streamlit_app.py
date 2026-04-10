@@ -150,14 +150,12 @@ def main():
 
 
 def execute_research(query: str, config: Settings):
-    """执行研究"""
+    """执行研究（MediaEngine 已统一为 LangGraph，与 DeepSearchAgent / AnspireSearchAgent 的 research() 对齐）。"""
     try:
-        # 创建进度条
         progress_bar = st.progress(0)
         status_text = st.empty()
 
-        # 初始化Agent
-        status_text.text("正在初始化Agent...")
+        status_text.text("正在初始化 Agent...")
         if config.SEARCH_TOOL_TYPE == "BochaAPI":
             agent = DeepSearchAgent(config)
         elif config.SEARCH_TOOL_TYPE == "AnspireAPI":
@@ -166,45 +164,14 @@ def execute_research(query: str, config: Settings):
             raise ValueError(f"未知的搜索工具类型: {config.SEARCH_TOOL_TYPE}")
         st.session_state.agent = agent
 
-        progress_bar.progress(10)
-
-        # 生成报告结构
-        status_text.text("正在生成报告结构...")
-        agent._generate_report_structure(query)
-        progress_bar.progress(20)
-
-        # 处理段落
-        total_paragraphs = len(agent.state.paragraphs)
-        for i in range(total_paragraphs):
-            status_text.text(f"正在处理段落 {i + 1}/{total_paragraphs}: {agent.state.paragraphs[i].title}")
-
-            # 初始搜索和总结
-            agent._initial_search_and_summary(i)
-            progress_value = 20 + (i + 0.5) / total_paragraphs * 60
-            progress_bar.progress(int(progress_value))
-
-            # 反思循环
-            agent._reflection_loop(i)
-            agent.state.paragraphs[i].research.mark_completed()
-
-            progress_value = 20 + (i + 1) / total_paragraphs * 60
-            progress_bar.progress(int(progress_value))
-
-        # 生成最终报告
-        status_text.text("正在生成最终报告...")
-        logger.info("正在生成最终报告...")
-        final_report = agent._generate_final_report()
-        progress_bar.progress(90)
-
-        # 保存报告
-        status_text.text("正在保存报告...")
-        logger.info("正在保存报告...")
-        agent._save_report(final_report)
+        progress_bar.progress(15)
+        status_text.text("正在执行深度研究（搜索、反思与报告生成）...")
+        logger.info("开始 LangGraph 深度研究")
+        final_report = agent.research(query, save_report=True)
         progress_bar.progress(100)
 
         status_text.text("研究完成！")
         logger.info("研究完成！")
-        # 显示结果
         display_results(agent, final_report)
 
     except Exception as e:

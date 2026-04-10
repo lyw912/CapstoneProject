@@ -11,6 +11,7 @@ os.environ['PYTHONUTF8'] = '1'
 os.environ['PYTHONUNBUFFERED'] = '1'  # 禁用Python输出缓冲，确保日志实时输出
 
 import subprocess
+import socket
 import time
 import threading
 from datetime import datetime
@@ -617,6 +618,95 @@ def read_process_output(process, app_name):
             write_log_to_file(app_name, f"[{datetime.now().strftime('%H:%M:%S')}] {error_msg}")
             break
 
+
+def _local_port_is_free(port: int) -> bool:
+    """检测本机端口是否可被绑定（未被其他进程监听）。"""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(("127.0.0.1", port))
+            return True
+        except OSError:
+            return False
+
+
+def _windows_pids_listening_on_port(port: int) -> list[int]:
+    """解析 netstat，返回在指定端口 LISTENING 的 PID（去重）。"""
+    suffix = f":{port}"
+    pids: set[int] = set()
+    try:
+        result = subprocess.run(
+            ["netstat", "-ano"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+            timeout=30,
+        )
+    except Exception:
+        return []
+    for line in result.stdout.splitlines():
+        line = line.strip()
+        parts = line.split()
+        if len(parts) < 5 or parts[0] != "TCP":
+            continue
+        local = parts[1]
+        if not local.endswith(suffix):
+            continue
+        if parts[3] != "LISTENING":
+            continue
+        try:
+            pids.add(int(parts[4]))
+        except ValueError:
+            continue
+    return list(pids)
+
+
+def _try_release_port(port: int, app_name: str) -> tuple[bool, str]:
+    """
+    若端口被占用，尝试结束占用进程（常见于上次 Streamlit 未正常退出）。
+    Windows：根据 netstat 找到 PID 后 taskkill；其他系统仅提示手动处理。
+    """
+    if _local_port_is_free(port):
+        return True, ""
+
+    if sys.platform == "win32":
+        pids = _windows_pids_listening_on_port(port)
+        my_pid = os.getpid()
+        killed = []
+        for pid in pids:
+            if pid == my_pid:
+                continue
+            try:
+                subprocess.run(
+                    ["taskkill", "/PID", str(pid), "/F"],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    creationflags=subprocess.CREATE_NO_WINDOW,
+                    timeout=30,
+                )
+                killed.append(pid)
+            except Exception as exc:
+                logger.warning(f"结束占用端口 {port} 的进程 {pid} 失败: {exc}")
+        if killed:
+            msg = f"端口 {port} 曾被占用，已尝试结束进程 PID: {killed}"
+            logger.info(msg)
+            write_log_to_file(app_name, f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
+            time.sleep(0.5)
+
+        if _local_port_is_free(port):
+            return True, ""
+        return False, (
+            f"端口 {port} 仍被占用。请关闭占用该端口的程序，或在任务管理器中结束对应进程后重试。"
+        )
+
+    return False, (
+        f"端口 {port} 已被占用。请结束占用该端口的进程后重试（例如: lsof -i :{port} 或 ss -tlnp）。"
+    )
+
+
 def start_streamlit_app(app_name, script_path, port):
     """启动Streamlit应用"""
     try:
@@ -626,11 +716,16 @@ def start_streamlit_app(app_name, script_path, port):
         # 检查文件是否存在
         if not os.path.exists(script_path):
             return False, f"文件不存在: {script_path}"
-        
-        # 清空之前的日志文件
+
+        # 先清空日志，再释放端口（释放过程会写入日志）
         log_file_path = LOG_DIR / f"{app_name}.log"
         if log_file_path.exists():
             log_file_path.unlink()
+
+        ok, port_msg = _try_release_port(port, app_name)
+        if not ok:
+            write_log_to_file(app_name, f"[{datetime.now().strftime('%H:%M:%S')}] {port_msg}")
+            return False, port_msg
         
         # 创建启动日志
         start_msg = f"[{datetime.now().strftime('%H:%M:%S')}] 启动 {app_name} 应用..."
