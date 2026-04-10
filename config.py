@@ -30,6 +30,32 @@ class Settings(BaseSettings):
     PORT: int = Field(5000, description="Flask服务器端口号，默认5000")
     OUTPUT_DIR: Path = Field(Path("output"), description="输出文件目录")
 
+    # ================== Report Engine 路径与日志 ====================
+    LOG_FILE: Path = Field(
+        Path("logs/report.log"),
+        description="Report Engine 专用日志文件路径（loguru sink）",
+    )
+    CHAPTER_OUTPUT_DIR: Path = Field(
+        Path("output/chapters"),
+        description="章节级 JSON 输出目录",
+    )
+    DOCUMENT_IR_OUTPUT_DIR: Path = Field(
+        Path("output/document_ir"),
+        description="装订后的 Document IR 输出目录",
+    )
+    TEMPLATE_DIR: Path = Field(
+        Path("ReportEngine/report_template"),
+        description="报告 Markdown 模板目录",
+    )
+    JSON_ERROR_LOG_DIR: Path = Field(
+        Path("output/json_error_logs"),
+        description="章节 JSON 解析失败时的诊断日志目录",
+    )
+    CHAPTER_JSON_MAX_ATTEMPTS: int = Field(
+        5,
+        description="单章 JSON 生成/修复最大尝试次数",
+    )
+
     # ====================== 数据库配置 ======================
     DB_DIALECT: str = Field("postgresql", description="数据库类型，可选 mysql 或 postgresql；请与其他连接信息同时配置")
     DB_HOST: str = Field("your_db_host", description="数据库主机，例如localhost 或 127.0.0.1")
