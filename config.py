@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     HOST: str = Field("0.0.0.0", description="BETTAFISH 主机地址，例如 0.0.0.0 或 127.0.0.1")
     PORT: int = Field(5000, description="Flask服务器端口号，默认5000")
     OUTPUT_DIR: Path = Field(Path("output"), description="输出文件目录")
+    SAVE_INTERMEDIATE_STATES: bool = Field(
+        False,
+        description="深度研究保存报告时是否同时写入中间状态 JSON（MediaEngine / QueryEngine）",
+    )
 
     # ================== Report Engine 路径与日志 ====================
     LOG_FILE: Path = Field(
