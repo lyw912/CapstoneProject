@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-MediaEngine 包内配置入口。
+MediaEngine package configuration entry.
 
-与项目根目录 `config.py` 使用同一套 Settings，避免重复定义；
-供 `MediaEngine.utils` 与 `from .utils.config import Settings` 使用。
+Uses the same Settings as the project root directory `config.py` to avoid duplicate definitions;
+Used for `MediaEngine.utils` and `from .utils.config import Settings`.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-# 确保可导入项目根目录下的 config 模块（例如从子目录直接运行脚本时）
+# Ensure the config module in the project root directory can be imported (e.g., when running scripts directly from subdirectories)
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 _root = str(_PROJECT_ROOT)
 if _root not in sys.path:

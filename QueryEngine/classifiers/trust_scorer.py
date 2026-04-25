@@ -1,13 +1,13 @@
 """
-TrustScore 计算器
+TrustScore Calculator
 
-多维可信度评分（0-1），权重分配：
-  - 域名权威性  30%：来源平台的公信力
-  - 时效性      25%：信息新鲜度（指数衰减，7天半衰期）
-  - 内容质量    25%：snippet 丰富度 + 是否有全文
-  - 搜索排名    20%：搜索引擎的相关性得分
+Multi-dimensional trust scoring (0-1), weight distribution:
+  - Domain Authority 30%: Credibility of the source platform
+  - Timeliness       25%: Information freshness (exponential decay, 7-day half-life)
+  - Content Quality  25%: Snippet richness + availability of full text
+  - Search Ranking   20%: Relevance score from search engine
 
-参考文献：架构文档 v2.0 Part 2 § 8.4
+Reference: Architecture Document v2.0 Part 2 § 8.4
 """
 
 from __future__ import annotations
@@ -20,11 +20,11 @@ from urllib.parse import urlparse
 from loguru import logger
 
 # ---------------------------------------------------------------------------
-# 域名权威性字典（精简版，完整版可在 utils/domain_authority.py 扩展）
+# Domain authority dictionary (simplified version, full version can be extended in utils/domain_authority.py)
 # ---------------------------------------------------------------------------
 
 DOMAIN_AUTHORITY: dict[str, float] = {
-    # 中国官方 (0.90–1.00)
+    # Chinese Official (0.90–1.00)
     "gov.cn":              1.00,
     "xinhua.net":          0.95,
     "people.com.cn":       0.95,
@@ -37,7 +37,7 @@ DOMAIN_AUTHORITY: dict[str, float] = {
     "miit.gov.cn":         0.90,
     "pbc.gov.cn":          0.90,
     "ndrc.gov.cn":         0.90,
-    # 中国主流媒体 (0.60–0.82)
+    # Chinese Mainstream Media (0.60–0.82)
     "thepaper.cn":         0.82,
     "caixin.com":          0.82,
     "ifeng.com":           0.75,
@@ -56,7 +56,7 @@ DOMAIN_AUTHORITY: dict[str, float] = {
     "stcn.com":            0.68,
     "jrj.com.cn":          0.65,
     "zaobao.com":          0.70,
-    # 国际权威媒体 (0.80–0.95)
+    # International Authoritative Media (0.80–0.95)
     "reuters.com":         0.95,
     "bbc.com":             0.90,
     "bbc.co.uk":           0.90,
@@ -73,7 +73,7 @@ DOMAIN_AUTHORITY: dict[str, float] = {
     "businessinsider.com": 0.70,
     "techcrunch.com":      0.72,
     "theverge.com":        0.72,
-    # 国际官方机构 (0.90–1.00)
+    # International Official Organizations (0.90–1.00)
     "un.org":              0.98,
     "who.int":             0.98,
     "imf.org":             0.95,
@@ -83,13 +83,13 @@ DOMAIN_AUTHORITY: dict[str, float] = {
     "europa.eu":           0.95,
     "senate.gov":          0.95,
     "state.gov":           0.95,
-    # 学术 (0.80–0.92)
+    # Academic (0.80–0.92)
     "nature.com":          0.92,
     "science.org":         0.92,
     "arxiv.org":           0.85,
     "scholar.google.com":  0.80,
     "ssrn.com":            0.80,
-    # 社交 / UGC (0.30–0.55)
+    # Social / UGC (0.30–0.55)
     "weibo.com":           0.40,
     "zhihu.com":           0.52,
     "douban.com":          0.48,
@@ -104,16 +104,16 @@ DOMAIN_AUTHORITY: dict[str, float] = {
     "hupu.com":            0.40,
 }
 
-# λ = ln(2) / 7 ≈ 0.099（7 天半衰期）
+# λ = ln(2) / 7 ≈ 0.099 (7-day half-life)
 _DECAY_LAMBDA: float = math.log(2) / 7
 
 
 # ---------------------------------------------------------------------------
-# 辅助
+# Helper functions
 # ---------------------------------------------------------------------------
 
 def _extract_domain(url: str) -> str:
-    """从 URL 提取主域名（去除 www. 前缀）。"""
+    """Extract primary domain from URL (removing www. prefix)."""
     try:
         netloc = urlparse(url).netloc.lower()
         return netloc.replace("www.", "")
@@ -123,44 +123,44 @@ def _extract_domain(url: str) -> str:
 
 def _get_domain_authority(domain: str) -> float:
     """
-    查询域名权威性得分（0.30–1.00）。
-    支持后缀匹配：如 news.xinhua.net → xinhua.net → 0.95。
+    Query domain authority score (0.30–1.00).
+    Support suffix matching: e.g., news.xinhua.net → xinhua.net → 0.95.
     """
-    # 精确匹配
+    # Exact match
     if domain in DOMAIN_AUTHORITY:
         return DOMAIN_AUTHORITY[domain]
 
-    # 后缀匹配（从最长后缀开始）
+    # Suffix matching (starting from longest suffix)
     parts = domain.split(".")
     for i in range(1, len(parts)):
         suffix = ".".join(parts[i:])
         if suffix in DOMAIN_AUTHORITY:
             return DOMAIN_AUTHORITY[suffix]
 
-    return 0.30  # 未知域名默认
+    return 0.30  # Default for unknown domains
 
 
 def _parse_date(date_str: str) -> Optional[datetime]:
     """
-    解析日期字符串为 naive datetime。
-    依次尝试：dateutil → fromisoformat → 失败返回 None。
+    Parse date string to naive datetime.
+    Try in order: dateutil → fromisoformat → return None on failure.
     """
     if not date_str:
         return None
     try:
         from dateutil import parser as _du
         dt = _du.parse(date_str)
-        return dt.replace(tzinfo=None)  # 统一为 naive
+        return dt.replace(tzinfo=None)  # Unify as naive
     except ImportError:
         pass
     except Exception:
         pass
 
-    # 降级：Python 内置 fromisoformat（Python 3.7+）
+    # Fallback: Python built-in fromisoformat (Python 3.7+)
     try:
-        # 去掉时区后缀 Z / +HH:MM
+        # Remove timezone suffix Z / +HH:MM
         cleaned = date_str.rstrip("Z").split("+")[0].split("-")[0:3]
-        # 简单处理，只取日期部分
+        # Simple processing, only take the date part
         dt_str = date_str[:10]  # YYYY-MM-DD
         return datetime.strptime(dt_str, "%Y-%m-%d")
     except Exception:
@@ -168,21 +168,21 @@ def _parse_date(date_str: str) -> Optional[datetime]:
 
 
 # ---------------------------------------------------------------------------
-# 主函数
+# Main function
 # ---------------------------------------------------------------------------
 
 def compute_trust_score(source: dict) -> float:
     """
-    综合可信度评分（0.0–1.0）。
+    Comprehensive trust score (0.0–1.0).
 
-    权重分配：
-      域名权威性 30%  +  时效性 25%  +  内容质量 25%  +  搜索排名 20%
+    Weight distribution:
+      Domain Authority 30% + Timeliness 25% + Content Quality 25% + Search Ranking 20%
 
     Args:
-        source: SourceItem 字典
+        source: SourceItem dict
 
     Returns:
-        float 归一化到 [0.0, 1.0]，保留 3 位小数
+        float normalized to [0.0, 1.0], rounded to 3 decimal places
     """
     score: float = 0.0
 
@@ -190,13 +190,13 @@ def compute_trust_score(source: dict) -> float:
     domain = _extract_domain(url)
 
     # ------------------------------------------------------------------
-    # 1. 域名权威性 (30%)
+    # 1. Domain Authority (30%)
     # ------------------------------------------------------------------
     authority = _get_domain_authority(domain)
     score += 0.30 * authority
 
     # ------------------------------------------------------------------
-    # 2. 时效性 (25%)：指数衰减，7 天半衰期
+    # 2. Timeliness (25%): exponential decay, 7-day half-life
     # ------------------------------------------------------------------
     published = source.get("published_at")
     if published:
@@ -206,12 +206,12 @@ def compute_trust_score(source: dict) -> float:
             timeliness = math.exp(-_DECAY_LAMBDA * days_old)
             score += 0.25 * timeliness
         else:
-            score += 0.125  # 无法解析日期，给一半
+            score += 0.125  # Unable to parse date, give half
     else:
-        score += 0.125  # 无日期信息，给一半
+        score += 0.125  # No date information, give half
 
     # ------------------------------------------------------------------
-    # 3. 内容质量 (25%)：snippet 长度 70% + 是否有全文 30%
+    # 3. Content Quality (25%): snippet length 70% + has full text 30%
     # ------------------------------------------------------------------
     snippet_len = len(source.get("snippet", "") or "")
     has_full = 1.0 if source.get("full_content") else 0.0
@@ -219,7 +219,7 @@ def compute_trust_score(source: dict) -> float:
     score += 0.25 * content_quality
 
     # ------------------------------------------------------------------
-    # 4. 搜索排名分 (20%)：来自搜索 API 的相关性得分
+    # 4. Search Ranking Score (20%): relevance score from search API
     # ------------------------------------------------------------------
     rrf = source.get("rrf_score") or 0.0
     try:
@@ -230,6 +230,6 @@ def compute_trust_score(source: dict) -> float:
     if rrf > 0:
         score += 0.20 * min(rrf, 1.0)
     else:
-        score += 0.10  # 无排名信息给一半
+        score += 0.10  # No ranking information, give half
 
     return round(min(score, 1.0), 3)

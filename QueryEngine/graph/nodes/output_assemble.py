@@ -1,14 +1,14 @@
 """
-OutputAssemble 节点 — 结构化输出组装
+OutputAssemble Node — Structured Output Assembly
 
-Phase 1：仅计算 stance_distribution + 汇总 sources。
-Phase 2：新增 opinion_clusters（每个立场的 LLM 观点聚类）。
-Phase 3：新增 knowledge_gaps + structured_summary（LLM 生成）。
+Phase 1: Calculate stance_distribution only + aggregate sources.
+Phase 2: Add opinion_clusters (LLM opinion clustering for each stance).
+Phase 3: Add knowledge_gaps + structured_summary (LLM generated).
 
-Phase 2 关键变化：
-  - 优先使用 classified_sources（已有 stance_label + trust_score）
-  - 为每个立场生成 OpinionCluster（调用 LLM）
-  - 使用 stance_coverage（来自 CoverageCheck）计算覆盖度
+Phase 2 Key Changes:
+  - Prioritize using classified_sources (already has stance_label + trust_score)
+  - Generate OpinionCluster for each stance (via LLM call)
+  - Use stance_coverage (from CoverageCheck) to calculate coverage
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from ...utils.config import settings
 from ..state import OpinionCluster, QueryAgentOutput, QueryAgentState, SourceItem
 
 # ---------------------------------------------------------------------------
-# 覆盖度常量（与 coverage_check.py 保持一致）
+# Coverage Constants (consistent with coverage_check.py)
 # ---------------------------------------------------------------------------
 
 _STANCE_THRESHOLDS: Dict[str, int] = {
@@ -37,7 +37,7 @@ _STANCE_THRESHOLDS: Dict[str, int] = {
 
 
 def _compute_coverage_score(stance_counts: Dict[str, int]) -> float:
-    """基于 STANCE_THRESHOLDS 计算覆盖度分数（0–1）。"""
+    """Calculate coverage score (0–1) based on STANCE_THRESHOLDS."""
     total_required = sum(_STANCE_THRESHOLDS.values())
     total_met = sum(
         min(stance_counts.get(s, 0), c)
@@ -47,18 +47,18 @@ def _compute_coverage_score(stance_counts: Dict[str, int]) -> float:
 
 
 # ---------------------------------------------------------------------------
-# LLM 工具
+# LLM Tools
 # ---------------------------------------------------------------------------
 
-OPINION_CLUSTER_PROMPT = """你是舆情分析师。针对话题"{query}"，以下是持"{stance}"立场的内容：
+OPINION_CLUSTER_PROMPT = """You are a public opinion analyst. For the topic "{query}", here is content with "{stance}" stance:
 
 {sources_text}
 
-请归纳：
-1. 核心论点（1句话，简洁概括该立场的主要主张）
-2. 最具代表性的原文引用（不超过100字，可直接摘录）
+Please summarize:
+1. Core argument (1 sentence, concisely summarize the main claim of this stance)
+2. Most representative original quote (within 100 characters, can be directly excerpted)
 
-只输出 JSON，格式：
+Output only JSON in the format:
 {{"core_argument": "...", "representative_quote": "..."}}"""
 
 
@@ -71,7 +71,7 @@ def _get_llm_client() -> LLMClient:
 
 
 def _parse_json_obj(text: str) -> dict:
-    """从 LLM 响应中提取 JSON 对象。"""
+    """Extract JSON object from LLM response."""
     text = re.sub(r"```(?:json)?", "", text).strip()
     try:
         obj = json.loads(text)
@@ -91,25 +91,25 @@ def _parse_json_obj(text: str) -> dict:
 
 
 def _build_sources_text(srcs: List[dict], max_sources: int = 5) -> str:
-    """将来源列表转换为供 LLM 阅读的文本（最多 max_sources 条）。"""
+    """Convert source list to text for LLM reading (at most max_sources items)."""
     lines = []
     for s in srcs[:max_sources]:
-        title = s.get("title", "（无标题）")
+        title = s.get("title", "(No title)")
         url = s.get("url", "")
         snippet = (s.get("snippet") or "")[:200]
         lines.append(f"- [{title}]({url}): {snippet}")
-    return "\n".join(lines) if lines else "（无来源）"
+    return "\n".join(lines) if lines else "(No sources)"
 
 
-KNOWLEDGE_GAPS_PROMPT = """基于以下舆情分析结果，识别3-5个仍然缺失的信息维度：
+KNOWLEDGE_GAPS_PROMPT = """Based on the following public opinion analysis results, identify 3-5 still missing information dimensions:
 
-话题：{query}
-已覆盖立场：{covered_stances}
-缺失立场：{missing_stances}
-来源平台分布：{platforms}
+Topic: {query}
+Covered stances: {covered_stances}
+Missing stances: {missing_stances}
+Source platform distribution: {platforms}
 
-请列出我们尚不清楚的问题，以"我们尚不清楚..."格式。
-只输出JSON数组：["我们尚不清楚...", "我们尚不清楚..."]"""
+Please list questions we still don't know, in the format "We still don't know...".
+Output only a JSON array: ["We still don't know...", "We still don't know..."]"""
 
 
 async def _identify_knowledge_gaps(
@@ -119,34 +119,34 @@ async def _identify_knowledge_gaps(
     sources: List[dict],
     llm: LLMClient,
 ) -> List[str]:
-    """识别知识缺口（3-5个）"""
+    """Identify knowledge gaps (3-5 items)"""
     if not sources:
-        return ["我们尚不清楚该话题的任何信息"]
+        return ["We still don't know any information about this topic"]
 
     covered = list(stance_coverage.keys())
     platforms = list(set(s.get("platform", "") for s in sources if s.get("platform")))[:10]
 
     prompt = KNOWLEDGE_GAPS_PROMPT.format(
         query=query,
-        covered_stances="、".join(covered) if covered else "无",
-        missing_stances="、".join(missing_stances) if missing_stances else "无",
-        platforms="、".join(platforms) if platforms else "无",
+        covered_stances=", ".join(covered) if covered else "None",
+        missing_stances=", ".join(missing_stances) if missing_stances else "None",
+        platforms=", ".join(platforms) if platforms else "None",
     )
 
     try:
         response = llm.invoke(
-            system_prompt="你是舆情分析专家。只输出JSON数组，不要有其他文字。",
+            system_prompt="You are a public opinion analysis expert. Output only a JSON array, no other text.",
             user_prompt=prompt,
         )
         gaps = _parse_json_array(response)
         return gaps[:5] if gaps else []
     except Exception as exc:
-        logger.warning(f"[OutputAssemble] 知识缺口识别失败: {exc}")
+        logger.warning(f"[OutputAssemble] Knowledge gap identification failed: {exc}")
         return []
 
 
 def _parse_json_array(text: str) -> list:
-    """从 LLM 响应中提取 JSON 数组"""
+    """Extract JSON array from LLM response"""
     text = re.sub(r"```(?:json)?", "", text).strip()
     try:
         data = json.loads(text)
@@ -173,8 +173,8 @@ async def _generate_opinion_cluster(
     llm: LLMClient,
 ) -> Optional[OpinionCluster]:
     """
-    为单个立场调用 LLM 生成 OpinionCluster。
-    若 LLM 调用失败，返回基于规则的最小化 cluster。
+    Call LLM to generate OpinionCluster for a single stance.
+    If LLM call fails, return a rule-based minimal cluster.
     """
     sources_text = _build_sources_text(srcs)
     prompt = OPINION_CLUSTER_PROMPT.format(
@@ -188,17 +188,17 @@ async def _generate_opinion_cluster(
 
     try:
         response = llm.invoke(
-            system_prompt="你是舆情分析专家。只输出 JSON，不要有其他文字。",
+            system_prompt="You are a public opinion analysis expert. Output only JSON, no other text.",
             user_prompt=prompt,
         )
         parsed = _parse_json_obj(response)
         core_argument = parsed.get("core_argument", "")
         representative_quote = parsed.get("representative_quote", "")
     except Exception as exc:
-        logger.warning(f"[OutputAssemble] 立场 '{stance}' 聚类 LLM 失败: {exc}")
-        # 降级：使用第一条来源的 snippet 作为代表性引用
+        logger.warning(f"[OutputAssemble] Stance '{stance}' clustering LLM failed: {exc}")
+        # Fallback: Use the first source's snippet as representative quote
         if srcs:
-            core_argument = f"持{stance}立场的来源（共{len(srcs)}条）"
+            core_argument = f"Sources with {stance} stance (total {len(srcs)} items)"
             representative_quote = (srcs[0].get("snippet") or "")[:100]
 
     if not core_argument:
@@ -216,20 +216,20 @@ async def _generate_opinion_cluster(
 
 
 # ---------------------------------------------------------------------------
-# 节点函数
+# Node Function
 # ---------------------------------------------------------------------------
 
 async def output_assemble_node(state: QueryAgentState) -> dict:
     """
-    LangGraph 节点：组装最终结构化输出。
+    LangGraph Node: Assemble final structured output.
 
-    Phase 2：
-    - 优先使用 classified_sources（有 stance_label + trust_score）
-    - 调用 LLM 生成每个立场的 opinion_cluster
-    - knowledge_gaps / structured_summary 留 Phase 3 补全
+    Phase 2:
+    - Prioritize using classified_sources (has stance_label + trust_score)
+    - Call LLM to generate opinion_cluster for each stance
+    - knowledge_gaps / structured_summary reserved for Phase 3 completion
     """
     # ------------------------------------------------------------------
-    # 1. 获取来源（优先级：classified > scored > deduped > raw）
+    # 1. Get sources (priority: classified > scored > deduped > raw)
     # ------------------------------------------------------------------
     sources: List[SourceItem] = (
         state.get("classified_sources")
@@ -244,7 +244,7 @@ async def output_assemble_node(state: QueryAgentState) -> dict:
     total_kept = len(sources)
 
     # ------------------------------------------------------------------
-    # 2. 立场分布（Phase 2：来自真实 stance_label）
+    # 2. Stance distribution (Phase 2: from actual stance_label)
     # ------------------------------------------------------------------
     stance_counts = Counter(
         s.get("stance_label") or "unclassified" for s in sources
@@ -256,14 +256,14 @@ async def output_assemble_node(state: QueryAgentState) -> dict:
     }
 
     # ------------------------------------------------------------------
-    # 3. 覆盖度分数
-    #    优先使用 CoverageCheck 计算的 stance_coverage；否则自己计算
+    # 3. Coverage score
+    #    Prioritize using stance_coverage calculated by CoverageCheck; otherwise calculate yourself
     # ------------------------------------------------------------------
     coverage_counts = state.get("stance_coverage") or dict(stance_counts)
     coverage_score = _compute_coverage_score(coverage_counts)
 
     # ------------------------------------------------------------------
-    # 4. 来源排序（按 trust_score 降序）
+    # 4. Source sorting (by trust_score descending)
     # ------------------------------------------------------------------
     sorted_sources = sorted(
         sources,
@@ -272,11 +272,11 @@ async def output_assemble_node(state: QueryAgentState) -> dict:
     )
 
     # ------------------------------------------------------------------
-    # 5. Phase 2：OpinionCluster 生成（每个立场一个 cluster）
+    # 5. Phase 2: OpinionCluster generation (one cluster per stance)
     # ------------------------------------------------------------------
     opinion_clusters: List[OpinionCluster] = []
 
-    # 只为有真实来源的立场生成 cluster（排除 unclassified）
+    # Only generate clusters for stances with actual sources (exclude unclassified)
     stance_groups: Dict[str, List[dict]] = defaultdict(list)
     for s in sources:
         label = s.get("stance_label") or "unclassified"
@@ -285,7 +285,7 @@ async def output_assemble_node(state: QueryAgentState) -> dict:
 
     if stance_groups:
         llm = _get_llm_client()
-        # 按立场出现频次降序生成（保证最重要的立场优先）
+        # Generate in descending order of stance frequency (ensure most important stances are processed first)
         sorted_stances = sorted(
             stance_groups.items(),
             key=lambda x: len(x[1]),
@@ -303,7 +303,7 @@ async def output_assemble_node(state: QueryAgentState) -> dict:
                 opinion_clusters.append(cluster)
 
     # ------------------------------------------------------------------
-    # 6. 知识缺口识别
+    # 6. Knowledge gap identification
     # ------------------------------------------------------------------
     knowledge_gaps = await _identify_knowledge_gaps(
         query=query,
@@ -314,7 +314,7 @@ async def output_assemble_node(state: QueryAgentState) -> dict:
     )
 
     # ------------------------------------------------------------------
-    # 7. 组装 QueryAgentOutput
+    # 7. Assemble QueryAgentOutput
     # ------------------------------------------------------------------
     output: QueryAgentOutput = {
         "original_query":     query,
@@ -327,16 +327,16 @@ async def output_assemble_node(state: QueryAgentState) -> dict:
         "sources":             sorted_sources,
         "knowledge_gaps":      knowledge_gaps,
         "coverage_score":      coverage_score,
-        "structured_summary":  "",            # Phase 3 可选
+        "structured_summary":  "",            # Phase 3 optional
         "trace_log":           state.get("trace_log") or [],
     }
 
     trace = (
-        f"[OutputAssemble] 来源={total_kept}/{total_raw}, "
-        f"立场分布={stance_distribution}, "
+        f"[OutputAssemble] Sources={total_kept}/{total_raw}, "
+        f"Stance distribution={stance_distribution}, "
         f"SCS={coverage_score:.2f}, "
         f"clusters={len(opinion_clusters)}, "
-        f"知识缺口={len(knowledge_gaps)}"
+        f"knowledge gaps={len(knowledge_gaps)}"
     )
     logger.info(trace)
 

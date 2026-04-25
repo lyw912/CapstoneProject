@@ -1,8 +1,8 @@
 """
-图表API修复模块。
+Chart API Repair Module.
 
-提供调用多个 Engine（ReportEngine, ForumEngine, MediaEngine 等）的 LLM API
-来修复图表数据的功能。
+Provides functionality to invoke LLM APIs from multiple Engines (ReportEngine, ForumEngine, MediaEngine, etc.)
+to repair chart data.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from loguru import logger
 from ReportEngine.utils.config import settings
 
 
-# 图表修复提示词
+# Chart repair system prompt
 CHART_REPAIR_SYSTEM_PROMPT = """你是一个专业的图表数据修复助手。你的任务是修复Chart.js图表数据中的格式错误，确保图表能够正常渲染。
 
 **Chart.js标准数据格式：**
@@ -83,7 +83,7 @@ CHART_REPAIR_SYSTEM_PROMPT = """你是一个专业的图表数据修复助手。
 """
 
 
-# 表格修复提示词
+# Table repair system prompt
 TABLE_REPAIR_SYSTEM_PROMPT = """你是一个专业的表格数据修复助手。你的任务是修复IR表格数据中的格式错误，确保表格能够正常渲染。
 
 **标准表格数据格式：**
@@ -183,7 +183,7 @@ TABLE_REPAIR_SYSTEM_PROMPT = """你是一个专业的表格数据修复助手。
 """
 
 
-# 词云修复提示词
+# Word cloud repair system prompt
 WORDCLOUD_REPAIR_SYSTEM_PROMPT = """你是一个专业的词云数据修复助手。你的任务是修复词云 widget 数据中的格式错误，确保词云能够正常渲染。
 
 **标准词云数据格式：**
@@ -241,14 +241,14 @@ def build_table_repair_prompt(
     validation_errors: List[str]
 ) -> str:
     """
-    构建表格修复提示词。
+    Build table repair prompt.
 
     Args:
-        table_block: 原始 table block
-        validation_errors: 验证错误列表
+        table_block: Original table block
+        validation_errors: List of validation errors
 
     Returns:
-        str: 提示词
+        str: The prompt
     """
     block_json = json.dumps(table_block, ensure_ascii=False, indent=2)
     errors_text = "\n".join(f"- {error}" for error in validation_errors)
@@ -283,14 +283,14 @@ def build_wordcloud_repair_prompt(
     validation_errors: List[str]
 ) -> str:
     """
-    构建词云修复提示词。
+    Build word cloud repair prompt.
 
     Args:
-        widget_block: 原始 wordcloud widget block
-        validation_errors: 验证错误列表
+        widget_block: Original word cloud widget block
+        validation_errors: List of validation errors
 
     Returns:
-        str: 提示词
+        str: The prompt
     """
     block_json = json.dumps(widget_block, ensure_ascii=False, indent=2)
     errors_text = "\n".join(f"- {error}" for error in validation_errors)
@@ -325,14 +325,14 @@ def build_chart_repair_prompt(
     validation_errors: List[str]
 ) -> str:
     """
-    构建图表修复提示词。
+    Build chart repair prompt.
 
     Args:
-        widget_block: 原始widget block
-        validation_errors: 验证错误列表
+        widget_block: Original widget block
+        validation_errors: List of validation errors
 
     Returns:
-        str: 提示词
+        str: The prompt
     """
     block_json = json.dumps(widget_block, ensure_ascii=False, indent=2)
     errors_text = "\n".join(f"- {error}" for error in validation_errors)
@@ -364,22 +364,22 @@ def build_chart_repair_prompt(
 
 def create_llm_repair_functions() -> List:
     """
-    创建LLM修复函数列表。
+    Create LLM repair function list.
 
-    返回多个 Engine 的修复函数：
+    Returns repair functions for multiple Engines:
     1. ReportEngine
-    2. ForumEngine (通过ForumHost)
+    2. ForumEngine (via ForumHost)
     3. MediaEngine
 
     Returns:
-        List[Callable]: 修复函数列表
+        List[Callable]: List of repair functions
     """
     repair_functions = []
 
-    # 1. ReportEngine修复函数
+    # 1. ReportEngine repair function
     if settings.REPORT_ENGINE_API_KEY and settings.REPORT_ENGINE_BASE_URL:
         def repair_with_report_engine(widget_block: Dict[str, Any], errors: List[str]) -> Optional[Dict[str, Any]]:
-            """使用ReportEngine的LLM修复图表"""
+            """Use ReportEngine LLM to repair chart"""
             try:
                 from ReportEngine.llms import LLMClient
 
@@ -400,21 +400,21 @@ def create_llm_repair_functions() -> List:
                 if not response:
                     return None
 
-                # 解析响应
+                # Parse response
                 repaired = json.loads(response)
                 return repaired
 
             except Exception as e:
-                logger.exception(f"ReportEngine图表修复失败: {e}")
+                logger.exception(f"ReportEngine chart repair failed: {e}")
                 return None
 
         repair_functions.append(repair_with_report_engine)
-        logger.debug("已添加ReportEngine图表修复函数")
+        logger.debug("Added ReportEngine chart repair function")
 
-    # 2. ForumEngine修复函数
+    # 2. ForumEngine repair function
     if settings.FORUM_HOST_API_KEY and settings.FORUM_HOST_BASE_URL:
         def repair_with_forum_engine(widget_block: Dict[str, Any], errors: List[str]) -> Optional[Dict[str, Any]]:
-            """使用ForumEngine的LLM修复图表"""
+            """Use ForumEngine LLM to repair chart"""
             try:
                 from ReportEngine.llms import LLMClient
 
@@ -439,16 +439,16 @@ def create_llm_repair_functions() -> List:
                 return repaired
 
             except Exception as e:
-                logger.exception(f"ForumEngine图表修复失败: {e}")
+                logger.exception(f"ForumEngine chart repair failed: {e}")
                 return None
 
         repair_functions.append(repair_with_forum_engine)
-        logger.debug("已添加ForumEngine图表修复函数")
+        logger.debug("Added ForumEngine chart repair function")
 
-    # 3. MediaEngine修复函数
+    # 3. MediaEngine repair function
     if settings.MEDIA_ENGINE_API_KEY and settings.MEDIA_ENGINE_BASE_URL:
         def repair_with_media_engine(widget_block: Dict[str, Any], errors: List[str]) -> Optional[Dict[str, Any]]:
-            """使用MediaEngine的LLM修复图表"""
+            """Use MediaEngine LLM to repair chart"""
             try:
                 from ReportEngine.llms import LLMClient
 
@@ -473,35 +473,35 @@ def create_llm_repair_functions() -> List:
                 return repaired
 
             except Exception as e:
-                logger.exception(f"MediaEngine图表修复失败: {e}")
+                logger.exception(f"MediaEngine chart repair failed: {e}")
                 return None
 
         repair_functions.append(repair_with_media_engine)
-        logger.debug("已添加MediaEngine图表修复函数")
+        logger.debug("Added MediaEngine chart repair function")
 
     if not repair_functions:
-        logger.warning("未配置任何Engine API，图表API修复功能将不可用")
+        logger.warning("No Engine API configured, chart API repair feature will be unavailable")
     else:
-        logger.info(f"图表API修复功能已启用，共 {len(repair_functions)} 个Engine可用")
+        logger.info(f"Chart API repair feature enabled, {len(repair_functions)} Engine(s) available")
 
     return repair_functions
 
 
 def create_table_repair_functions() -> List:
     """
-    创建表格 LLM 修复函数列表。
+    Create table LLM repair function list.
 
-    使用与图表修复相同的 Engine 配置。
+    Uses the same Engine configuration as chart repair.
 
     Returns:
-        List[Callable]: 修复函数列表
+        List[Callable]: List of repair functions
     """
     repair_functions = []
 
-    # 使用 ReportEngine 修复表格
+    # Use ReportEngine to repair tables
     if settings.REPORT_ENGINE_API_KEY and settings.REPORT_ENGINE_BASE_URL:
         def repair_table_with_report_engine(table_block: Dict[str, Any], errors: List[str]) -> Optional[Dict[str, Any]]:
-            """使用 ReportEngine 的 LLM 修复表格"""
+            """Use ReportEngine LLM to repair table"""
             try:
                 from ReportEngine.llms import LLMClient
 
@@ -522,40 +522,40 @@ def create_table_repair_functions() -> List:
                 if not response:
                     return None
 
-                # 解析响应
+                # Parse response
                 repaired = json.loads(response)
                 return repaired
 
             except Exception as e:
-                logger.exception(f"ReportEngine 表格修复失败: {e}")
+                logger.exception(f"ReportEngine table repair failed: {e}")
                 return None
 
         repair_functions.append(repair_table_with_report_engine)
-        logger.debug("已添加 ReportEngine 表格修复函数")
+        logger.debug("Added ReportEngine table repair function")
 
     if not repair_functions:
-        logger.warning("未配置任何 Engine API，表格 API 修复功能将不可用")
+        logger.warning("No Engine API configured, table API repair feature will be unavailable")
     else:
-        logger.info(f"表格 API 修复功能已启用，共 {len(repair_functions)} 个 Engine 可用")
+        logger.info(f"Table API repair feature enabled, {len(repair_functions)} Engine(s) available")
 
     return repair_functions
 
 
 def create_wordcloud_repair_functions() -> List:
     """
-    创建词云 LLM 修复函数列表。
+    Create word cloud LLM repair function list.
 
-    使用与图表修复相同的 Engine 配置。
+    Uses the same Engine configuration as chart repair.
 
     Returns:
-        List[Callable]: 修复函数列表
+        List[Callable]: List of repair functions
     """
     repair_functions = []
 
-    # 使用 ReportEngine 修复词云
+    # Use ReportEngine to repair word clouds
     if settings.REPORT_ENGINE_API_KEY and settings.REPORT_ENGINE_BASE_URL:
         def repair_wordcloud_with_report_engine(widget_block: Dict[str, Any], errors: List[str]) -> Optional[Dict[str, Any]]:
-            """使用 ReportEngine 的 LLM 修复词云"""
+            """Use ReportEngine LLM to repair word cloud"""
             try:
                 from ReportEngine.llms import LLMClient
 
@@ -576,20 +576,20 @@ def create_wordcloud_repair_functions() -> List:
                 if not response:
                     return None
 
-                # 解析响应
+                # Parse response
                 repaired = json.loads(response)
                 return repaired
 
             except Exception as e:
-                logger.exception(f"ReportEngine 词云修复失败: {e}")
+                logger.exception(f"ReportEngine word cloud repair failed: {e}")
                 return None
 
         repair_functions.append(repair_wordcloud_with_report_engine)
-        logger.debug("已添加 ReportEngine 词云修复函数")
+        logger.debug("Added ReportEngine word cloud repair function")
 
     if not repair_functions:
-        logger.warning("未配置任何 Engine API，词云 API 修复功能将不可用")
+        logger.warning("No Engine API configured, word cloud API repair feature will be unavailable")
     else:
-        logger.info(f"词云 API 修复功能已启用，共 {len(repair_functions)} 个 Engine 可用")
+        logger.info(f"Word cloud API repair feature enabled, {len(repair_functions)} Engine(s) available")
 
     return repair_functions

@@ -1,8 +1,8 @@
 """
-Media Agent LangGraph 构建
+Media Agent LangGraph Builder
 
   START
-    → report_structure   （生成报告段落结构）
+    → report_structure   (Generate report paragraph structure)
     → [paragraph_router]
         ├─ "more"    → process_paragraph → [paragraph_router]
         └─ "done"    → finalize_report → END
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 def paragraph_router(state: MediaAgentState) -> Literal["more", "done"]:
-    """是否还有待处理段落。"""
+    """Check if there are remaining paragraphs to process."""
     ps = state.get("pipeline_state")
     idx = state.get("paragraph_index", 0)
     if not ps or not ps.paragraphs:
@@ -34,10 +34,10 @@ def paragraph_router(state: MediaAgentState) -> Literal["more", "done"]:
 
 def build_media_agent_graph(agent: DeepSearchAgent):
     """
-    构建并编译 Media Agent LangGraph。
+    Build and compile Media Agent LangGraph.
 
     Returns:
-        CompiledGraph — 可调用 .invoke(state) / .ainvoke(state)
+        CompiledGraph — can call .invoke(state) / .ainvoke(state)
     """
     graph = StateGraph(MediaAgentState)
 

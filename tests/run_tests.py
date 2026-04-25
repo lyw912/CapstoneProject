@@ -1,13 +1,13 @@
 """
-简单的测试运行脚本
+Simple test runner script
 
-可以直接运行此脚本来执行测试
+Run this script directly to execute tests
 """
 
 import sys
 from pathlib import Path
 
-# 添加项目根目录到路径
+# Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -15,16 +15,16 @@ from test_monitor import TestLogMonitor
 
 
 def main():
-    """运行所有测试"""
+    """Run all tests"""
     print("=" * 60)
-    print("ForumEngine 日志解析测试")
+    print("ForumEngine Log Parsing Tests")
     print("=" * 60)
     print()
     
     test_instance = TestLogMonitor()
     test_instance.setup_method()
     
-    # 获取所有测试方法
+    # Get all test methods
     test_methods = [method for method in dir(test_instance) if method.startswith('test_')]
     
     passed = 0
@@ -32,22 +32,22 @@ def main():
     
     for test_method_name in test_methods:
         test_method = getattr(test_instance, test_method_name)
-        print(f"运行测试: {test_method_name}...", end=" ")
+        print(f"Running test: {test_method_name}...", end=" ")
         
         try:
             test_method()
-            print("✓ 通过")
+            print("✓ Passed")
             passed += 1
         except AssertionError as e:
-            print(f"✗ 失败: {e}")
+            print(f"✗ Failed: {e}")
             failed += 1
         except Exception as e:
-            print(f"✗ 错误: {e}")
+            print(f"✗ Error: {e}")
             failed += 1
     
     print()
     print("=" * 60)
-    print(f"测试结果: {passed} 通过, {failed} 失败")
+    print(f"Test Results: {passed} Passed, {failed} Failed")
     print("=" * 60)
     
     if failed > 0:

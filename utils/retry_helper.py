@@ -1,6 +1,6 @@
 """
-重试机制工具模块
-提供通用的网络请求重试功能，增强系统健壮性
+Retry mechanism utility module
+Provides generic network request retry functionality to enhance system robustness
 """
 
 import time
@@ -9,9 +9,9 @@ from typing import Callable, Any
 import requests
 from loguru import logger
 
-# 配置日志
+# Configure logging
 class RetryConfig:
-    """重试配置类"""
+    """Retry configuration class"""
     
     def __init__(
         self,
@@ -22,21 +22,21 @@ class RetryConfig:
         retry_on_exceptions: tuple = None
     ):
         """
-        初始化重试配置
+        Initialize retry configuration
         
         Args:
-            max_retries: 最大重试次数
-            initial_delay: 初始延迟秒数
-            backoff_factor: 退避因子（每次重试延迟翻倍）
-            max_delay: 最大延迟秒数
-            retry_on_exceptions: 需要重试的异常类型元组
+            max_retries: Maximum number of retry attempts
+            initial_delay: Initial delay in seconds
+            backoff_factor: Backoff factor (delay doubles with each retry)
+            max_delay: Maximum delay in seconds
+            retry_on_exceptions: Tuple of exception types to retry on
         """
         self.max_retries = max_retries
         self.initial_delay = initial_delay
         self.backoff_factor = backoff_factor
         self.max_delay = max_delay
         
-        # 默认需要重试的异常类型
+        # Default exception types to retry on
         if retry_on_exceptions is None:
             self.retry_on_exceptions = (
                 requests.exceptions.RequestException,
@@ -51,18 +51,18 @@ class RetryConfig:
         else:
             self.retry_on_exceptions = retry_on_exceptions
 
-# 默认配置
+# Default configuration
 DEFAULT_RETRY_CONFIG = RetryConfig()
 
 def with_retry(config: RetryConfig = None):
     """
-    重试装饰器
+    Retry decorator
     
     Args:
-        config: 重试配置，如果不提供则使用默认配置
+        config: Retry configuration, uses default if not provided
     
     Returns:
-        装饰器函数
+        Decorator function
     """
     if config is None:
         config = DEFAULT_RETRY_CONFIG
@@ -72,39 +72,39 @@ def with_retry(config: RetryConfig = None):
         def wrapper(*args, **kwargs) -> Any:
             last_exception = None
             
-            for attempt in range(config.max_retries + 1):  # +1 因为第一次不算重试
+            for attempt in range(config.max_retries + 1):  # +1 because first attempt doesn't count as retry
                 try:
                     result = func(*args, **kwargs)
                     if attempt > 0:
-                        logger.info(f"函数 {func.__name__} 在第 {attempt + 1} 次尝试后成功")
+                        logger.info(f"Function {func.__name__} succeeded after {attempt + 1} attempts")
                     return result
                     
                 except config.retry_on_exceptions as e:
                     last_exception = e
                     
                     if attempt == config.max_retries:
-                        # 最后一次尝试也失败了
-                        logger.error(f"函数 {func.__name__} 在 {config.max_retries + 1} 次尝试后仍然失败")
-                        logger.error(f"最终错误: {str(e)}")
+                        # Last attempt also failed
+                        logger.error(f"Function {func.__name__} failed after {config.max_retries + 1} attempts")
+                        logger.error(f"Final error: {str(e)}")
                         raise e
                     
-                    # 计算延迟时间
+                    # Calculate delay time
                     delay = min(
                         config.initial_delay * (config.backoff_factor ** attempt),
                         config.max_delay
                     )
                     
-                    logger.warning(f"函数 {func.__name__} 第 {attempt + 1} 次尝试失败: {str(e)}")
-                    logger.info(f"将在 {delay:.1f} 秒后进行第 {attempt + 2} 次尝试...")
+                    logger.warning(f"Function {func.__name__} failed on attempt {attempt + 1}: {str(e)}")
+                    logger.info(f"Will retry in {delay:.1f} seconds (attempt {attempt + 2})...")
                     
                     time.sleep(delay)
                 
                 except Exception as e:
-                    # 不在重试列表中的异常，直接抛出
-                    logger.error(f"函数 {func.__name__} 遇到不可重试的异常: {str(e)}")
+                    # Exceptions not in retry list, raise immediately
+                    logger.error(f"Function {func.__name__} encountered non-retryable exception: {str(e)}")
                     raise e
             
-            # 这里不应该到达，但作为安全网
+            # This should not be reached, but as a safety net
             if last_exception:
                 raise last_exception
             
@@ -117,15 +117,15 @@ def retry_on_network_error(
     backoff_factor: float = 2.0
 ):
     """
-    专门用于网络错误的重试装饰器（简化版）
+    Retry decorator specifically for network errors (simplified version)
     
     Args:
-        max_retries: 最大重试次数
-        initial_delay: 初始延迟秒数
-        backoff_factor: 退避因子
+        max_retries: Maximum number of retry attempts
+        initial_delay: Initial delay in seconds
+        backoff_factor: Backoff factor
     
     Returns:
-        装饰器函数
+        Decorator function
     """
     config = RetryConfig(
         max_retries=max_retries,
@@ -135,20 +135,20 @@ def retry_on_network_error(
     return with_retry(config)
 
 class RetryableError(Exception):
-    """自定义的可重试异常"""
+    """Custom retryable exception"""
     pass
 
 def with_graceful_retry(config: RetryConfig = None, default_return=None):
     """
-    优雅重试装饰器 - 用于非关键API调用
-    失败后不会抛出异常，而是返回默认值，保证系统继续运行
+    Graceful retry decorator - for non-critical API calls
+    Returns default value instead of raising exception on failure to ensure system continuity
     
     Args:
-        config: 重试配置，如果不提供则使用默认配置
-        default_return: 所有重试失败后返回的默认值
+        config: Retry configuration, uses default if not provided
+        default_return: Default value to return when all retries fail
     
     Returns:
-        装饰器函数
+        Decorator function
     """
     if config is None:
         config = SEARCH_API_RETRY_CONFIG
@@ -158,41 +158,41 @@ def with_graceful_retry(config: RetryConfig = None, default_return=None):
         def wrapper(*args, **kwargs) -> Any:
             last_exception = None
             
-            for attempt in range(config.max_retries + 1):  # +1 因为第一次不算重试
+            for attempt in range(config.max_retries + 1):  # +1 because first attempt doesn't count as retry
                 try:
                     result = func(*args, **kwargs)
                     if attempt > 0:
-                        logger.info(f"非关键API {func.__name__} 在第 {attempt + 1} 次尝试后成功")
+                        logger.info(f"Non-critical API {func.__name__} succeeded after {attempt + 1} attempts")
                     return result
                     
                 except config.retry_on_exceptions as e:
                     last_exception = e
                     
                     if attempt == config.max_retries:
-                        # 最后一次尝试也失败了，返回默认值而不抛出异常
-                        logger.warning(f"非关键API {func.__name__} 在 {config.max_retries + 1} 次尝试后仍然失败")
-                        logger.warning(f"最终错误: {str(e)}")
-                        logger.info(f"返回默认值以保证系统继续运行: {default_return}")
+                        # Last attempt also failed, return default instead of raising
+                        logger.warning(f"Non-critical API {func.__name__} failed after {config.max_retries + 1} attempts")
+                        logger.warning(f"Final error: {str(e)}")
+                        logger.info(f"Returning default value to ensure system continuity: {default_return}")
                         return default_return
                     
-                    # 计算延迟时间
+                    # Calculate delay time
                     delay = min(
                         config.initial_delay * (config.backoff_factor ** attempt),
                         config.max_delay
                     )
                     
-                    logger.warning(f"非关键API {func.__name__} 第 {attempt + 1} 次尝试失败: {str(e)}")
-                    logger.info(f"将在 {delay:.1f} 秒后进行第 {attempt + 2} 次尝试...")
+                    logger.warning(f"Non-critical API {func.__name__} failed on attempt {attempt + 1}: {str(e)}")
+                    logger.info(f"Will retry in {delay:.1f} seconds (attempt {attempt + 2})...")
                     
                     time.sleep(delay)
                 
                 except Exception as e:
-                    # 不在重试列表中的异常，返回默认值
-                    logger.warning(f"非关键API {func.__name__} 遇到不可重试的异常: {str(e)}")
-                    logger.info(f"返回默认值以保证系统继续运行: {default_return}")
+                    # Exceptions not in retry list, return default
+                    logger.warning(f"Non-critical API {func.__name__} encountered non-retryable exception: {str(e)}")
+                    logger.info(f"Returning default value to ensure system continuity: {default_return}")
                     return default_return
             
-            # 这里不应该到达，但作为安全网
+            # This should not be reached, but as a safety net
             return default_return
             
         return wrapper
@@ -205,16 +205,16 @@ def make_retryable_request(
     **kwargs
 ) -> Any:
     """
-    直接执行可重试的请求（不使用装饰器）
+    Directly execute a retryable request (without using decorator)
     
     Args:
-        request_func: 要执行的请求函数
-        *args: 传递给请求函数的位置参数
-        max_retries: 最大重试次数
-        **kwargs: 传递给请求函数的关键字参数
+        request_func: Request function to execute
+        *args: Positional arguments to pass to request function
+        max_retries: Maximum number of retry attempts
+        **kwargs: Keyword arguments to pass to request function
     
     Returns:
-        请求函数的返回值
+        Return value of request function
     """
     config = RetryConfig(max_retries=max_retries)
     
@@ -224,24 +224,24 @@ def make_retryable_request(
     
     return _execute()
 
-# 预定义一些常用的重试配置
+# Predefined common retry configurations
 LLM_RETRY_CONFIG = RetryConfig(
-    max_retries=6,        # 保持额外重试次数
-    initial_delay=60.0,   # 首次等待至少 1 分钟
-    backoff_factor=2.0,   # 继续使用指数退避
-    max_delay=600.0       # 单次等待最长 10 分钟
+    max_retries=6,        # Keep extra retry attempts
+    initial_delay=60.0,   # Wait at least 1 minute initially
+    backoff_factor=2.0,   # Continue using exponential backoff
+    max_delay=600.0       # Maximum wait 10 minutes per attempt
 )
 
 SEARCH_API_RETRY_CONFIG = RetryConfig(
-    max_retries=5,        # 增加到5次重试
-    initial_delay=2.0,    # 增加初始延迟
-    backoff_factor=1.6,   # 调整退避因子
-    max_delay=25.0        # 增加最大延迟
+    max_retries=5,        # Increase to 5 retries
+    initial_delay=2.0,    # Increase initial delay
+    backoff_factor=1.6,   # Adjust backoff factor
+    max_delay=25.0        # Increase maximum delay
 )
 
 DB_RETRY_CONFIG = RetryConfig(
-    max_retries=5,        # 增加到5次重试
-    initial_delay=1.0,    # 保持较短的数据库重试延迟
+    max_retries=5,        # Increase to 5 retries
+    initial_delay=1.0,    # Keep shorter delay for database retries
     backoff_factor=1.5,
     max_delay=10.0
 )

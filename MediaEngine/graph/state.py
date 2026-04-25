@@ -1,8 +1,8 @@
 """
-Media Agent LangGraph 状态定义
+Media Agent LangGraph State Definition
 
-与 QueryEngine 一致，使用 TypedDict 在节点间传递状态；
-pipeline_state 为现有 dataclass State，承载段落与搜索轨迹。
+Consistent with QueryEngine, uses TypedDict to pass state between nodes;
+pipeline_state is the existing dataclass State, carrying paragraphs and search traces.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from ..state.state import State
 
 
 class MediaAgentState(TypedDict, total=False):
-    """Media 深度研究 LangGraph 运行时状态。"""
+    """Media Deep Research LangGraph runtime state."""
 
     original_query: str
     paragraph_index: int

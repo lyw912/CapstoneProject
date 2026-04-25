@@ -1,8 +1,8 @@
 """
-DedupFilter 节点 — 去重过滤
+DedupFilter Node — Deduplication Filter
 
-Phase 1：URL 精确去重（标准化后比较）。
-Phase 2：MinHash LSH 内容去重（datasketch，阈值 0.80）。
+Phase 1: URL exact deduplication (comparison after normalization).
+Phase 2: MinHash LSH content deduplication (datasketch, threshold 0.80).
 """
 
 from __future__ import annotations
@@ -18,13 +18,13 @@ from ...classifiers.stance_classifier import _is_official_domain, _extract_domai
 
 
 # ---------------------------------------------------------------------------
-# URL 标准化
+# URL Normalization
 # ---------------------------------------------------------------------------
 
 def _normalize_url(url: str) -> str:
     """
-    URL 标准化：去除 www.、查询参数、锚点、末尾斜杠，统一小写。
-    用于精确去重。
+    URL normalization: Remove www., query parameters, anchors, trailing slashes, and convert to lowercase.
+    Used for exact deduplication.
     """
     try:
         parsed = urlparse(url.lower())
@@ -37,28 +37,28 @@ def _normalize_url(url: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 节点函数
+# Node Function
 # ---------------------------------------------------------------------------
 
 def dedup_filter_node(state: QueryAgentState) -> dict:
     """
-    LangGraph 节点：去重过滤。
+    LangGraph Node: Deduplication filter.
 
-    优化策略：
-    1. URL 精确去重。
-    2. 内容去重（MinHash LSH）。
-    3. 排序策略：官方域名优先，避免权威来源被非权威重复项挤掉。
+    Optimization Strategy:
+    1. URL exact deduplication.
+    2. Content deduplication (MinHash LSH).
+    3. Sorting strategy: Official domains prioritized to avoid authoritative sources being displaced by non-authoritative duplicates.
     """
     sources: List[SourceItem] = state.get("raw_sources", [])
 
-    # 排序：官方域名排在前面，确保去重时优先保留
+    # Sort: Official domains first to ensure they are preserved during deduplication
     def _get_priority(s: SourceItem) -> int:
         domain = _extract_domain(s.get("url", ""))
         return 0 if _is_official_domain(domain) else 1
 
     sorted_sources = sorted(sources, key=_get_priority)
 
-    # Stage 1: URL 精确去重
+    # Stage 1: URL exact deduplication
     seen_urls: set = set()
     url_deduped: List[SourceItem] = []
     for s in sorted_sources:
@@ -67,16 +67,16 @@ def dedup_filter_node(state: QueryAgentState) -> dict:
             seen_urls.add(norm)
             url_deduped.append(s)
 
-    # Phase 2：MinHash LSH 内容去重（80% 相似度阈值）
+    # Phase 2: MinHash LSH content deduplication (80% similarity threshold)
     content_deduped = minhash_dedup(url_deduped, threshold=0.80)
 
-    # 恢复原始相对顺序（如果需要，或者保持排序后的顺序）
-    # 这里我们保持排序后的顺序，因为后续的 Scorer 会重新评分
+    # Restore original relative order (if needed, or keep sorted order)
+    # Here we keep the sorted order because the subsequent Scorer will re-score
 
     trace = (
-        f"[DedupFilter] 输入{len(sources)}条, "
-        f"URL去重后{len(url_deduped)}条, "
-        f"内容去重后{len(content_deduped)}条"
+        f"[DedupFilter] Input {len(sources)} items, "
+        f"After URL dedup {len(url_deduped)} items, "
+        f"After content dedup {len(content_deduped)} items"
     )
     logger.info(trace)
 

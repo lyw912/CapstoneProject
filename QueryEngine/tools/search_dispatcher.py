@@ -1,13 +1,13 @@
 """
-UnifiedSearchDispatcher — 统一搜索调度器（Phase 2：Tavily + Anspire）
+UnifiedSearchDispatcher — Unified Search Dispatcher (Phase 2: Tavily + Anspire)
 
-Phase 1：只接 Tavily。
-Phase 2：接入 AnspireAISearch（中文搜索增强）；InsightDB 留 Phase 2.5。
-Phase 3+：接入 InsightEngine.MediaCrawlerDB（社媒数据）。
+Phase 1: Only connected to Tavily.
+Phase 2: Added AnspireAISearch (Chinese search enhancement); InsightDB reserved for Phase 2.5.
+Phase 3+: Will connect to InsightEngine.MediaCrawlerDB (social media data).
 
-关键改动（Phase 2）：
-  - _tavily_to_source_items / _anspire_to_source_items 注入 _target_stance 字段
-  - 新增 _search_anspire()，路由逻辑在 _dispatch_one() 中按 target_source 分支
+Key Changes (Phase 2):
+  - _tavily_to_source_items / _anspire_to_source_items inject _target_stance field
+  - Added _search_anspire(), routing logic in _dispatch_one() branches by target_source
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from ..graph.state import SourceItem, SubQueryItem
 
 # ---------------------------------------------------------------------------
-# Anspire 可选依赖（跨引擎引用，失败时降级为只用 Tavily）
+# Anspire Optional Dependency (cross-engine reference, degrades to Tavily-only on failure)
 # ---------------------------------------------------------------------------
 try:
     import sys, os as _os
@@ -37,25 +37,25 @@ try:
     _ANSPIRE_AVAILABLE = True
 except Exception as _anspire_err:
     _ANSPIRE_AVAILABLE = False
-    logger.debug(f"[Dispatcher] AnspireAISearch 不可用，中文搜索将回退到 Tavily: {_anspire_err}")
+    logger.debug(f"[Dispatcher] AnspireAISearch not available, Chinese search will fallback to Tavily: {_anspire_err}")
 
 # ---------------------------------------------------------------------------
-# InsightDB 可选依赖（社媒数据库）
+# InsightDB Optional Dependency (social media database)
 # ---------------------------------------------------------------------------
 try:
     from InsightEngine.tools.search import MediaCrawlerDB as _MediaCrawlerDB
     _INSIGHTDB_AVAILABLE = True
 except Exception as _insight_err:
     _INSIGHTDB_AVAILABLE = False
-    logger.debug(f"[Dispatcher] MediaCrawlerDB 不可用，社媒数据查询将跳过: {_insight_err}")
+    logger.debug(f"[Dispatcher] MediaCrawlerDB not available, social media queries will be skipped: {_insight_err}")
 
 
 # ---------------------------------------------------------------------------
-# 辅助
+# Helpers
 # ---------------------------------------------------------------------------
 
 def _extract_domain(url: str) -> str:
-    """从 URL 中提取主域名（去 www. 前缀）。"""
+    """Extract main domain from URL (remove www. prefix)."""
     try:
         netloc = urlparse(url).netloc
         return netloc.replace("www.", "").lower()
@@ -64,7 +64,7 @@ def _extract_domain(url: str) -> str:
 
 
 def _tavily_to_source_items(response: TavilyResponse, sq: Dict) -> List[Dict]:
-    """将 Tavily 响应转为统一 SourceItem 格式的字典列表。"""
+    """Convert Tavily response to list of dictionaries in unified SourceItem format."""
     items = []
     if not response or not response.results:
         return items
@@ -84,19 +84,19 @@ def _tavily_to_source_items(response: TavilyResponse, sq: Dict) -> List[Dict]:
             stance_confidence=0.0,
             sub_query_ref=sq["query"],
             rrf_score=r.score,
-            # Phase 2：注入子查询的目标立场，供 StanceClassifier 弱标签使用
+            # Phase 2: Inject target stance from sub-query for StanceClassifier weak labeling
             _target_stance=sq.get("target_stance", ""),
         ))
     return items
 
 
 def _anspire_to_source_items(response, sq: Dict) -> List[Dict]:
-    """将 Anspire 响应转为统一 SourceItem 格式的字典列表。"""
+    """Convert Anspire response to list of dictionaries in unified SourceItem format."""
     items = []
     if not response:
         return items
 
-    # AnspireAISearch 返回的结果格式
+    # AnspireAISearch return result format
     results = []
     if hasattr(response, "webpages"):
         results = response.webpages or []
@@ -110,7 +110,7 @@ def _anspire_to_source_items(response, sq: Dict) -> List[Dict]:
             snippet = r.get("snippet") or r.get("content") or ""
             published_at = r.get("date_last_crawled") or None
         else:
-            # 对象属性访问
+            # Object attribute access
             url = getattr(r, "url", "") or ""
             title = getattr(r, "name", "") or ""
             snippet = getattr(r, "snippet", "") or ""
@@ -132,27 +132,27 @@ def _anspire_to_source_items(response, sq: Dict) -> List[Dict]:
             stance_label=None,
             stance_confidence=0.0,
             sub_query_ref=sq["query"],
-            # Phase 2：注入子查询的目标立场
+            # Phase 2: Inject target stance from sub-query
             _target_stance=sq.get("target_stance", ""),
         ))
     return items
 
 
 def _insightdb_to_source_items(response, sq: Dict) -> List[Dict]:
-    """将 InsightDB (MediaCrawlerDB) 响应转为统一 SourceItem 格式"""
+    """Convert InsightDB (MediaCrawlerDB) response to unified SourceItem format"""
     items = []
     if not response or not hasattr(response, "results"):
         return items
 
     for r in response.results:
-        # QueryResult 对象
+        # QueryResult object
         url = r.url or ""
         title = r.title_or_content[:100] if r.title_or_content else ""
         snippet = r.title_or_content[:500] if r.title_or_content else ""
 
         items.append(dict(
             source_id=str(uuid.uuid4()),
-            url=url or f"{r.platform}://{r.source_table}",  # 无URL时用平台标识
+            url=url or f"{r.platform}://{r.source_table}",  # Use platform identifier when no URL
             title=title,
             source_api="insight_db",
             platform=r.platform,
@@ -163,22 +163,22 @@ def _insightdb_to_source_items(response, sq: Dict) -> List[Dict]:
             stance_label=None,
             stance_confidence=0.0,
             sub_query_ref=sq["query"],
-            rrf_score=r.hotness_score / 100.0 if r.hotness_score else 0.0,  # 归一化
+            rrf_score=r.hotness_score / 100.0 if r.hotness_score else 0.0,  # Normalize
             _target_stance=sq.get("target_stance", ""),
         ))
     return items
 
 
 # ---------------------------------------------------------------------------
-# 调度器
+# Dispatcher
 # ---------------------------------------------------------------------------
 
 class UnifiedSearchDispatcher:
     """
-    统一搜索调度器。
+    Unified Search Dispatcher.
 
-    Phase 1：只使用 Tavily。
-    Phase 2 扩展点：在 _dispatch_one() 中增加 bocha / insight_db 分支。
+    Phase 1: Only uses Tavily.
+    Phase 2 Extension Point: Add bocha / insight_db branches in _dispatch_one().
     """
 
     def __init__(self):
@@ -192,7 +192,7 @@ class UnifiedSearchDispatcher:
 
     async def dispatch(self, sub_queries: List[Dict]) -> Tuple[List[Dict], List[str]]:
         """
-        并行调度所有子查询。
+        Dispatch all sub-queries in parallel.
 
         Returns:
             (sources, errors)
@@ -204,7 +204,7 @@ class UnifiedSearchDispatcher:
         errors: List[str] = []
         for sq, result in zip(sub_queries, results):
             if isinstance(result, Exception):
-                msg = f"搜索失败 [{sq['query']}]: {result}"
+                msg = f"Search failed [{sq['query']}]: {result}"
                 logger.warning(msg)
                 errors.append(msg)
             elif isinstance(result, list):
@@ -214,11 +214,11 @@ class UnifiedSearchDispatcher:
 
     async def _dispatch_one(self, sq: Dict) -> List[Dict]:
         """
-        对单个子查询按 target_source 路由到对应搜索后端。
+        Route single sub-query to corresponding search backend by target_source.
 
-        Phase 2.5 路由逻辑：
-          anspire      → AnspireAISearch（中文新闻/分析）
-          insight_db   → MediaCrawlerDB（社媒数据）
+        Phase 2.5 Routing Logic:
+          anspire      → AnspireAISearch (Chinese news/analysis)
+          insight_db   → MediaCrawlerDB (social media data)
           tavily / any → TavilyNewsAgency
         """
         target = sq.get("target_source", "any")
@@ -232,22 +232,22 @@ class UnifiedSearchDispatcher:
         return await self._search_tavily(sq)
 
     async def _search_tavily(self, sq: Dict) -> List[Dict]:
-        """异步包装 Tavily 同步调用。"""
+        """Async wrapper for Tavily synchronous call."""
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(None, self._call_tavily_sync, sq)
         return _tavily_to_source_items(response, sq)
 
     def _call_tavily_sync(self, sq: Dict) -> TavilyResponse:
-        """根据子查询的优先级和搜索参数选择 Tavily 工具。"""
+        """Select Tavily tool based on sub-query priority and search parameters."""
         query = sq["query"]
         priority = sq.get("priority", 3)
         search_params = sq.get("search_params") or {}
 
-        # include_domains 参数（用于 official 立场的域名过滤）
-        # 注：TavilyNewsAgency 的 basic_search_news 接受 kwargs，透传给 Tavily API
+        # include_domains parameter (for official stance domain filtering)
+        # Note: TavilyNewsAgency's basic_search_news accepts kwargs, passes through to Tavily API
         include_domains = search_params.get("include_domains")
 
-        # include_domains 只在 basic_search_news 中支持，deep_search_news 不支持
+        # include_domains only supported in basic_search_news, not in deep_search_news
         if include_domains:
             return self.tavily.basic_search_news(query, max_results=10, include_domains=include_domains)
 
@@ -257,31 +257,31 @@ class UnifiedSearchDispatcher:
             return self.tavily.basic_search_news(query, max_results=7)
 
     async def _search_anspire(self, sq: Dict) -> List[Dict]:
-        """异步包装 AnspireAISearch 同步调用（中文搜索）。"""
+        """Async wrapper for AnspireAISearch synchronous call (Chinese search)."""
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(None, self._call_anspire_sync, sq)
         return _anspire_to_source_items(response, sq)
 
     def _call_anspire_sync(self, sq: Dict):
-        """调用 AnspireAISearch.comprehensive_search()。"""
+        """Call AnspireAISearch.comprehensive_search()."""
         try:
             anspire = _AnspireSearch()
             return anspire.comprehensive_search(sq["query"], max_results=10)
         except Exception as exc:
-            logger.warning(f"[Dispatcher] Anspire 搜索失败 [{sq['query']}]: {exc}")
+            logger.warning(f"[Dispatcher] Anspire search failed [{sq['query']}]: {exc}")
             return None
 
     async def _search_insight_db(self, sq: Dict) -> List[Dict]:
-        """异步包装 MediaCrawlerDB 同步调用（社媒数据）。"""
+        """Async wrapper for MediaCrawlerDB synchronous call (social media data)."""
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(None, self._call_insightdb_sync, sq)
         return _insightdb_to_source_items(response, sq)
 
     def _call_insightdb_sync(self, sq: Dict):
-        """调用 MediaCrawlerDB.search_topic_globally()。"""
+        """Call MediaCrawlerDB.search_topic_globally()."""
         try:
             db = _MediaCrawlerDB()
             return db.search_topic_globally(sq["query"], limit_per_table=20)
         except Exception as exc:
-            logger.warning(f"[Dispatcher] InsightDB 搜索失败 [{sq['query']}]: {exc}")
+            logger.warning(f"[Dispatcher] InsightDB search failed [{sq['query']}]: {exc}")
             return None

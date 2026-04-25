@@ -1,11 +1,10 @@
 version: "3.9"
 
 services:
-  bettafish:
-    image: ghcr.io/666ghj/bettafish:latest
-    # Speed up mirror
-    # image: ghcr.nju.edu.cn/666ghj/bettafish:latest
-    container_name: bettafish
+  public-opinion-system:
+    image: your-registry/public-opinion-system:latest
+    # Replace with your actual image registry
+    container_name: public-opinion-system
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
@@ -25,14 +24,14 @@ services:
 
   db:
     image: postgres:15
-    container_name: bettafish-db
+    container_name: public-opinion-db
     restart: unless-stopped
     env_file:
       - .env
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-bettafish}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bettafish}
-      POSTGRES_DB: ${POSTGRES_DB:-bettafish}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-public_opinion_db}
     ports:
       - "${POSTGRES_PORT:-5444}:5432"
     volumes:

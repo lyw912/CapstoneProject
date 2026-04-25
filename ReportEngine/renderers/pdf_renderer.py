@@ -1,6 +1,6 @@
 """
-PDF渲染器 - 使用WeasyPrint从HTML生成PDF
-支持完整的CSS样式和中文字体
+PDF Renderer - Generates PDF from HTML using WeasyPrint
+Supports complete CSS styling and Chinese fonts
 """
 
 from __future__ import annotations
@@ -20,8 +20,8 @@ from ReportEngine.utils.dependency_check import (
     check_pango_available,
 )
 
-# 在导入WeasyPrint之前，尝试补充常见的macOS Homebrew动态库路径，
-# 避免因未设置DYLD_LIBRARY_PATH而找不到pango/cairo等依赖。
+# Before importing WeasyPrint, try to add common macOS Homebrew dynamic library paths,
+# to avoid not finding pango/cairo dependencies when DYLD_LIBRARY_PATH is not set.
 if sys.platform == 'darwin':
     mac_libs = [Path('/opt/homebrew/lib'), Path('/usr/local/lib')]
     current = os.environ.get('DYLD_LIBRARY_PATH', '')
@@ -32,11 +32,11 @@ if sys.platform == 'darwin':
     if inserts:
         os.environ['DYLD_LIBRARY_PATH'] = ":".join(inserts + ([current] if current else []))
 
-# Windows: 自动补充常见 GTK/Pango 运行时路径，避免 DLL 加载失败
+# Windows: Auto-add common GTK/Pango runtime paths to avoid DLL loading failures
 if sys.platform.startswith('win'):
     added = prepare_pango_environment()
     if added:
-        logger.debug(f"已自动添加 GTK 运行时路径: {added}")
+        logger.debug(f"Automatically added GTK runtime path: {added}")
 
 try:
     from weasyprint import HTML, CSS
@@ -45,7 +45,7 @@ try:
     PDF_DEP_STATUS = "OK"
 except (ImportError, OSError) as e:
     WEASYPRINT_AVAILABLE = False
-    # 判断错误类型以提供更友好的提示，并尝试输出缺失依赖的详细信息
+    # Determine error type to provide more friendly hints, and try to output detailed missing dependency information
     try:
         _, dep_message = check_pango_available()
     except Exception:
@@ -53,18 +53,18 @@ except (ImportError, OSError) as e:
 
     if isinstance(e, OSError):
         msg = dep_message or (
-            "PDF 导出依赖缺失（系统库未安装或环境变量未设置），"
-            "PDF 导出功能将不可用。其他功能不受影响。"
+            "PDF export dependencies missing (system libraries not installed or environment variables not set), "
+            "PDF export functionality will be unavailable. Other features are not affected."
         )
         logger.warning(msg)
         PDF_DEP_STATUS = msg
     else:
-        msg = dep_message or "WeasyPrint未安装，PDF导出功能将不可用"
+        msg = dep_message or "WeasyPrint not installed, PDF export functionality will be unavailable"
         logger.warning(msg)
         PDF_DEP_STATUS = msg
 except Exception as e:
     WEASYPRINT_AVAILABLE = False
-    PDF_DEP_STATUS = f"WeasyPrint 加载失败: {e}，PDF导出功能将不可用"
+    PDF_DEP_STATUS = f"WeasyPrint loading failed: {e}, PDF export functionality will be unavailable"
     logger.warning(PDF_DEP_STATUS)
 
 from .html_renderer import HTMLRenderer
@@ -82,11 +82,11 @@ except ImportError:
 
 class PDFRenderer:
     """
-    基于WeasyPrint的PDF渲染器
+    WeasyPrint-based PDF Renderer
 
-    - 直接从HTML生成PDF，保留所有CSS样式
-    - 完美支持中文字体
-    - 自动处理分页和布局
+    - Generates PDF directly from HTML, preserving all CSS styles
+    - Perfect support for Chinese fonts
+    - Automatic pagination and layout handling
     """
 
     def __init__(
@@ -95,11 +95,11 @@ class PDFRenderer:
         layout_optimizer: PDFLayoutOptimizer | None = None
     ):
         """
-        初始化PDF渲染器
+        Initialize PDF renderer
 
-        参数:
-            config: 渲染器配置
-            layout_optimizer: PDF布局优化器（可选）
+        Parameters:
+            config: Renderer configuration
+            layout_optimizer: PDF layout optimizer (optional)
         """
         self.config = config or {}
         self.html_renderer = HTMLRenderer(config)
@@ -109,50 +109,50 @@ class PDFRenderer:
             raise RuntimeError(
                 PDF_DEP_STATUS
                 if 'PDF_DEP_STATUS' in globals() else
-                "WeasyPrint未安装，请运行: pip install weasyprint"
+                "WeasyPrint not installed, please run: pip install weasyprint"
             )
 
-        # 初始化图表转换器
+        # Initialize chart converter
         try:
             font_path = self._get_font_path()
             self.chart_converter = create_chart_converter(font_path=str(font_path))
-            logger.info("图表SVG转换器初始化成功")
+            logger.info("Chart SVG converter initialized successfully")
         except Exception as e:
-            logger.warning(f"图表SVG转换器初始化失败: {e}，将使用表格降级")
+            logger.warning(f"Chart SVG converter initialization failed: {e}, will use table fallback")
 
-        # 初始化数学公式转换器
+        # Initialize math formula converter
         try:
             self.math_converter = MathToSVG(font_size=16, color='black')
-            logger.info("数学公式SVG转换器初始化成功")
+            logger.info("Math formula SVG converter initialized successfully")
         except Exception as e:
-            logger.warning(f"数学公式SVG转换器初始化失败: {e}，公式将显示为文本")
+            logger.warning(f"Math formula SVG converter initialization failed: {e}, formulas will display as text")
             self.math_converter = None
 
     @staticmethod
     def _get_font_path() -> Path:
-        """获取字体文件路径"""
-        # 优先使用完整字体以确保字符覆盖
+        """Get font file path"""
+        # Prefer full font to ensure character coverage
         fonts_dir = Path(__file__).parent / "assets" / "fonts"
 
-        # 检查完整字体
+        # Check full font
         full_font = fonts_dir / "SourceHanSerifSC-Medium.otf"
         if full_font.exists():
-            logger.info(f"使用完整字体: {full_font}")
+            logger.info(f"Using full font: {full_font}")
             return full_font
 
-        # 检查TTF子集字体
+        # Check TTF subset font
         subset_ttf = fonts_dir / "SourceHanSerifSC-Medium-Subset.ttf"
         if subset_ttf.exists():
-            logger.info(f"使用TTF子集字体: {subset_ttf}")
+            logger.info(f"Using TTF subset font: {subset_ttf}")
             return subset_ttf
 
-        # 检查OTF子集字体
+        # Check OTF subset font
         subset_otf = fonts_dir / "SourceHanSerifSC-Medium-Subset.otf"
         if subset_otf.exists():
-            logger.info(f"使用OTF子集字体: {subset_otf}")
+            logger.info(f"Using OTF subset font: {subset_otf}")
             return subset_otf
 
-        raise FileNotFoundError(f"未找到字体文件，请检查 {fonts_dir} 目录")
+        raise FileNotFoundError(f"Font file not found, please check {fonts_dir} directory")
 
     def _preprocess_charts(
         self,
@@ -160,20 +160,20 @@ class PDFRenderer:
         ir_file_path: str | None = None
     ) -> Dict[str, Any]:
         """
-        预处理图表：使用 ChartReviewService 验证并修复所有图表数据。
+        Preprocess charts: Use ChartReviewService to validate and repair all chart data.
 
-        使用统一的 ChartReviewService 进行图表审查，修复结果直接写回传入的 IR。
-        如果提供 ir_file_path，修复后会自动保存到文件。
+        Uses unified ChartReviewService for chart review, repair results are written back directly to the passed IR.
+        If ir_file_path is provided, repairs will be auto-saved to file.
 
-        参数:
-            document_ir: Document IR数据
-            ir_file_path: 可选，IR 文件路径，提供时修复后会自动保存
+        Parameters:
+            document_ir: Document IR data
+            ir_file_path: Optional, IR file path, if provided, repairs will be auto-saved
 
-        返回:
-            Dict[str, Any]: 修复后的Document IR（深拷贝）
+        Returns:
+            Dict[str, Any]: Repaired Document IR (deep copy)
         """
-        # 使用统一的 ChartReviewService
-        # review_document 返回本次会话的统计信息（线程安全）
+        # Use unified ChartReviewService
+        # review_document returns session statistics (thread-safe)
         chart_service = get_chart_review_service()
         review_stats = chart_service.review_document(
             document_ir,
@@ -182,61 +182,61 @@ class PDFRenderer:
             save_on_repair=bool(ir_file_path)
         )
 
-        # 使用返回的 ReviewStats 对象，而非共享的 chart_service.stats
+        # Use the returned ReviewStats object, not the shared chart_service.stats
         if review_stats.total > 0:
             logger.info(
-                f"PDF图表预处理完成: "
-                f"总计 {review_stats.total} 个图表, "
-                f"修复 {review_stats.repaired_total} 个, "
-                f"失败 {review_stats.failed} 个"
+                f"PDF chart preprocessing completed: "
+                f"Total {review_stats.total} charts, "
+                f"Repaired {review_stats.repaired_total}, "
+                f"Failed {review_stats.failed}"
             )
 
-        # 返回深拷贝，避免后续 SVG 转换过程影响回写后的原始 IR
+        # Return deep copy to avoid SVG conversion affecting the original IR
         return copy.deepcopy(document_ir)
 
     def _convert_charts_to_svg(self, document_ir: Dict[str, Any]) -> Dict[str, str]:
         """
-        将document_ir中的所有图表转换为SVG
+        Convert all charts in document_ir to SVG
 
-        参数:
-            document_ir: Document IR数据
+        Parameters:
+            document_ir: Document IR data
 
-        返回:
-            Dict[str, str]: widgetId到SVG字符串的映射
+        Returns:
+            Dict[str, str]: Mapping from widgetId to SVG string
         """
         svg_map = {}
 
         if not hasattr(self, 'chart_converter') or not self.chart_converter:
-            logger.warning("图表转换器未初始化，跳过图表转换")
+            logger.warning("Chart converter not initialized, skipping chart conversion")
             return svg_map
 
-        # 遍历所有章节
+        # Iterate through all chapters
         chapters = document_ir.get('chapters', [])
         for chapter in chapters:
             blocks = chapter.get('blocks', [])
             self._extract_and_convert_widgets(blocks, svg_map)
 
-        logger.info(f"成功转换 {len(svg_map)} 个图表为SVG")
+        logger.info(f"Successfully converted {len(svg_map)} charts to SVG")
         return svg_map
 
     def _convert_wordclouds_to_images(self, document_ir: Dict[str, Any]) -> Dict[str, str]:
         """
-        将document_ir中的词云widget转换为PNG并返回data URI映射
+        Convert word cloud widgets in document_ir to PNG and return data URI mapping
         """
         img_map: Dict[str, str] = {}
 
         if not WORDCLOUD_AVAILABLE:
-            logger.debug("wordcloud库未安装，词云将使用表格兜底")
+            logger.debug("wordcloud library not installed, word clouds will use table fallback")
             return img_map
 
-        # 遍历所有章节
+        # Iterate through all chapters
         chapters = document_ir.get('chapters', [])
         for chapter in chapters:
             blocks = chapter.get('blocks', [])
             self._extract_wordcloud_widgets(blocks, img_map)
 
         if img_map:
-            logger.info(f"成功转换 {len(img_map)} 个词云为图片")
+            logger.info(f"Successfully converted {len(img_map)} word clouds to images")
         return img_map
 
     def _extract_and_convert_widgets(
@@ -245,11 +245,11 @@ class PDFRenderer:
         svg_map: Dict[str, str]
     ) -> None:
         """
-        递归遍历blocks，找到所有widget并转换为SVG
+        Recursively traverse blocks, find all widgets and convert to SVG
 
-        参数:
-            blocks: block列表
-            svg_map: 用于存储转换结果的字典
+        Parameters:
+            blocks: List of blocks
+            svg_map: Dictionary for storing conversion results
         """
         for block in blocks:
             if not isinstance(block, dict):
@@ -257,25 +257,25 @@ class PDFRenderer:
 
             block_type = block.get('type')
 
-            # 处理widget类型
+            # Process widget type
             if block_type == 'widget':
                 widget_id = block.get('widgetId')
                 widget_type = block.get('widgetType', '')
 
-                # 只处理chart.js类型的widget
+                # Only process chart.js type widgets
                 if widget_id and widget_type.startswith('chart.js'):
                     widget_type_lower = widget_type.lower()
                     props = block.get('props')
                     props_type = str(props.get('type') or '').lower() if isinstance(props, dict) else ''
                     if 'wordcloud' in widget_type_lower or 'wordcloud' in props_type:
-                        logger.debug(f"检测到词云 {widget_id}，跳过SVG转换并使用图片注入流程")
+                        logger.debug(f"Detected word cloud {widget_id}, skipping SVG conversion and using image injection flow")
                         continue
 
                     failed, fail_reason = self.html_renderer._has_chart_failure(block)
                     if block.get("_chart_renderable") is False or failed:
                         logger.debug(
-                            f"跳过转换失败的图表 {widget_id}"
-                            f"{f'，原因: {fail_reason}' if fail_reason else ''}"
+                            f"Skipping conversion of failed chart {widget_id}"
+                            f"{f', reason: {fail_reason}' if fail_reason else ''}"
                         )
                         continue
                     try:
@@ -287,25 +287,25 @@ class PDFRenderer:
                         )
                         if svg_content:
                             svg_map[widget_id] = svg_content
-                            logger.debug(f"图表 {widget_id} 转换为SVG成功")
+                            logger.debug(f"Chart {widget_id} converted to SVG successfully")
                         else:
-                            logger.warning(f"图表 {widget_id} 转换为SVG失败")
+                            logger.warning(f"Chart {widget_id} failed to convert to SVG")
                     except Exception as e:
-                        logger.error(f"转换图表 {widget_id} 时出错: {e}")
+                        logger.error(f"Error converting chart {widget_id}: {e}")
 
-            # 递归处理嵌套的blocks
+            # Recursively process nested blocks
             nested_blocks = block.get('blocks')
             if isinstance(nested_blocks, list):
                 self._extract_and_convert_widgets(nested_blocks, svg_map)
 
-            # 处理列表项
+            # Process list items
             if block_type == 'list':
                 items = block.get('items', [])
                 for item in items:
                     if isinstance(item, list):
                         self._extract_and_convert_widgets(item, svg_map)
 
-            # 处理表格单元格
+            # Process table cells
             if block_type == 'table':
                 rows = block.get('rows', [])
                 for row in rows:
@@ -321,7 +321,7 @@ class PDFRenderer:
         img_map: Dict[str, str]
     ) -> None:
         """
-        递归遍历blocks，找到词云widget并生成图片
+        Recursively traverse blocks, find word cloud widgets and generate images
         """
         for block in blocks:
             if not isinstance(block, dict):
@@ -343,9 +343,9 @@ class PDFRenderer:
                         data_uri = self._generate_wordcloud_image(block)
                         if data_uri:
                             img_map[widget_id] = data_uri
-                            logger.debug(f"词云 {widget_id} 转换为图片成功")
+                            logger.debug(f"Word cloud {widget_id} converted to image successfully")
                     except Exception as exc:
-                        logger.warning(f"生成词云图片失败 {widget_id}: {exc}")
+                        logger.warning(f"Failed to generate word cloud image {widget_id}: {exc}")
 
             nested_blocks = block.get('blocks')
             if isinstance(nested_blocks, list):
@@ -368,7 +368,7 @@ class PDFRenderer:
 
     def _normalize_wordcloud_items(self, block: Dict[str, Any]) -> list:
         """
-        从widget block中提取词云数据
+        Extract word cloud data from widget block
         """
         props = block.get('props') or {}
         raw_items = props.get('data')
@@ -394,17 +394,17 @@ class PDFRenderer:
 
     def _generate_wordcloud_image(self, block: Dict[str, Any]) -> str | None:
         """
-        生成词云PNG并返回data URI
+        Generate word cloud PNG and return data URI
         """
         items = self._normalize_wordcloud_items(block)
         if not items:
             return None
 
-        # 使用频次形式馈入wordcloud库
+        # Feed wordcloud library with frequency format
         frequencies = {}
         for item in items:
             weight = item['weight']
-            # 兼容权重为0-1的小数，放大以体现差异
+            # Support weights as decimals 0-1, amplify to show differences
             freq = weight * 100 if 0 < weight <= 1.5 else weight
             frequencies[item['word']] = max(1, freq)
 
@@ -428,28 +428,28 @@ class PDFRenderer:
 
     def _convert_math_to_svg(self, document_ir: Dict[str, Any]) -> Dict[str, str]:
         """
-        将document_ir中的所有数学公式转换为SVG
+        Convert all math formulas in document_ir to SVG
 
-        参数:
-            document_ir: Document IR数据
+        Parameters:
+            document_ir: Document IR data
 
-        返回:
-            Dict[str, str]: 公式块ID到SVG字符串的映射
+        Returns:
+            Dict[str, str]: Mapping from formula block ID to SVG string
         """
         svg_map = {}
 
         if not hasattr(self, 'math_converter') or not self.math_converter:
-            logger.warning("数学公式转换器未初始化，跳过公式转换")
+            logger.warning("Math formula converter not initialized, skipping formula conversion")
             return svg_map
 
-        # 遍历所有章节，保持全局计数器避免ID重复
+        # Iterate through all chapters, maintaining global counter to avoid ID duplication
         block_counter = [0]
         chapters = document_ir.get('chapters', [])
         for chapter in chapters:
             blocks = chapter.get('blocks', [])
             self._extract_and_convert_math_blocks(blocks, svg_map, block_counter)
 
-        logger.info(f"成功转换 {len(svg_map)} 个数学公式为SVG")
+        logger.info(f"Successfully converted {len(svg_map)} math formulas to SVG")
         return svg_map
 
     def _extract_and_convert_math_blocks(
@@ -459,18 +459,18 @@ class PDFRenderer:
         block_counter: list = None
     ) -> None:
         """
-        递归遍历blocks，找到所有math块并转换为SVG
+        Recursively traverse blocks, find all math blocks and convert to SVG
 
-        参数:
-            blocks: block列表
-            svg_map: 用于存储转换结果的字典
-            block_counter: 用于生成唯一ID的计数器
+        Parameters:
+            blocks: List of blocks
+            svg_map: Dictionary for storing conversion results
+            block_counter: Counter for generating unique IDs
         """
         if block_counter is None:
             block_counter = [0]
 
         def _extract_inline_math_from_inlines(inlines: list):
-            """从段落内联节点中提取数学公式"""
+            """Extract math formulas from paragraph inline nodes"""
             if not isinstance(inlines, list):
                 return
             for run in inlines:
@@ -480,10 +480,10 @@ class PDFRenderer:
                 math_mark = next((m for m in marks if m.get('type') == 'math'), None)
 
                 if math_mark:
-                    # 仅单个math mark
+                    # Single math mark only
                     raw = math_mark.get('value') or run.get('text') or ''
                     latex = self._normalize_latex(raw)
-                    # 行内mark统一按inline处理，避免误将行内公式当成display
+                    # Inline marks always treated as inline, avoid mistaking inline formula as display
                     is_display = False
                     if not latex:
                         continue
@@ -498,14 +498,14 @@ class PDFRenderer:
                         )
                         if svg_content:
                             svg_map[math_id] = svg_content
-                            logger.debug(f"公式 {math_id} 转换为SVG成功")
+                            logger.debug(f"Formula {math_id} converted to SVG successfully")
                         else:
-                            logger.warning(f"公式 {math_id} 转换为SVG失败: {latex[:50]}...")
+                            logger.warning(f"Formula {math_id} failed to convert to SVG: {latex[:50]}...")
                     except Exception as exc:
-                        logger.error(f"转换内联公式 {latex[:50]}... 时出错: {exc}")
+                        logger.error(f"Error converting inline formula {latex[:50]}...: {exc}")
                     continue
 
-                # 无math mark，尝试解析文本中的多个公式
+                # No math mark, try to parse multiple formulas in text
                 text_val = run.get('text')
                 if not isinstance(text_val, str):
                     continue
@@ -527,13 +527,13 @@ class PDFRenderer:
                         )
                         if svg_content:
                             svg_map[math_id] = svg_content
-                            logger.debug(f"公式 {math_id} 转换为SVG成功")
+                            logger.debug(f"Formula {math_id} converted to SVG successfully")
                         else:
-                            logger.warning(f"公式 {math_id} 转换为SVG失败: {latex[:50]}...")
+                            logger.warning(f"Formula {math_id} failed to convert to SVG: {latex[:50]}...")
                     except Exception as exc:
-                        logger.error(f"转换内联公式 {latex[:50]}... 时出错: {exc}")
+                        logger.error(f"Error converting inline formula {latex[:50]}...: {exc}")
                 if ids_for_html:
-                    # 将ID列表写回run，便于HTML渲染时使用相同ID（顺序对应segments）
+                    # Write ID list back to run for HTML rendering to use same IDs (order corresponds to segments)
                     run['mathIds'] = ids_for_html
 
         for block in blocks:
@@ -542,7 +542,7 @@ class PDFRenderer:
 
             block_type = block.get('type')
 
-            # 处理math类型
+            # Process math type
             if block_type == 'math':
                 latex = self._normalize_latex(block.get('latex', ''))
                 if latex:
@@ -552,32 +552,32 @@ class PDFRenderer:
                         svg_content = self.math_converter.convert_display_to_svg(latex)
                         if svg_content:
                             svg_map[math_id] = svg_content
-                            # 将ID添加到block中，以便后续注入时识别
+                            # Add ID to block for identification during injection
                             block['mathId'] = math_id
-                            logger.debug(f"公式 {math_id} 转换为SVG成功")
+                            logger.debug(f"Formula {math_id} converted to SVG successfully")
                         else:
-                            logger.warning(f"公式 {math_id} 转换为SVG失败: {latex[:50]}...")
+                            logger.warning(f"Formula {math_id} failed to convert to SVG: {latex[:50]}...")
                     except Exception as e:
-                        logger.error(f"转换公式 {latex[:50]}... 时出错: {e}")
+                        logger.error(f"Error converting formula {latex[:50]}...: {e}")
             else:
-                # 提取段落、表格等内部的内联公式
+                # Extract inline formulas from paragraphs, tables, etc.
                 inlines = block.get('inlines')
                 if inlines:
                     _extract_inline_math_from_inlines(inlines)
 
-            # 递归处理嵌套的blocks
+            # Recursively process nested blocks
             nested_blocks = block.get('blocks')
             if isinstance(nested_blocks, list):
                 self._extract_and_convert_math_blocks(nested_blocks, svg_map, block_counter)
 
-            # 处理列表项
+            # Process list items
             if block_type == 'list':
                 items = block.get('items', [])
                 for item in items:
                     if isinstance(item, list):
                         self._extract_and_convert_math_blocks(item, svg_map, block_counter)
 
-            # 处理表格单元格
+            # Process table cells
             if block_type == 'table':
                 rows = block.get('rows', [])
                 for row in rows:
@@ -587,7 +587,7 @@ class PDFRenderer:
                         if isinstance(cell_blocks, list):
                             self._extract_and_convert_math_blocks(cell_blocks, svg_map, block_counter)
 
-            # 处理callout内部的blocks
+            # Process blocks inside callout
             if block_type == 'callout':
                 callout_blocks = block.get('blocks', [])
                 if isinstance(callout_blocks, list):
@@ -609,39 +609,39 @@ class PDFRenderer:
 
         import re
 
-        # 为每个widgetId查找对应的canvas并替换为SVG
+        # Find canvas for each widgetId and replace with SVG
         for widget_id, svg_content in svg_map.items():
-            # 清理SVG内容（移除XML声明，因为SVG将嵌入HTML）
+            # Clean SVG content (remove XML declaration since SVG will be embedded in HTML)
             svg_content = re.sub(r'<\?xml[^>]+\?>', '', svg_content)
             svg_content = re.sub(r'<!DOCTYPE[^>]+>', '', svg_content)
             svg_content = svg_content.strip()
 
-            # 创建SVG容器HTML
+            # Create SVG container HTML
             svg_html = f'<div class="chart-svg-container">{svg_content}</div>'
 
-            # 查找包含此widgetId的配置脚本（限制在同一个</script>内，避免跨标签误配）
+            # Find config script containing this widgetId (limit within same </script> to avoid mismatches)
             config_pattern = rf'<script[^>]+id="([^"]+)"[^>]*>(?:(?!</script>).)*?"widgetId"\s*:\s*"{re.escape(widget_id)}"(?:(?!</script>).)*?</script>'
             match = re.search(config_pattern, html, re.DOTALL)
 
             if match:
                 config_id = match.group(1)
 
-                # 查找对应的canvas元素
-                # 格式: <canvas id="chart-N" data-config-id="chart-config-N"></canvas>
+                # Find corresponding canvas element
+                # Format: <canvas id="chart-N" data-config-id="chart-config-N"></canvas>
                 canvas_pattern = rf'<canvas[^>]+data-config-id="{re.escape(config_id)}"[^>]*></canvas>'
 
-                # 【修复】替换canvas为SVG，使用lambda避免反斜杠转义问题
+                # [Fix] Replace canvas with SVG, using lambda to avoid backslash escape issues
                 html, replaced = re.subn(canvas_pattern, lambda m: svg_html, html, count=1)
                 if replaced:
-                    logger.debug(f"已替换图表 {widget_id} 的canvas为SVG")
+                    logger.debug(f"Replaced canvas with SVG for chart {widget_id}")
                 else:
-                    logger.warning(f"未找到图表 {widget_id} 的canvas进行替换")
+                    logger.warning(f"Canvas not found for chart {widget_id} replacement")
 
-                # 将对应fallback标记为隐藏，避免PDF中出现重复表格
+                # Mark corresponding fallback as hidden to avoid duplicate tables in PDF
                 fallback_pattern = rf'<div class="chart-fallback"([^>]*data-widget-id="{re.escape(widget_id)}"[^>]*)>'
 
                 def _hide_fallback(m: re.Match) -> str:
-                    """为匹配到的图表fallback添加隐藏类，防止PDF中重复渲染"""
+                    """Add hidden class to matched chart fallback to prevent duplicate rendering in PDF"""
                     tag = m.group(0)
                     if 'svg-hidden' in tag:
                         return tag
@@ -649,7 +649,7 @@ class PDFRenderer:
 
                 html = re.sub(fallback_pattern, _hide_fallback, html, count=1)
             else:
-                logger.warning(f"未找到图表 {widget_id} 对应的配置脚本")
+                logger.warning(f"Config script not found for chart {widget_id}")
 
         return html
 
@@ -670,9 +670,9 @@ class PDFRenderer:
             if m:
                 latex = m.group(1).strip()
                 break
-        # 清理控制字符、防止mathtext解析失败
+        # Clean control characters to prevent mathtext parsing failures
         latex = re.sub(r'[\x00-\x1f\x7f]', '', latex)
-        # 常见兼容：\tfrac/\dfrac -> \frac
+        # Common compatibility: \tfrac/\dfrac -> \frac
         latex = latex.replace(r'\tfrac', r'\frac').replace(r'\dfrac', r'\frac')
         return latex
 
@@ -740,7 +740,7 @@ class PDFRenderer:
             config_pattern = rf'<script[^>]+id="([^"]+)"[^>]*>(?:(?!</script>).)*?"widgetId"\s*:\s*"{re.escape(widget_id)}"(?:(?!</script>).)*?</script>'
             match = re.search(config_pattern, html, re.DOTALL)
             if not match:
-                logger.debug(f"未找到词云 {widget_id} 的配置脚本，跳过注入")
+                logger.debug(f"Config script not found for word cloud {widget_id}, skipping injection")
                 continue
 
             config_id = match.group(1)
@@ -748,14 +748,14 @@ class PDFRenderer:
 
             html, replaced = re.subn(canvas_pattern, lambda m: img_html, html, count=1)
             if replaced:
-                logger.debug(f"已替换词云 {widget_id} 的canvas为PNG图片")
+                logger.debug(f"Replaced canvas with PNG image for word cloud {widget_id}")
             else:
-                logger.warning(f"未找到词云 {widget_id} 的canvas进行替换")
+                logger.warning(f"Canvas not found for word cloud {widget_id} replacement")
 
             fallback_pattern = rf'<div class="chart-fallback"([^>]*data-widget-id="{re.escape(widget_id)}"[^>]*)>'
 
             def _hide_fallback(m: re.Match) -> str:
-                """匹配词云表格兜底并打上隐藏标记，避免SVG/图片重复显示"""
+                """Add hidden marker to word cloud table fallback to avoid SVG/image duplication"""
                 tag = m.group(0)
                 if 'svg-hidden' in tag:
                     return tag
@@ -781,9 +781,9 @@ class PDFRenderer:
 
         import re
 
-        # 优先替换内联公式，再替换块级公式，保持顺序一致
+        # Prioritize replacing inline formulas, then block formulas, maintaining order consistency
         for math_id, svg_content in svg_map.items():
-            # 清理SVG内容（移除XML声明，因为SVG将嵌入HTML）
+            # Clean SVG content (remove XML declaration since SVG will be embedded in HTML)
             svg_content = re.sub(r'<\?xml[^>]+\?>', '', svg_content)
             svg_content = re.sub(r'<!DOCTYPE[^>]+>', '', svg_content)
             svg_content = svg_content.strip()
@@ -792,7 +792,7 @@ class PDFRenderer:
             svg_inline_html = f'<span class="math-svg-inline">{svg_content}</span>'
 
             replaced = False
-            # 优先按 data-math-id 精确替换
+            # Prioritize precise replacement by data-math-id
             inline_pattern = rf'<span class="math-inline"[^>]*data-math-id="{re.escape(math_id)}"[^>]*>.*?</span>'
             if re.search(inline_pattern, html, re.DOTALL):
                 html = re.sub(inline_pattern, lambda m: svg_inline_html, html, count=1)
@@ -803,7 +803,7 @@ class PDFRenderer:
                     html = re.sub(block_pattern, lambda m: svg_block_html, html, count=1)
                     replaced = True
 
-            # 如果没有找到特定ID，按出现顺序兜底替换
+            # If specific ID not found, fall back to sequential replacement
             if not replaced:
                 html, sub_inline = re.subn(r'<span class="math-inline">[^<]*</span>', lambda m: svg_inline_html, html, count=1)
                 if sub_inline:
@@ -814,7 +814,7 @@ class PDFRenderer:
                         replaced = True
 
             if replaced:
-                logger.debug(f"已替换公式 {math_id} 为SVG")
+                logger.debug(f"Replaced formula {math_id} with SVG")
 
         return html
 
@@ -841,17 +841,17 @@ class PDFRenderer:
         返回:
             str: 优化后的HTML内容
         """
-        # 如果启用布局优化，先分析文档并生成优化配置
+        # If layout optimization is enabled, analyze document first and generate optimization config
         if optimize_layout:
-            logger.info("启用PDF布局优化...")
+            logger.info("Enabling PDF layout optimization...")
             layout_config = self.layout_optimizer.optimize_for_document(document_ir)
 
-            # 保存优化日志
+            # Save optimization log
             log_dir = Path('logs/pdf_layouts')
             log_dir.mkdir(parents=True, exist_ok=True)
             log_file = log_dir / f"layout_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
 
-            # 保存配置和优化日志
+            # Save config and optimization log
             optimization_log = self.layout_optimizer._log_optimization(
                 self.layout_optimizer._analyze_document(document_ir),
                 layout_config
@@ -861,51 +861,51 @@ class PDFRenderer:
         else:
             layout_config = self.layout_optimizer.config
 
-        # 关键修复：先预处理图表，确保数据有效
-        logger.info("预处理图表数据...")
+        # Critical fix: preprocess charts first to ensure data validity
+        logger.info("Preprocessing chart data...")
         preprocessed_ir = self._preprocess_charts(document_ir, ir_file_path)
 
-        # 转换图表为SVG（使用预处理后的IR）
-        logger.info("开始转换图表为SVG矢量图形...")
+        # Convert charts to SVG (using preprocessed IR)
+        logger.info("Starting conversion of charts to SVG vector graphics...")
         svg_map = self._convert_charts_to_svg(preprocessed_ir)
 
-        # 转换词云为PNG
-        logger.info("开始转换词云为图片...")
+        # Convert word clouds to PNG
+        logger.info("Starting conversion of word clouds to images...")
         wordcloud_map = self._convert_wordclouds_to_images(preprocessed_ir)
 
-        # 转换数学公式为SVG
-        logger.info("开始转换数学公式为SVG矢量图形...")
+        # Convert math formulas to SVG
+        logger.info("Starting conversion of math formulas to SVG vector graphics...")
         math_svg_map = self._convert_math_to_svg(preprocessed_ir)
 
-        # 使用HTML渲染器生成基础HTML（使用预处理后的IR，以便复用mathId等标记）
+        # Use HTML renderer to generate base HTML (using preprocessed IR to reuse mathId and other markers)
         html = self.html_renderer.render(preprocessed_ir, ir_file_path=ir_file_path)
 
-        # 注入图表SVG
+        # Inject chart SVG
         if svg_map:
             html = self._inject_svg_into_html(html, svg_map)
-            logger.info(f"已注入 {len(svg_map)} 个SVG图表")
+            logger.info(f"Injected {len(svg_map)} SVG charts")
 
         if wordcloud_map:
             html = self._inject_wordcloud_images(html, wordcloud_map)
-            logger.info(f"已注入 {len(wordcloud_map)} 个词云图片")
+            logger.info(f"Injected {len(wordcloud_map)} word cloud images")
 
-        # 注入数学公式SVG
+        # Inject math formula SVG
         if math_svg_map:
             html = self._inject_math_svg_into_html(html, math_svg_map)
-            logger.info(f"已注入 {len(math_svg_map)} 个SVG公式")
+            logger.info(f"Injected {len(math_svg_map)} SVG formulas")
 
-        # 获取字体路径并转换为base64（用于嵌入）
+        # Get font path and convert to base64 (for embedding)
         font_path = self._get_font_path()
         font_data = font_path.read_bytes()
         font_base64 = base64.b64encode(font_data).decode('ascii')
 
-        # 判断字体格式
+        # Determine font format
         font_format = 'opentype' if font_path.suffix == '.otf' else 'truetype'
 
-        # 生成优化后的CSS
+        # Generate optimized CSS
         optimized_css = self.layout_optimizer.generate_pdf_css()
 
-        # 添加PDF专用CSS
+        # Add PDF-specific CSS
         pdf_css = f"""
 <style>
 /* PDF专用字体嵌入 */
@@ -1528,7 +1528,7 @@ button.ghost-btn {{
 </style>
 """
 
-        # 在</head>前插入PDF专用CSS
+        # Insert PDF-specific CSS before </head>
         html = html.replace('</head>', f'{pdf_css}\n</head>')
 
         return html
@@ -1554,29 +1554,29 @@ button.ghost-btn {{
         """
         output_path = Path(output_path)
 
-        logger.info(f"开始生成PDF: {output_path}")
+        logger.info(f"Starting PDF generation: {output_path}")
 
-        # 生成HTML内容
+        # Generate HTML content
         html_content = self._get_pdf_html(document_ir, optimize_layout, ir_file_path)
 
-        # 配置字体
+        # Configure fonts
         font_config = FontConfiguration()
 
-        # 从HTML字符串创建WeasyPrint HTML对象
+        # Create WeasyPrint HTML object from HTML string
         html_doc = HTML(string=html_content, base_url=str(Path.cwd()))
 
-        # 生成PDF
+        # Generate PDF
         try:
             html_doc.write_pdf(
                 output_path,
                 font_config=font_config,
-                presentational_hints=True  # 保留HTML的呈现提示
+                presentational_hints=True  # Preserve HTML presentation hints
             )
-            logger.info(f"✓ PDF生成成功: {output_path}")
+            logger.info(f"✓ PDF generated successfully: {output_path}")
             return output_path
 
         except Exception as e:
-            logger.error(f"PDF生成失败: {e}")
+            logger.error(f"PDF generation failed: {e}")
             raise
 
     def render_to_bytes(

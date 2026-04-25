@@ -1,10 +1,10 @@
 """
-TrustScorer 节点
+TrustScorer Node
 
-对 deduped_sources 中每条来源调用 compute_trust_score()，
-将计算结果写入 source["trust_score"]，产出 scored_sources。
+Calls compute_trust_score() for each source in deduped_sources,
+writes the result to source["trust_score"], producing scored_sources.
 
-Phase 2 新增节点，位于图中 dedup_filter → trust_scorer → stance_classify。
+Phase 2 new node, located in the graph at dedup_filter → trust_scorer → stance_classify.
 """
 
 from __future__ import annotations
@@ -19,16 +19,16 @@ from ..state import QueryAgentState
 
 async def trust_scorer_node(state: QueryAgentState) -> dict:
     """
-    LangGraph 节点：TrustScore 计算。
+    LangGraph Node: TrustScore calculation.
 
-    输入：state["deduped_sources"]
-    输出：state["scored_sources"]（每条 trust_score 已填充）
+    Input: state["deduped_sources"]
+    Output: state["scored_sources"] (each with trust_score filled)
     """
     sources: List[dict] = state.get("deduped_sources") or []
 
     scored: List[dict] = []
     for s in sources:
-        s = dict(s)  # shallow copy，避免修改 State 中的原始对象
+        s = dict(s)  # shallow copy, avoid modifying original objects in State
         s["trust_score"] = compute_trust_score(s)
         scored.append(s)
 
@@ -40,8 +40,8 @@ async def trust_scorer_node(state: QueryAgentState) -> dict:
         avg = max_s = min_s = 0.0
 
     trace = (
-        f"[TrustScorer] 处理 {len(scored)} 条来源, "
-        f"均值={avg:.3f}, 最高={max_s:.3f}, 最低={min_s:.3f}"
+        f"[TrustScorer] Processed {len(scored)} sources, "
+        f"avg={avg:.3f}, max={max_s:.3f}, min={min_s:.3f}"
     )
     logger.info(trace)
 

@@ -1,8 +1,8 @@
 """
-论坛日志测试数据
+Forum Log Test Data
 
-包含各种日志格式的最小示例，用于测试ForumEngine/monitor.py中的日志解析函数。
-涵盖旧格式（[HH:MM:SS]）和新格式（loguru默认格式）的日志记录示例。
+Contains minimal examples of various log formats for testing log parsing functions in ForumEngine/monitor.py.
+Covers both old format ([HH:MM:SS]) and new format (loguru default format) log samples.
 """
 
 # ===== 旧格式（支持 [HH:MM:SS]）=====
@@ -152,6 +152,6 @@ SUMMARY_NODE_JSON_FIX_ERROR = "[11:55:31] 2025-11-06 11:55:31.799 | ERROR    | M
 SUMMARY_NODE_ERROR_LOG = "[11:55:31] 2025-11-06 11:55:31.763 | ERROR    | MediaEngine.nodes.summary_node:process_output:141 - 发生错误：无法处理输出"
 
 # SummaryNode的Traceback错误日志（虽然包含nodes.summary_node，但不应被捕获）
-SUMMARY_NODE_TRACEBACK = """[11:55:31] File "D:\\Programing\\BettaFish\\SingleEngineApp\\..\\MediaEngine\\nodes\\summary_node.py", line 138, in process_output
+SUMMARY_NODE_TRACEBACK = """[11:55:31] File "D:\\Programing\\Project\\SingleEngineApp\\..\\MediaEngine\\nodes\\summary_node.py", line 138, in process_output
 [11:55:31] result = json.loads(cleaned_output)"""
 

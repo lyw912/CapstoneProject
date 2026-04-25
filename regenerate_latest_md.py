@@ -32,7 +32,7 @@ def find_latest_run_dir(chapter_root: Path):
         Path | None: 最新的 run 目录路径；若未找到则为 None。
     """
     if not chapter_root.exists():
-        logger.error(f"章节目录不存在: {chapter_root}")
+        logger.error(f"Chapter directory does not exist: {chapter_root}")
         return None
 
     run_dirs = []
@@ -44,11 +44,11 @@ def find_latest_run_dir(chapter_root: Path):
             run_dirs.append((candidate, manifest_path.stat().st_mtime))
 
     if not run_dirs:
-        logger.error("未找到带 manifest.json 的章节目录")
+        logger.error("No chapter directory with manifest.json found")
         return None
 
     latest_dir = sorted(run_dirs, key=lambda item: item[1], reverse=True)[0][0]
-    logger.info(f"找到最新run目录: {latest_dir.name}")
+    logger.info(f"Found latest run directory: {latest_dir.name}")
     return latest_dir
 
 
@@ -71,12 +71,12 @@ def load_manifest(run_dir: Path):
             manifest = json.load(f)
         report_id = manifest.get("reportId") or run_dir.name
         metadata = manifest.get("metadata") or {}
-        logger.info(f"报告ID: {report_id}")
+        logger.info(f"Report ID: {report_id}")
         if manifest.get("createdAt"):
-            logger.info(f"创建时间: {manifest['createdAt']}")
+            logger.info(f"Creation time: {manifest['createdAt']}")
         return report_id, metadata
     except Exception as exc:
-        logger.error(f"读取manifest失败: {exc}")
+        logger.error(f"Failed to read manifest: {exc}")
         return None, None
 
 
@@ -95,7 +95,7 @@ def load_chapters(run_dir: Path):
     """
     storage = ChapterStorage(settings.CHAPTER_OUTPUT_DIR)
     chapters = storage.load_chapters(run_dir)
-    logger.info(f"加载章节数: {len(chapters)}")
+    logger.info(f"Chapters loaded: {len(chapters)}")
     return chapters
 
 
@@ -117,12 +117,12 @@ def validate_chapters(chapters):
             invalid.append((chapter.get("chapterId") or "unknown", errors))
 
     if invalid:
-        logger.warning(f"有 {len(invalid)} 个章节未通过结构校验，将继续装订：")
+        logger.warning(f"{len(invalid)} chapters failed structure validation, continuing binding:")
         for chapter_id, errors in invalid:
             preview = "; ".join(errors[:3])
             logger.warning(f"  - {chapter_id}: {preview}")
     else:
-        logger.info("章节结构校验通过")
+        logger.info("Chapter structure validation passed")
 
 
 def stitch_document(report_id, metadata, chapters):
@@ -143,8 +143,8 @@ def stitch_document(report_id, metadata, chapters):
     composer = DocumentComposer()
     document_ir = composer.build_document(report_id, metadata, chapters)
     logger.info(
-        f"装订完成: {len(document_ir.get('chapters', []))} 个章节，"
-        f"{count_charts(document_ir)} 个图表"
+        f"Binding complete: {len(document_ir.get('chapters', []))} chapters, "
+        f"{count_charts(document_ir)} charts"
     )
     return document_ir
 
@@ -224,7 +224,7 @@ def save_document_ir(document_ir, base_name, timestamp):
     ir_filename = f"report_ir_{base_name}_{timestamp}_regen.json"
     ir_path = output_dir / ir_filename
     ir_path.write_text(json.dumps(document_ir, ensure_ascii=False, indent=2), encoding="utf-8")
-    logger.info(f"IR已保存: {ir_path}")
+    logger.info(f"IR saved: {ir_path}")
     return ir_path
 
 
@@ -255,7 +255,7 @@ def render_markdown(document_ir, base_name, timestamp, ir_path=None):
     md_path.write_text(markdown_content, encoding="utf-8")
 
     file_size_kb = md_path.stat().st_size / 1024
-    logger.info(f"Markdown生成成功: {md_path} ({file_size_kb:.1f} KB)")
+    logger.info(f"Markdown generated successfully: {md_path} ({file_size_kb:.1f} KB)")
     return md_path
 
 
@@ -291,7 +291,7 @@ def main():
     返回:
         int: 0 表示成功，其余表示失败。
     """
-    logger.info("🚀 使用最新的LLM章节重新装订并渲染Markdown")
+    logger.info("🚀 Re-binding and rendering Markdown using latest LLM chapters")
 
     chapter_root = Path(settings.CHAPTER_OUTPUT_DIR)
     latest_run = find_latest_run_dir(chapter_root)
@@ -304,7 +304,7 @@ def main():
 
     chapters = load_chapters(latest_run)
     if not chapters:
-        logger.error("未找到章节JSON，无法装订")
+        logger.error("No chapter JSON found, cannot bind")
         return 1
 
     validate_chapters(chapters)
@@ -317,13 +317,13 @@ def main():
     )
 
     ir_path = save_document_ir(document_ir, base_name, timestamp)
-    # 传入 ir_path，修复后的图表会自动保存到 IR 文件
+    # Pass ir_path so repaired charts are automatically saved to IR file
     md_path = render_markdown(document_ir, base_name, timestamp, ir_path=ir_path)
 
     logger.info("")
-    logger.info("🎉 Markdown装订与渲染完成")
-    logger.info(f"IR文件: {ir_path.resolve()}")
-    logger.info(f"Markdown文件: {md_path.resolve()}")
+    logger.info("🎉 Markdown binding and rendering complete")
+    logger.info(f"IR file: {ir_path.resolve()}")
+    logger.info(f"Markdown file: {md_path.resolve()}")
     return 0
 
 

@@ -1,22 +1,22 @@
 """
-Query Agent LangGraph 子图构建 — Phase 2
+Query Agent LangGraph Subgraph Builder — Phase 2
 
-Phase 2 完整图结构（含条件边）：
+Phase 2 Complete Graph Structure (with conditional edges):
 
   START
-    → query_planner        （立场矩阵子查询生成）
-    → unified_search       （Tavily + Bocha 并行搜索）
-    → dedup_filter         （URL + MinHash 内容去重）
-    → trust_scorer         （多维可信度评分）       ← Phase 2 新增
-    → stance_classify      （混合立场分类）          ← Phase 2 新增
-    → coverage_check       （立场覆盖度检查）        ← Phase 2 新增
+    → query_planner        (Stance matrix subquery generation)
+    → unified_search       (Tavily + Bocha parallel search)
+    → dedup_filter         (URL + MinHash content deduplication)
+    → trust_scorer         (Multi-dimensional trust scoring)       ← Phase 2 New
+    → stance_classify      (Hybrid stance classification)          ← Phase 2 New
+    → coverage_check       (Stance coverage check)                 ← Phase 2 New
     → [coverage_router]
         ├─ "sufficient"  → output_assemble → END
         ├─ "max_reached" → output_assemble → END
-        └─ "need_more"   → gap_filler               ← Phase 2 新增
-                            → unified_search （循环补搜）
+        └─ "need_more"   → gap_filler               ← Phase 2 New
+                            → unified_search (Loop back for supplementary search)
 
-Phase 3 扩展点（已注释）：接入 Crawl4AI 深度提取、LLM 版 StanceClassifier。
+Phase 3 Extension Points (commented): Integrate Crawl4AI deep extraction, LLM-based StanceClassifier.
 """
 
 from __future__ import annotations
@@ -37,25 +37,25 @@ from .state import QueryAgentState
 
 
 # ---------------------------------------------------------------------------
-# 条件路由函数
+# Conditional Routing Functions
 # ---------------------------------------------------------------------------
 
 def coverage_router(state: QueryAgentState) -> str:
     """
-    决定 CoverageCheck 之后的走向：
+    Determine the routing path after CoverageCheck:
 
-    - "max_reached"：已达搜索轮次上限 → 强制输出
-    - "need_more"  ：有缺失立场且未超上限 → 触发 GapFiller 补搜
-    - "sufficient" ：立场覆盖已满足 → 直接输出
+    - "max_reached": Search iteration limit reached → Force output
+    - "need_more": Missing stances and limit not exceeded → Trigger GapFiller for supplementary search
+    - "sufficient": Stance coverage satisfied → Direct output
     """
     iterations = state.get("search_iterations", 0)
     max_iter = state.get("max_iterations", 3)
 
-    # 硬性上限优先（防止无限循环）
+    # Hard limit takes priority (prevent infinite loops)
     if iterations >= max_iter:
         return "max_reached"
 
-    # 检查缺失立场
+    # Check for missing stances
     missing = state.get("missing_stances") or []
     if missing:
         return "need_more"
@@ -64,20 +64,20 @@ def coverage_router(state: QueryAgentState) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 图构建
+# Graph Builder
 # ---------------------------------------------------------------------------
 
 def build_query_agent_graph():
     """
-    构建并编译 Query Agent LangGraph 子图（Phase 2 完整版）。
+    Build and compile the Query Agent LangGraph subgraph (Phase 2 complete version).
 
     Returns:
-        CompiledGraph — 可调用 .ainvoke(state) 或 .invoke(state)
+        CompiledGraph — Can call .ainvoke(state) or .invoke(state)
     """
     graph = StateGraph(QueryAgentState)
 
     # ------------------------------------------------------------------
-    # 注册节点
+    # Register Nodes
     # ------------------------------------------------------------------
     graph.add_node("query_planner",   query_planner_node)
     graph.add_node("unified_search",  unified_search_node)
@@ -89,7 +89,7 @@ def build_query_agent_graph():
     graph.add_node("output_assemble", output_assemble_node)
 
     # ------------------------------------------------------------------
-    # 主流程边
+    # Main Flow Edges
     # ------------------------------------------------------------------
     graph.add_edge(START,            "query_planner")
     graph.add_edge("query_planner",  "unified_search")
@@ -99,32 +99,32 @@ def build_query_agent_graph():
     graph.add_edge("stance_classify","coverage_check")  # Phase 2
 
     # ------------------------------------------------------------------
-    # 条件边：覆盖度检查结果决定走向
+    # Conditional Edges: Coverage check results determine routing
     # ------------------------------------------------------------------
     graph.add_conditional_edges(
         "coverage_check",
         coverage_router,
         {
-            "sufficient":  "output_assemble",  # 覆盖度满足 → 直接输出
-            "need_more":   "gap_filler",        # 有缺口 → 补搜
-            "max_reached": "output_assemble",   # 超轮次上限 → 强制输出
+            "sufficient":  "output_assemble",  # Coverage sufficient → Direct output
+            "need_more":   "gap_filler",        # Gap exists → Supplementary search
+            "max_reached": "output_assemble",   # Iteration limit exceeded → Force output
         },
     )
 
     # ------------------------------------------------------------------
-    # 补搜回路：GapFiller 生成的子查询回到 UnifiedSearch
+    # Supplementary Search Loop: GapFiller-generated subqueries back to UnifiedSearch
     # ------------------------------------------------------------------
     graph.add_edge("gap_filler",     "unified_search")
 
     # ------------------------------------------------------------------
-    # 最终输出
+    # Final Output
     # ------------------------------------------------------------------
     graph.add_edge("output_assemble", END)
 
     # ------------------------------------------------------------------
-    # Phase 3 扩展点（已注释）：
-    # - Crawl4AI 深度提取节点（在 trust_scorer 之后，对高价值来源补充全文）
-    # - LLM 版 StanceClassifier（对规则版置信度低的 case 二次确认）
+    # Phase 3 Extension Points (commented):
+    # - Crawl4AI deep extraction node (after trust_scorer, supplement full text for high-value sources)
+    # - LLM-based StanceClassifier (re-evaluate cases with low confidence from rule-based version)
     # ------------------------------------------------------------------
 
     return graph.compile()

@@ -1,5 +1,5 @@
 """
-根据模板目录与多源报告，生成整本报告的标题/目录/主题设计。
+Generate title/table of contents/theme design for the entire report based on template catalog and multi-source reports.
 """
 
 from __future__ import annotations
@@ -20,18 +20,18 @@ from .base_node import BaseNode
 
 class DocumentLayoutNode(BaseNode):
     """
-    负责生成全局标题、目录与Hero设计。
+    Responsible for generating global title, table of contents and Hero design.
 
-    结合模板切片、报告摘要与论坛讨论，指导整本书的视觉与结构基调。
+    Combines template slices, report summaries and forum discussions to guide the visual and structural tone of the entire book.
     """
 
     def __init__(self, llm_client):
-        """记录LLM客户端并设置节点名字，供BaseNode日志使用"""
+        """Record LLM client and set node name for BaseNode logging"""
         super().__init__(llm_client, "DocumentLayoutNode")
-        # 初始化鲁棒JSON解析器，启用所有修复策略
+        # Initialize robust JSON parser with all repair strategies enabled
         self.json_parser = RobustJSONParser(
             enable_json_repair=True,
-            enable_llm_repair=False,  # 可以根据需要启用LLM修复
+            enable_llm_repair=False,  # LLM repair can be enabled if needed
             max_repair_attempts=3,
         )
 
@@ -45,20 +45,20 @@ class DocumentLayoutNode(BaseNode):
         template_overview: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
         """
-        综合模板+多源内容，生成全书的标题、目录结构与主题色板。
+        Synthesize template + multi-source content to generate title, TOC structure and theme palette for the entire book.
 
-        参数:
-            sections: 模板切片后的章节列表。
-            template_markdown: 模板原文，用于LLM理解上下文。
-            reports: 三个引擎的内容映射。
-            forum_logs: 论坛讨论摘要。
-            query: 用户查询词。
-            template_overview: 预生成的模板概览，可复用以减少提示词长度。
+        Args:
+            sections: List of chapters after template slicing.
+            template_markdown: Original template text for LLM context understanding.
+            reports: Three-engine content mapping.
+            forum_logs: Forum discussion summary.
+            query: User query keyword.
+            template_overview: Pre-generated template overview, reusable to reduce prompt length.
 
-        返回:
-            dict: 包含 title/subtitle/toc/hero/themeTokens 等设计信息的字典。
+        Returns:
+            dict: Dictionary containing design info like title/subtitle/toc/hero/themeTokens.
         """
-        # 将模板原文、切片结构与多源报告一并喂给LLM，便于其理解层级与素材
+        # Feed template text, slice structure and multi-source reports to LLM to help understand hierarchy and materials
         payload = {
             "query": query,
             "template": {
@@ -82,102 +82,102 @@ class DocumentLayoutNode(BaseNode):
             top_p=0.9,
         )
         design = self._parse_response(response)
-        logger.info("文档标题/目录设计已生成")
+        logger.info("Document title/TOC design generated")
         return design
 
     def _parse_response(self, raw: str) -> Dict[str, Any]:
         """
-        解析LLM返回的JSON文本，若失败则抛出友好错误。
+        Parse JSON text returned by LLM, throw user-friendly error if failed.
 
-        使用鲁棒JSON解析器进行多重修复尝试：
-        1. 清理markdown标记和思考内容
-        2. 本地语法修复（括号平衡、逗号补全、控制字符转义等）
-        3. 使用json_repair库进行高级修复
-        4. 可选的LLM辅助修复
+        Use robust JSON parser for multiple repair attempts:
+        1. Clean markdown tags and thinking content
+        2. Local syntax repair (bracket balance, comma completion, control char escaping, etc.)
+        3. Use json_repair library for advanced repair
+        4. Optional LLM-assisted repair
 
-        参数:
-            raw: LLM原始返回字符串，允许带```包裹、思考内容等。
+        Args:
+            raw: LLM raw response string, allowing ``` wrapping, thinking content, etc.
 
-        返回:
-            dict: 结构化的设计稿。
+        Returns:
+            dict: Structured design draft.
 
-        异常:
-            ValueError: 当响应为空或JSON解析失败时抛出。
+        Raises:
+            ValueError: When response is empty or JSON parsing fails.
         """
         try:
             result = self.json_parser.parse(
                 raw,
-                context_name="文档设计",
-                # 目录字段已更名为 tocPlan，这里跟随最新Schema校验
+                context_name="Document Design",
+                # TOC field renamed to tocPlan, following latest Schema validation
                 expected_keys=["title", "tocPlan", "hero"],
             )
-            # 验证关键字段的类型
+            # Validate key field types
             if not isinstance(result.get("title"), str):
-                logger.warning("文档设计缺少title字段或类型错误，使用默认值")
-                result.setdefault("title", "未命名报告")
+                logger.warning("Document design missing title field or type error, using default")
+                result.setdefault("title", "Untitled Report")
 
-            # 处理tocPlan字段
+            # Process tocPlan field
             toc_plan = result.get("tocPlan", [])
             if not isinstance(toc_plan, list):
-                logger.warning("文档设计缺少tocPlan字段或类型错误，使用空列表")
+                logger.warning("Document design missing tocPlan field or type error, using empty list")
                 result["tocPlan"] = []
             else:
-                # 清理tocPlan中的description字段
+                # Clean description fields in tocPlan
                 result["tocPlan"] = self._clean_toc_plan_descriptions(toc_plan)
 
             if not isinstance(result.get("hero"), dict):
-                logger.warning("文档设计缺少hero字段或类型错误，使用空对象")
+                logger.warning("Document design missing hero field or type error, using empty object")
                 result.setdefault("hero", {})
 
             return result
         except JSONParseError as exc:
-            # 转换为原有的异常类型以保持向后兼容
-            raise ValueError(f"文档设计JSON解析失败: {exc}") from exc
+            # Convert to original exception type for backward compatibility
+            raise ValueError(f"Document design JSON parsing failed: {exc}") from exc
 
     def _clean_toc_plan_descriptions(self, toc_plan: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        清理tocPlan中每个条目的description字段，移除可能的JSON片段。
+        Clean description fields in each tocPlan entry, remove possible JSON fragments.
 
-        参数:
-            toc_plan: 原始的目录计划列表
+        Args:
+            toc_plan: Original table of contents plan list.
 
-        返回:
-            List[Dict[str, Any]]: 清理后的目录计划列表
+        Returns:
+            List[Dict[str, Any]]: Cleaned table of contents plan list.
         """
         import re
 
         def clean_text(text: Any) -> str:
-            """清理文本中的JSON片段"""
+            """Clean JSON fragments from text"""
             if not text or not isinstance(text, str):
                 return ""
 
             cleaned = text
 
-            # 移除以逗号+空白+{开头的不完整JSON对象
+            # Remove incomplete JSON objects starting with comma+whitespace+{
             cleaned = re.sub(r',\s*\{[^}]*$', '', cleaned)
 
-            # 移除以逗号+空白+[开头的不完整JSON数组
+            # Remove incomplete JSON arrays starting with comma+whitespace+[
             cleaned = re.sub(r',\s*\[[^\]]*$', '', cleaned)
 
-            # 移除孤立的 { 加上后续内容（如果没有匹配的 }）
+            # Remove isolated { with subsequent content (if no matching })
             open_brace_pos = cleaned.rfind('{')
             if open_brace_pos != -1:
                 close_brace_pos = cleaned.rfind('}')
                 if close_brace_pos < open_brace_pos:
                     cleaned = cleaned[:open_brace_pos].rstrip(',，、 \t\n')
 
-            # 移除孤立的 [ 加上后续内容（如果没有匹配的 ]）
+            # Remove isolated [ with subsequent content (if no matching ])
             open_bracket_pos = cleaned.rfind('[')
             if open_bracket_pos != -1:
                 close_bracket_pos = cleaned.rfind(']')
                 if close_bracket_pos < open_bracket_pos:
                     cleaned = cleaned[:open_bracket_pos].rstrip(',，、 \t\n')
 
-            # 移除看起来像JSON键值对的片段
+            # Remove fragments that look like JSON key-value pairs
             cleaned = re.sub(r',?\s*"[^"]+"\s*:\s*"[^"]*$', '', cleaned)
             cleaned = re.sub(r',?\s*"[^"]+"\s*:\s*[^,}\]]*$', '', cleaned)
 
-            # 清理末尾的逗号和空白
+            # Clean trailing commas and whitespace
             cleaned = cleaned.rstrip(',，、 \t\n')
 
             return cleaned.strip()
@@ -187,16 +187,16 @@ class DocumentLayoutNode(BaseNode):
             if not isinstance(entry, dict):
                 continue
 
-            # 清理description字段
+            # Clean description field
             if "description" in entry:
                 original_desc = entry["description"]
                 cleaned_desc = clean_text(original_desc)
 
                 if cleaned_desc != original_desc:
                     logger.warning(
-                        f"清理目录项 '{entry.get('display', 'unknown')}' 的description字段中的JSON片段:\n"
-                        f"  原文: {original_desc[:100]}...\n"
-                        f"  清理后: {cleaned_desc[:100]}..."
+                        f"Cleaned JSON fragments from description field of TOC entry '{entry.get('display', 'unknown')}':\n"
+                        f"  Original: {original_desc[:100]}...\n"
+                        f"  Cleaned: {cleaned_desc[:100]}..."
                     )
                     entry["description"] = cleaned_desc
 

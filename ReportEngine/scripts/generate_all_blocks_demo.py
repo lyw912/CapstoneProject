@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-生成覆盖全部允许block类型的演示 IR，用于验证 HTML / PDF / Markdown 渲染。
+Generate demo IR covering all allowed block types for validating HTML / PDF / Markdown rendering.
 
-执行后会在 `final_reports/ir` 写入一份带时间戳的 IR，
-并分别在 `final_reports/html`、`final_reports/pdf` 与 `final_reports/md`
-输出对应的渲染文件。
+After execution, writes a timestamped IR to `final_reports/ir`,
+and outputs corresponding rendered files to `final_reports/html`, `final_reports/pdf`, and `final_reports/md`.
 """
 
 from __future__ import annotations
@@ -14,7 +13,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# 允许直接以脚本形式运行
+# Allow running directly as a script
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -27,11 +26,11 @@ from ReportEngine.utils.config import settings
 
 
 def build_inline_marks_demo() -> dict:
-    """生成覆盖全部内联标记的 paragraph block。"""
+    """Generate paragraph block covering all inline marks."""
     return {
         "type": "paragraph",
         "inlines": [
-            {"text": "这一段覆盖全部内联标记："},
+            {"text": "This paragraph demonstrates all inline marks: "},
             {"text": "粗体", "marks": [{"type": "bold"}]},
             {"text": " / 斜体", "marks": [{"type": "italic"}]},
             {"text": " / 下划线", "marks": [{"type": "underline"}]},
@@ -47,7 +46,7 @@ def build_inline_marks_demo() -> dict:
                     }
                 ],
             },
-            {"text": " / 颜色", "marks": [{"type": "color", "value": "#c0392b"}]},
+            {"text": " / color", "marks": [{"type": "color", "value": "#c0392b"}]},
             {
                 "text": " / 字体",
                 "marks": [
@@ -59,17 +58,17 @@ def build_inline_marks_demo() -> dict:
                     }
                 ],
             },
-            {"text": " / 高亮", "marks": [{"type": "highlight"}]},
-            {"text": " / 下标", "marks": [{"type": "subscript"}]},
-            {"text": " / 上标", "marks": [{"type": "superscript"}]},
-            {"text": " / 行内公式", "marks": [{"type": "math", "value": "E=mc^2"}]},
+            {"text": " / highlight", "marks": [{"type": "highlight"}]},
+            {"text": " / subscript", "marks": [{"type": "subscript"}]},
+            {"text": " / superscript", "marks": [{"type": "superscript"}]},
+            {"text": " / inline formula", "marks": [{"type": "math", "value": "E=mc^2"}]},
             {"text": "。"},
         ],
     }
 
 
 def build_widget_block() -> dict:
-    """构造一个合法的 Chart.js widget block。"""
+    """Build a valid Chart.js widget block."""
     return {
         "type": "widget",
         "widgetId": "demo-volume-trend",
@@ -79,14 +78,14 @@ def build_widget_block() -> dict:
             "options": {
                 "responsive": True,
                 "plugins": {"legend": {"position": "bottom"}},
-                "scales": {"y": {"title": {"display": True, "text": "提及量"}}},
+                "scales": {"y": {"title": {"display": True, "text": "Mentions"}}},
             },
         },
         "data": {
             "labels": ["T0", "T0+6h", "T0+12h", "T0+18h", "T0+24h"],
             "datasets": [
                 {
-                    "label": "主流媒体",
+                    "label": "Mainstream Media",
                     "data": [12, 18, 23, 30, 26],
                     "borderColor": "#2980b9",
                     "backgroundColor": "rgba(41,128,185,0.18)",
@@ -94,7 +93,7 @@ def build_widget_block() -> dict:
                     "fill": False,
                 },
                 {
-                    "label": "社交平台",
+                    "label": "Social Media",
                     "data": [8, 10, 15, 28, 40],
                     "borderColor": "#c0392b",
                     "backgroundColor": "rgba(192,57,43,0.2)",
@@ -107,7 +106,7 @@ def build_widget_block() -> dict:
 
 
 def build_chapters() -> list[dict]:
-    """构造覆盖所有 block 类型的章节列表。"""
+    """Build chapter list covering all block types."""
     inline_demo = build_inline_marks_demo()
 
     bullet_list = {
@@ -514,7 +513,7 @@ def build_chapters() -> list[dict]:
         "widgetId": "demo-horizontal-voice",
         "widgetType": "chart.js/bar",
         "props": {
-            # 通过 indexAxis 切换横向柱状图
+            # Switch to horizontal bar chart via indexAxis
             "type": "bar",
             "options": {
                 "indexAxis": "y",
@@ -806,7 +805,7 @@ def build_chapters() -> list[dict]:
 
 
 def validate_chapters(chapters: list[dict]) -> None:
-    """使用 IRValidator 校验章节结构，发现错误时抛出异常。"""
+    """Validate chapter structure using IRValidator, raise exception on errors."""
     validator = IRValidator()
     for chapter in chapters:
         ok, errors = validator.validate_chapter(chapter)
@@ -815,7 +814,7 @@ def validate_chapters(chapters: list[dict]) -> None:
 
 
 def render_and_save(document_ir: dict, timestamp: str) -> tuple[Path, Path, Path, Path]:
-    """将 IR 保存为 JSON，并渲染 HTML / PDF / Markdown，返回四个路径。"""
+    """Save IR as JSON and render HTML / PDF / Markdown, returning four paths."""
     ir_dir = Path(settings.DOCUMENT_IR_OUTPUT_DIR)
     html_dir = Path(settings.OUTPUT_DIR) / "html"
     pdf_dir = Path(settings.OUTPUT_DIR) / "pdf"
@@ -872,7 +871,7 @@ def main() -> int:
 
     ir_path, html_path, pdf_path, md_path = render_and_save(document_ir, timestamp)
 
-    print("✅ 演示 IR 生成完成")
+    print("✅ Demo IR generation complete")
     print(f"IR:   {ir_path}")
     print(f"HTML: {html_path}")
     print(f"PDF:  {pdf_path}")

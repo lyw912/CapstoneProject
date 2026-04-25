@@ -1,8 +1,8 @@
 """
-Query Agent 图节点包
+Query Agent Graph Node Package
 
-Phase 1 节点：query_planner, unified_search, dedup_filter, output_assemble
-Phase 2 节点：trust_scorer, stance_classify, coverage_check, gap_filler
+Phase 1 Nodes: query_planner, unified_search, dedup_filter, output_assemble
+Phase 2 Nodes: trust_scorer, stance_classify, coverage_check, gap_filler
 """
 
 from .query_planner  import query_planner_node
@@ -10,7 +10,7 @@ from .unified_search import unified_search_node
 from .dedup_filter   import dedup_filter_node
 from .output_assemble import output_assemble_node
 
-# Phase 2 新增节点
+# Phase 2 New Nodes
 from .trust_scorer   import trust_scorer_node
 from .stance_classify import stance_classify_node
 from .coverage_check  import coverage_check_node

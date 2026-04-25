@@ -1,8 +1,8 @@
 """
-QueryEngine classifiers 模块
+QueryEngine classifiers module
 
-- TrustScorer: 多维可信度评分（域名权威性 + 时效性 + 内容质量 + 搜索排名）
-- HybridStanceClassifier: 混合立场分类（域名规则 + 关键词 + 子查询弱标签）
+- TrustScorer: Multi-dimensional trust scoring (domain authority + timeliness + content quality + search ranking)
+- HybridStanceClassifier: Hybrid stance classification (domain rules + keywords + sub-query weak labels)
 """
 
 from .trust_scorer import compute_trust_score

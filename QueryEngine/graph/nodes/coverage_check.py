@@ -1,16 +1,16 @@
 """
-CoverageCheck 节点
+CoverageCheck Node
 
-检查 classified_sources 中各立场的覆盖情况，
-识别未达到最低要求的立场，写入 missing_stances。
+Checks coverage of each stance in classified_sources,
+identifies stances that do not meet minimum requirements, and writes to missing_stances.
 
-CoverageCheck 本身是同步节点（无 LLM 调用），是条件路由的决策依据。
+CoverageCheck is a synchronous node (no LLM calls) and serves as the decision basis for conditional routing.
 
-覆盖度计算公式（SCS，Stance Coverage Score）：
+Coverage Score Formula (SCS, Stance Coverage Score):
   SCS = (1/K) × Σ min(count(stance_k) / threshold_k, 1.0)
-  K = 参与评估的立场数量（4 个：support, oppose, official, neutral）
+  K = Number of stances evaluated (4: support, oppose, official, neutral)
 
-Phase 2 新增节点，位于图中 stance_classify → coverage_check → [router]。
+Phase 2 new node, located in the graph at stance_classify → coverage_check → [router].
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from loguru import logger
 from ..state import QueryAgentState
 
 # ---------------------------------------------------------------------------
-# 各立场最低要求来源数（"background" 不列入闭环检查，属于补充信息）
+# Minimum required source counts for each stance ("background" is excluded from loop checking as supplementary info)
 # ---------------------------------------------------------------------------
 
 MINIMUM_STANCE_COUNTS: Dict[str, int] = {
@@ -36,7 +36,7 @@ MINIMUM_STANCE_COUNTS: Dict[str, int] = {
 
 def _compute_coverage_score(stance_counts: Dict[str, int]) -> float:
     """
-    基于 MINIMUM_STANCE_COUNTS 计算立场覆盖度分数（0–1）。
+    Calculate stance coverage score (0–1) based on MINIMUM_STANCE_COUNTS.
 
     SCS = (1/K) × Σ min(count(stance_k) / threshold_k, 1.0)
     """
@@ -50,22 +50,22 @@ def _compute_coverage_score(stance_counts: Dict[str, int]) -> float:
 
 def coverage_check_node(state: QueryAgentState) -> dict:
     """
-    LangGraph 节点：立场覆盖度检查。
+    LangGraph Node: Stance coverage check.
 
-    输入：state["classified_sources"]
-    输出：state["stance_coverage"]（各立场实际数量）
-          state["missing_stances"]（未达到最低阈值的立场列表）
+    Input: state["classified_sources"]
+    Output: state["stance_coverage"] (actual count for each stance)
+           state["missing_stances"] (list of stances not meeting minimum threshold)
     """
     sources: List[dict] = state.get("classified_sources") or []
 
-    # 只统计有明确立场标签的来源（排除 None / "unclassified"）
+    # Only count sources with explicit stance labels (exclude None / "unclassified")
     stance_counts = Counter(
         s.get("stance_label")
         for s in sources
         if s.get("stance_label") and s.get("stance_label") not in ("unclassified",)
     )
 
-    # 识别未达到最低阈值的立场
+    # Identify stances that do not meet minimum thresholds
     missing: List[str] = [
         stance
         for stance, min_count in MINIMUM_STANCE_COUNTS.items()
@@ -75,8 +75,8 @@ def coverage_check_node(state: QueryAgentState) -> dict:
     coverage_score = _compute_coverage_score(dict(stance_counts))
 
     trace = (
-        f"[CoverageCheck] 立场分布={dict(stance_counts)}, "
-        f"缺失={missing}, SCS={coverage_score:.2f}"
+        f"[CoverageCheck] Stance distribution={dict(stance_counts)}, "
+        f"Missing={missing}, SCS={coverage_score:.2f}"
     )
     logger.info(trace)
 

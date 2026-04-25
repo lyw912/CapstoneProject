@@ -1,13 +1,14 @@
 """
-GapFiller 节点
+GapFiller Node
 
-当 CoverageCheck 发现立场覆盖不足时，调用 LLM 生成针对缺失立场的
-补搜子查询（gap_queries），随后图会回到 unified_search 执行补搜。
+When CoverageCheck detects insufficient stance coverage, calls LLM to generate
+supplementary search sub-queries (gap_queries) for missing stances, then the
+graph returns to unified_search to execute the supplementary search.
 
-LLM 模型：复用 agent.py 配置的 LLMClient（同 QueryPlanner 一致）。
-JSON 解析：复用 query_planner.py 中的 _parse_json_array 工具函数。
+LLM Model: Reuses LLMClient configured in agent.py (same as QueryPlanner).
+JSON Parsing: Reuses _parse_json_array utility function from query_planner.py.
 
-Phase 2 新增节点，位于图中 coverage_check --need_more--> gap_filler --> unified_search。
+Phase 2 new node, located in the graph at coverage_check --need_more--> gap_filler --> unified_search.
 """
 
 from __future__ import annotations
@@ -23,7 +24,7 @@ from ...utils.config import settings
 from ..state import QueryAgentState, SubQueryItem
 
 # ---------------------------------------------------------------------------
-# 官方域名（用于 official 立场的补搜 domain 过滤）
+# Official Domains (for domain filtering when supplementary searching for official stance)
 # ---------------------------------------------------------------------------
 
 OFFICIAL_DOMAINS_CN = [
@@ -35,32 +36,32 @@ OFFICIAL_DOMAINS_CN = [
 # Prompt
 # ---------------------------------------------------------------------------
 
-GAP_FILL_PROMPT = """当前舆情话题：{query}
+GAP_FILL_PROMPT = """Current public opinion topic: {query}
 
-已收集的来源中，以下立场的声音不足，需要针对性补搜：
-缺失立场：{missing_stances}
+Among collected sources, the following stances are insufficiently represented and need targeted supplementary search:
+Missing stances: {missing_stances}
 
-请为每个缺失立场生成 1-2 个具体的搜索子查询。要求：
-- 使用具体的搜索关键词（中文为主），不要抽象描述
-- 若缺 "support"，搜索：支持者论据 / 正面评价 / 好处 / 利好
-- 若缺 "oppose"，搜索：反对意见 / 批评质疑 / 风险问题 / 负面影响
-- 若缺 "official"，搜索：政府回应 / 官方声明 / 监管态度 / 政策回应
-- 若缺 "neutral"，搜索：专家分析 / 研究报告 / 客观评估 / 第三方观点
+Please generate 1-2 specific search sub-queries for each missing stance. Requirements:
+- Use specific search keywords (primarily Chinese), not abstract descriptions
+- If lacking "support", search: supporter arguments / positive reviews / benefits / advantages
+- If lacking "oppose", search: opposing opinions / criticism / risks / negative impacts
+- If lacking "official", search: government response / official statement / regulatory attitude / policy response
+- If lacking "neutral", search: expert analysis / research reports / objective assessment / third-party perspectives
 
-只输出 JSON 数组，不要有其他文字：
+Output only a JSON array, no other text:
 [
-  {{"query": "具体搜索词", "target_stance": "oppose", "target_source": "any", "priority": 2}},
+  {{"query": "specific search term", "target_stance": "oppose", "target_source": "any", "priority": 2}},
   ...
 ]"""
 
 
 # ---------------------------------------------------------------------------
-# 工具
+# Utilities
 # ---------------------------------------------------------------------------
 
 def _parse_json_array(text: str) -> list:
-    """从 LLM 响应中提取 JSON 数组（兼容各种格式问题）。"""
-    # 去除 markdown 代码块
+    """Extract JSON array from LLM response (tolerates various formatting issues)."""
+    # Remove markdown code blocks
     text = re.sub(r"```(?:json)?", "", text).strip()
 
     try:
@@ -91,43 +92,43 @@ def _get_llm_client() -> LLMClient:
 
 
 # ---------------------------------------------------------------------------
-# 节点函数
+# Node Function
 # ---------------------------------------------------------------------------
 
 async def gap_filler_node(state: QueryAgentState) -> dict:
     """
-    LangGraph 节点：为缺失立场生成补搜子查询。
+    LangGraph Node: Generate supplementary search sub-queries for missing stances.
 
-    输入：state["missing_stances"]，state["original_query"]
-    输出：state["gap_queries"]（补搜子查询列表，发给 unified_search）
+    Input: state["missing_stances"], state["original_query"]
+    Output: state["gap_queries"] (list of supplementary search sub-queries, sent to unified_search)
     """
     missing: List[str] = state.get("missing_stances") or []
     query: str = state.get("original_query", "")
 
     if not missing:
-        logger.info("[GapFiller] 无缺失立场，跳过补搜")
+        logger.info("[GapFiller] No missing stances, skip supplementary search")
         return {
             "gap_queries": [],
-            "trace_log": ["[GapFiller] 无需补搜"],
+            "trace_log": ["[GapFiller] No supplementary search needed"],
         }
 
     prompt = GAP_FILL_PROMPT.format(
         query=query,
-        missing_stances="、".join(missing),
+        missing_stances=", ".join(missing),
     )
 
     llm = _get_llm_client()
     try:
         response = llm.invoke(
-            system_prompt="你是搜索策略专家。只输出 JSON 数组，不要有其他文字。",
+            system_prompt="You are a search strategy expert. Output only a JSON array, no other text.",
             user_prompt=prompt,
         )
         raw_queries = _parse_json_array(response)
     except Exception as exc:
-        logger.warning(f"[GapFiller] LLM 调用失败: {exc}")
+        logger.warning(f"[GapFiller] LLM call failed: {exc}")
         raw_queries = []
 
-    # 后处理：补全字段 + 为 official 注入域名过滤
+    # Post-processing: Complete fields + inject domain filtering for official stance
     processed: List[SubQueryItem] = []
     for gq in raw_queries:
         if not isinstance(gq, dict) or not gq.get("query"):
@@ -141,19 +142,19 @@ async def gap_filler_node(state: QueryAgentState) -> dict:
             "search_params": gq.get("search_params") or {},
         }
 
-        # official 立场注入官方域名过滤
+        # Inject official domain filtering for official stance
         if item["target_stance"] == "official" and not item["search_params"].get("include_domains"):
             item["search_params"]["include_domains"] = OFFICIAL_DOMAINS_CN
 
-        # support/oppose 倾向于 insight_db（社媒数据更可能有民间支持/反对声）
+        # support/oppose prefer insight_db (social media data more likely to have public support/opposition voices)
         if item["target_stance"] in ("support", "oppose") and item["target_source"] == "any":
             item["target_source"] = "insight_db"
 
         processed.append(item)
 
     trace = (
-        f"[GapFiller] 缺失立场={missing}, "
-        f"生成 {len(processed)} 个补搜子查询"
+        f"[GapFiller] Missing stances={missing}, "
+        f"Generated {len(processed)} supplementary search sub-queries"
     )
     logger.info(trace)
 

@@ -206,18 +206,18 @@ flowchart TB
 
 ### 1. 克隆项目与获取子模块
 
-MindSpider 作为 BettaFish 的核心组件运行。请克隆 BettaFish 主项目并同步获取 `MediaCrawler` 爬虫子模块。
+MindSpider 作为本项目的核心组件运行。请克隆主项目并同步获取 `MediaCrawler` 爬虫子模块。
 
 **方式一：克隆时直接获取（推荐）**
 
 ```bash
-git clone --recurse-submodules https://github.com/666ghj/BettaFish.git
-cd BettaFish/MindSpider
+git clone --recurse-submodules <your-repo-url>
+cd <project-name>/MindSpider
 ```
 
 **方式二：已克隆主项目后补充拉取**
 
-如果你已经克隆了 BettaFish 但 `MindSpider/DeepSentimentCrawling/MediaCrawler` 目录为空，请在**项目根目录**运行：
+如果你已经克隆了主项目但 `MindSpider/DeepSentimentCrawling/MediaCrawler` 目录为空，请在**项目根目录**运行：
 
 ```bash
 git submodule update --init --recursive
@@ -399,7 +399,7 @@ uv run main.py --deep-sentiment --platforms zhihu --test
 
 ### 其他问题
 
-https://github.com/666ghj/BettaFish/issues/185
+<your-repo-url>/issues
 
 ### 爬取参数调整
 

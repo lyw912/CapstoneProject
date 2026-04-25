@@ -1,14 +1,14 @@
 """
-QueryEngine evaluation 模块
+QueryEngine evaluation module
 
-评估指标：
-  SCS  Stance Coverage Score    立场覆盖度（核心指标）
-  SDI  Source Diversity Index   来源多样性（Shannon 熵归一化）
-  SBS  Stance Balance Score     立场均衡度（1 - Gini系数）
-  TSM  Trust Score Mean         平均可信度
-  E2E  End-to-End Latency       端到端延迟（秒）
+Evaluation Metrics:
+  SCS  Stance Coverage Score    Stance coverage (core metric)
+  SDI  Source Diversity Index   Source diversity (Shannon entropy normalized)
+  SBS  Stance Balance Score     Stance balance (1 - Gini coefficient)
+  TSM  Trust Score Mean         Average trust score
+  E2E  End-to-End Latency       End-to-end latency (seconds)
 
-Phase 2 目标：SCS ≥ 0.70, SDI ≥ 0.50, E2E < 180s
+Phase 2 Targets: SCS ≥ 0.70, SDI ≥ 0.50, E2E < 180s
 """
 
 from .metrics import (

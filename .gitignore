@@ -100,7 +100,7 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
-# ==== 环境和IDE ====
+# ==== Environment and IDE ====
 # Environments
 .env
 .venv
@@ -153,30 +153,30 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# ==== 大型模型文件 ====
-# 预训练模型目录
+# ==== Large Model Files ====
+# Pre-trained model directories
 # models/
 # */models/
 # */*/models/
 
-# PyTorch 模型文件
+# PyTorch model files
 # *.pth
 *.pt
 *.bin
 *.ckpt
 *.safetensors
 
-# TensorFlow 模型文件
+# TensorFlow model files
 *.pb
 *.h5
 *.hdf5
 saved_model/
 
-# Hugging Face 缓存
+# Hugging Face cache
 huggingface_hub/
 transformers_cache/
 
-# 具体模型文件路径
+# Specific model file paths
 SentimentAnalysisModel/WeiboSentiment_Finetuned/GPT2-Lora/models/
 SentimentAnalysisModel/WeiboSentiment_Finetuned/GPT2-AdapterTuning/models/
 SentimentAnalysisModel/WeiboSentiment_Finetuned/BertChinese-Lora/models/
@@ -187,39 +187,39 @@ SentimentAnalysisModel/WeiboSentiment_MachineLearning/model/chinese_wwm_pytorch/
 SentimentAnalysisModel/WeiboSentiment_SmallQwen/models/
 SentimentAnalysisModel/BertTopicDetection_Finetuned/model/
 
-# LoRA 和 Adapter 权重
+# LoRA and Adapter weights
 */adapter_model.safetensors
 */pytorch_adapter.bin
 */adapter_config.json
 best_weibo_sentiment_lora/
 best_weibo_sentiment_model.pth
 
-# 微调后的模型
+# Fine-tuned models
 checkpoints/
 */checkpoints/
 
-# ==== 数据集文件 ====
-# 大型数据集压缩包
+# ==== Dataset Files ====
+# Large dataset archives
 *.zip
 *.tar
 *.tar.gz
 *.rar
 *.7z
 
-# CSV 数据文件 (大型)
+# CSV data files (large)
 # ChineseNlpCorpus/datasets/*/*.csv
 # */weibo_senti_100k.csv
 # */ChnSentiCorp_htl_all.csv
 # */waimai_10k.csv
 
-# 其他数据文件
+# Other data files
 # *.pkl
 # *.pickle
 *.json.gz
 *.jsonl
 *.parquet
 
-# 数据集目录
+# Dataset directories
 # data/
 # */data/
 # dataset/
@@ -227,14 +227,14 @@ checkpoints/
 # datasets/raw/
 # datasets/processed/
 
-# ==== MediaCrawler 相关 ====
-# 临时图片和媒体文件
+# ==== MediaCrawler Related ====
+# Temporary images and media files
 temp_image/
 */temp_image/
 browser_data/
 */browser_data/
 
-# 爬虫数据输出
+# Crawler data output
 /data/
 crawled_data/
 output/
@@ -243,19 +243,19 @@ output/
 node_modules/
 *.tgz
 
-# 数据库文件
+# Database files
 # *.db
 # *.sqlite
 # *.sqlite3
 # subtitle_db
 
-# ==== UI 和 Web 相关 ====
-# 前端构建文件
+# ==== UI and Web Related ====
+# Frontend build files
 dist/
 build/
 public/build/
 
-# 图片和媒体文件 (大型)
+# Image and media files (large)
 # *.png
 # *.jpg
 # *.jpeg
@@ -271,13 +271,13 @@ public/build/
 # VitePress 缓存
 docs/.vitepress/cache
 
-# ==== 日志和临时文件 ====
-# 日志文件
+# ==== Logs and Temporary Files ====
+# Log files
 # *.log
 logs/
 # */logs/
 
-# 临时文件
+# Temporary files
 temp/
 tmp/
 *.tmp
@@ -286,8 +286,8 @@ tmp/
 *.swo
 *~
 
-# ==== 配置和密钥 ====
-# 敏感配置文件
+# ==== Configuration and Secrets ====
+# Sensitive configuration files
 #/config.py
 config.ini
 secrets.json
@@ -298,33 +298,33 @@ secrets.json
 #config.py
 #MindSpider/config.py
 
-# API 密钥
+# API keys
 api_keys.txt
 credentials.json
 
-# ==== 其他项目特定文件 ====
-# 词云生成的临时文件
+# ==== Other Project-Specific Files ====
+# Word cloud temporary files
 wordcloud_temp/
 *.ttf
 
-# 测试输出
+# Test output
 test_output/
 test_results/
 
-# 备份文件
+# Backup files
 *.bak
 *.backup
 *.old
 
-# 压缩文件
+# Compressed files
 *.gz
 *.bz2
 *.xz
 
-# Office 文件临时
+# Office temporary files
 ~$*
 
-# ==== 版本控制 ====
+# ==== Version Control ====
 # Git
 .git/
 *.orig
@@ -337,7 +337,7 @@ test_results/
 
 .cursor/
 
-# Ai操作指引文件
+# AI operation guidance files
 OperationGuidance/
 
 db_data/

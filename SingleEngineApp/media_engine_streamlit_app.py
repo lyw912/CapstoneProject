@@ -1,6 +1,6 @@
 """
-Streamlit Web界面
-为 Multimodal Agent 提供友好的 Web 界面（底层仍为 MediaEngine）。
+Streamlit Web Interface
+Provides a user-friendly web interface for Multimodal Agent (underlying MediaEngine).
 """
 
 import os
@@ -11,11 +11,11 @@ import json
 import locale
 from loguru import logger
 
-# 设置UTF-8编码环境
+# Set UTF-8 encoding environment
 os.environ['PYTHONIOENCODING'] = 'utf-8'
 os.environ['PYTHONUTF8'] = '1'
 
-# 设置系统编码
+# Set system encoding
 try:
     locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 except locale.Error:
@@ -24,7 +24,7 @@ except locale.Error:
     except locale.Error:
         pass
 
-# 添加src目录到Python路径
+# Add src directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from MediaEngine import DeepSearchAgent, AnspireSearchAgent, Settings
@@ -33,7 +33,7 @@ from utils.github_issues import error_with_issue_link
 
 
 def main():
-    """主函数"""
+    """Main function"""
     st.set_page_config(
         page_title="Multimodal Agent",
         page_icon="",
@@ -41,45 +41,45 @@ def main():
     )
 
     st.title("Multimodal Agent")
-    st.markdown("多模态内容理解：视频、图像与结构化信息卡片等跨模态分析")
-    st.markdown("突破传统文本交流限制，广泛的浏览抖音、快手、小红书的视频、图文、直播")
-    st.markdown("使用现代化搜索引擎提供的诸如日历卡、天气卡、股票卡等多模态结构化信息进一步增强能力")
+    st.markdown("Multimodal content understanding: cross-modal analysis of videos, images, and structured info cards")
+    st.markdown("Breaks through traditional text communication limitations, extensively browses videos, images, and live streams on TikTok, Kuaishou, and Xiaohongshu")
+    st.markdown("Enhanced capabilities using multimodal structured information from modern search engines such as calendar cards, weather cards, and stock cards")
 
-    # 检查URL参数
+    # Check URL parameters
     try:
-        # 尝试使用新版本的query_params
+        # Try using new version query_params
         query_params = st.query_params
         auto_query = query_params.get('query', '')
         auto_search = query_params.get('auto_search', 'false').lower() == 'true'
     except AttributeError:
-        # 兼容旧版本
+        # Fallback for older versions
         query_params = st.experimental_get_query_params()
         auto_query = query_params.get('query', [''])[0]
         auto_search = query_params.get('auto_search', ['false'])[0].lower() == 'true'
 
-    # ----- 配置被硬编码 -----
-    # 强制使用 Gemini
+    # ----- Configuration is hardcoded -----
+    # Force use Gemini
     model_name = settings.MEDIA_ENGINE_MODEL_NAME or "gemini-2.5-pro"
-    # 默认高级配置
+    # Default advanced configuration
     max_reflections = 2
     max_content_length = 20000
 
-    # 简化的研究查询展示区域
+    # Simplified research query display area
 
-    # 如果有自动查询，使用它作为默认值，否则显示占位符
-    display_query = auto_query if auto_query else "等待从主页面接收分析内容..."
+    # If there's an auto query, use it as default, otherwise show placeholder
+    display_query = auto_query if auto_query else "Waiting to receive analysis content from main page..."
 
-    # 只读的查询展示区域
+    # Read-only query display area
     st.text_area(
-        "当前查询",
+        "Current Query",
         value=display_query,
         height=100,
         disabled=True,
-        help="查询内容由主页面的搜索框控制",
+        help="Query content is controlled by the search box on the main page",
         label_visibility="hidden"
     )
 
-    # 自动搜索逻辑
+    # Auto search logic
     start_research = False
     query = auto_query
 
@@ -87,33 +87,33 @@ def main():
         st.session_state.auto_search_executed = True
         start_research = True
     elif auto_query and not auto_search:
-        st.warning("等待搜索启动信号...")
+        st.warning("Waiting for search start signal...")
 
-    # 验证配置
+    # Validate configuration
     if start_research:
         if not query.strip():
-            st.error("请输入研究查询")
-            logger.error("请输入研究查询")
+            st.error("Please enter research query")
+            logger.error("Please enter research query")
             return
 
-        # 由于强制使用Gemini，检查相关的API密钥
+        # Since using Gemini, check related API keys
         if not settings.MEDIA_ENGINE_API_KEY:
-            st.error("请在您的环境变量中设置MEDIA_ENGINE_API_KEY")
-            logger.error("请在您的环境变量中设置MEDIA_ENGINE_API_KEY")
+            st.error("Please set MEDIA_ENGINE_API_KEY in your environment variables")
+            logger.error("Please set MEDIA_ENGINE_API_KEY in your environment variables")
             return
 
-        # 自动使用配置文件中的API密钥
+        # Automatically use API keys from configuration file
         engine_key = settings.MEDIA_ENGINE_API_KEY
         bocha_key = settings.BOCHA_WEB_SEARCH_API_KEY
         ansire_key = settings.ANSPIRE_API_KEY
 
-        # 构建 Settings（pydantic_settings风格，优先大写环境变量）
+        # Build Settings (pydantic_settings style, prioritize uppercase environment variables)
         if settings.SEARCH_TOOL_TYPE == "BochaAPI":
             if not bocha_key:
-                st.error("请在您的环境变量中设置BOCHA_WEB_SEARCH_API_KEY")
-                logger.error("请在您的环境变量中设置BOCHA_WEB_SEARCH_API_KEY")
+                st.error("Please set BOCHA_WEB_SEARCH_API_KEY in your environment variables")
+                logger.error("Please set BOCHA_WEB_SEARCH_API_KEY in your environment variables")
                 return
-            logger.info("使用Bocha搜索API密钥")
+            logger.info("Using Bocha search API key")
             config = Settings(
                 MEDIA_ENGINE_API_KEY=engine_key,
                 MEDIA_ENGINE_BASE_URL=settings.MEDIA_ENGINE_BASE_URL,
@@ -126,10 +126,10 @@ def main():
             )
         elif settings.SEARCH_TOOL_TYPE == "AnspireAPI":
             if not ansire_key:
-                st.error("请在您的环境变量中设置ANSPIRE_API_KEY")
-                logger.error("请在您的环境变量中设置ANSPIRE_API_KEY")
+                st.error("Please set ANSPIRE_API_KEY in your environment variables")
+                logger.error("Please set ANSPIRE_API_KEY in your environment variables")
                 return
-            logger.info("使用Anspire搜索API密钥")
+            logger.info("Using Anspire search API key")
             config = Settings(
                 MEDIA_ENGINE_API_KEY=engine_key,
                 MEDIA_ENGINE_BASE_URL=settings.MEDIA_ENGINE_BASE_URL,
@@ -141,100 +141,100 @@ def main():
                 OUTPUT_DIR="media_engine_streamlit_reports",
             )
         else:
-            st.error(f"未知的搜索工具类型: {settings.SEARCH_TOOL_TYPE}")
-            logger.error(f"未知的搜索工具类型: {settings.SEARCH_TOOL_TYPE}")
+            st.error(f"Unknown search tool type: {settings.SEARCH_TOOL_TYPE}")
+            logger.error(f"Unknown search tool type: {settings.SEARCH_TOOL_TYPE}")
             return
 
-        # 执行研究
+        # Execute research
         execute_research(query, config)
 
 
 def execute_research(query: str, config: Settings):
-    """执行研究（MediaEngine 已统一为 LangGraph，与 DeepSearchAgent / AnspireSearchAgent 的 research() 对齐）。"""
+    """Execute research (MediaEngine unified to LangGraph, aligned with DeepSearchAgent / AnspireSearchAgent research())."""
     try:
         progress_bar = st.progress(0)
         status_text = st.empty()
 
-        status_text.text("正在初始化 Agent...")
+        status_text.text("Initializing Agent...")
         if config.SEARCH_TOOL_TYPE == "BochaAPI":
             agent = DeepSearchAgent(config)
         elif config.SEARCH_TOOL_TYPE == "AnspireAPI":
             agent = AnspireSearchAgent(config)
         else:
-            raise ValueError(f"未知的搜索工具类型: {config.SEARCH_TOOL_TYPE}")
+            raise ValueError(f"Unknown search tool type: {config.SEARCH_TOOL_TYPE}")
         st.session_state.agent = agent
 
         progress_bar.progress(15)
-        status_text.text("正在执行深度研究（搜索、反思与报告生成）...")
-        logger.info("开始 LangGraph 深度研究")
+        status_text.text("Executing deep research (search, reflection and report generation)...")
+        logger.info("Starting LangGraph deep research")
         final_report = agent.research(query, save_report=True)
         progress_bar.progress(100)
 
-        status_text.text("研究完成！")
-        logger.info("研究完成！")
+        status_text.text("Research completed!")
+        logger.info("Research completed!")
         display_results(agent, final_report)
 
     except Exception as e:
         import traceback
         error_traceback = traceback.format_exc()
         error_display = error_with_issue_link(
-            f"研究过程中发生错误: {str(e)}",
+            f"Error occurred during research: {str(e)}",
             error_traceback,
             app_name="Multimodal Agent Streamlit App"
         )
         st.error(error_display)
-        logger.exception(f"研究过程中发生错误: {str(e)}")
+        logger.exception(f"Error occurred during research: {str(e)}")
 
 
 def display_results(agent: DeepSearchAgent, final_report: str):
-    """显示研究结果"""
-    st.header("研究结果")
+    """Display research results"""
+    st.header("Research Results")
 
-    # 结果标签页（已移除下载选项）
-    tab1, tab2 = st.tabs(["研究小结", "引用信息"])
+    # Result tabs (download options removed)
+    tab1, tab2 = st.tabs(["Research Summary", "Citation Info"])
 
     with tab1:
         st.markdown(final_report)
 
     with tab2:
-        # 段落详情
-        st.subheader("段落详情")
+        # Paragraph details
+        st.subheader("Paragraph Details")
         for i, paragraph in enumerate(agent.state.paragraphs):
-            with st.expander(f"段落 {i + 1}: {paragraph.title}"):
-                st.write("**预期内容:**", paragraph.content)
-                st.write("**最终内容:**", paragraph.research.latest_summary[:300] + "..."
+            with st.expander(f"Paragraph {i + 1}: {paragraph.title}"):
+                st.write("**Expected Content:**", paragraph.content)
+                st.write("**Final Content:**", paragraph.research.latest_summary[:300] + "..."
                 if len(paragraph.research.latest_summary) > 300
                 else paragraph.research.latest_summary)
-                st.write("**搜索次数:**", paragraph.research.get_search_count())
-                st.write("**反思次数:**", paragraph.research.reflection_iteration)
+                st.write("**Search Count:**", paragraph.research.get_search_count())
+                st.write("**Reflection Count:**", paragraph.research.reflection_iteration)
 
-        # 搜索历史
-        st.subheader("搜索历史")
+        # Search history
+        st.subheader("Search History")
         all_searches = []
         for paragraph in agent.state.paragraphs:
             all_searches.extend(paragraph.research.search_history)
 
         if all_searches:
             for i, search in enumerate(all_searches):
-                query_label = search.query if search.query else "未记录查询"
-                with st.expander(f"搜索 {i + 1}: {query_label}"):
-                    paragraph_title = getattr(search, "paragraph_title", "") or "未标注段落"
-                    search_tool = getattr(search, "search_tool", "") or "未标注工具"
+                query_label = search.query if search.query else "Unrecorded query"
+                with st.expander(f"Search {i + 1}: {query_label}"):
+                    paragraph_title = getattr(search, "paragraph_title", "") or "Unlabeled paragraph"
+                    search_tool = getattr(search, "search_tool", "") or "Unlabeled tool"
                     has_result = getattr(search, "has_result", True)
-                    st.write("**段落:**", paragraph_title)
-                    st.write("**使用的工具:**", search_tool)
+                    st.write("**Paragraph:**", paragraph_title)
+                    st.write("**Tool Used:**", search_tool)
                     preview = search.content or ""
                     if not isinstance(preview, str):
                         preview = str(preview)
                     if len(preview) > 200:
                         preview = preview[:200] + "..."
-                    st.write("**URL:**", search.url or "无")
-                    st.write("**标题:**", search.title or "无")
-                    st.write("**内容预览:**", preview if preview else "无可用内容")
+                    st.write("**URL:**", search.url or "None")
+                    st.write("**Title:**", search.title or "None")
+                    st.write("**Content Preview:**", preview if preview else "No content available")
                     if not has_result:
-                        st.info("本次搜索未返回结果")
+                        st.info("This search returned no results")
                     if search.score:
-                        st.write("**相关度评分:**", search.score)
+                        st.write("**Relevance Score:**", search.score)
 
 
 if __name__ == "__main__":

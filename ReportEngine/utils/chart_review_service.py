@@ -1,13 +1,13 @@
 """
-图表审查服务 - 统一管理图表验证和修复。
+Chart Review Service - Unified management of chart validation and repair.
 
-提供单例服务，确保所有渲染器共享修复状态，避免重复修复。
-修复成功后可自动持久化到 IR 文件。
+Provides a singleton service to ensure all renderers share repair state and avoid duplicate repairs.
+Repairs can be automatically persisted to IR files after successful fixes.
 
-线程安全说明：
-- 验证器和修复器实例是无状态的，可安全共享
-- 每次 review_document 调用会创建独立的 ReviewSession
-- 统计信息通过 ReviewSession 返回，避免并发竞争
+Thread Safety Notes:
+- Validator and repairer instances are stateless and can be safely shared
+- Each review_document call creates an independent ReviewSession
+- Statistics are returned via ReviewSession to avoid concurrency race conditions
 """
 
 from __future__ import annotations
@@ -34,10 +34,10 @@ from ReportEngine.utils.chart_repair_api import create_llm_repair_functions
 @dataclass
 class ReviewStats:
     """
-    图表审查统计信息 - 每次审查会话独立的统计数据。
+    Chart review statistics - Independent stats for each review session.
 
-    通过为每次 review_document 调用创建独立的 ReviewStats 实例，
-    避免多线程并发时的统计数据竞争问题。
+    Creates independent ReviewStats instances for each review_document call
+    to avoid statistics race conditions in multi-threaded concurrency.
     """
     total: int = 0
     valid: int = 0
@@ -46,7 +46,7 @@ class ReviewStats:
     failed: int = 0
 
     def to_dict(self) -> Dict[str, int]:
-        """转换为字典格式"""
+        """Convert to dictionary format"""
         return {
             'total': self.total,
             'valid': self.valid,
@@ -57,31 +57,31 @@ class ReviewStats:
 
     @property
     def repaired_total(self) -> int:
-        """修复总数"""
+        """Total number of repairs"""
         return self.repaired_locally + self.repaired_api
 
 
 class ChartReviewService:
     """
-    图表审查服务 - 单例模式。
+    Chart Review Service - Singleton pattern.
 
-    职责：
-    1. 统一管理图表验证和修复
-    2. 维护修复缓存，避免重复修复
-    3. 支持修复后自动持久化到 IR 文件
-    4. 提供统计信息（通过 ReviewStats 返回，线程安全）
+    Responsibilities:
+    1. Unified management of chart validation and repair
+    2. Maintain repair cache to avoid duplicate repairs
+    3. Support automatic persistence to IR files after repair
+    4. Provide statistics (returned via ReviewStats, thread-safe)
 
-    线程安全说明：
-    - validator 和 repairer 是无状态的，可安全共享
-    - 每次 review_document 调用创建独立的 ReviewStats
-    - 不再使用全局 _stats，避免并发竞争
+    Thread Safety Notes:
+    - validator and repairer are stateless and can be safely shared
+    - Each review_document call creates independent ReviewStats
+    - No longer uses global _stats to avoid concurrency race conditions
     """
 
     _instance: Optional["ChartReviewService"] = None
     _lock = threading.Lock()
 
     def __new__(cls) -> "ChartReviewService":
-        """单例模式"""
+        """Singleton pattern"""
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
@@ -90,13 +90,13 @@ class ChartReviewService:
         return cls._instance
 
     def __init__(self):
-        """初始化服务（仅首次调用时执行）"""
+        """Initialize service (only executed on first call)"""
         if self._initialized:
             return
 
         self._initialized = True
 
-        # 初始化验证器和修复器（无状态，可安全共享）
+        # Initialize validator and repairer (stateless, can be safely shared)
         self.validator = create_chart_validator()
         self.llm_repair_fns = create_llm_repair_functions()
         self.repairer = create_chart_repairer(
@@ -104,25 +104,25 @@ class ChartReviewService:
             llm_repair_fns=self.llm_repair_fns
         )
 
-        # 打印 LLM 修复函数状态
+        # Print LLM repair function status
         if not self.llm_repair_fns:
-            logger.warning("ChartReviewService: 未配置任何 LLM API，图表 API 修复功能不可用")
+            logger.warning("ChartReviewService: No LLM API configured, chart API repair feature unavailable")
         else:
-            logger.info(f"ChartReviewService: 已配置 {len(self.llm_repair_fns)} 个 LLM 修复函数")
+            logger.info(f"ChartReviewService: {len(self.llm_repair_fns)} LLM repair function(s) configured")
 
-        # 最后一次审查的统计信息（仅用于向后兼容，不推荐在并发场景使用）
-        # 新代码应使用 review_document 返回的 ReviewStats
+        # Statistics from last review (for backward compatibility only, not recommended for concurrent use)
+        # New code should use ReviewStats returned by review_document
         self._last_stats: Optional[ReviewStats] = None
         self._last_stats_lock = threading.Lock()
 
-        logger.info("ChartReviewService 初始化完成")
+        logger.info("ChartReviewService initialization completed")
 
     def reset_stats(self) -> None:
         """
-        重置统计信息（向后兼容，不推荐使用）。
+        Reset statistics (backward compatibility, not recommended).
 
-        注意：此方法仅用于向后兼容。在并发场景下，
-        应使用 review_document 返回的 ReviewStats 对象。
+        Note: This method is for backward compatibility only.
+        In concurrent scenarios, use the ReviewStats object returned by review_document.
         """
         with self._last_stats_lock:
             self._last_stats = None
@@ -130,13 +130,13 @@ class ChartReviewService:
     @property
     def stats(self) -> Dict[str, int]:
         """
-        获取最后一次审查的统计信息副本（向后兼容）。
+        Get a copy of the last review statistics (backward compatibility).
 
-        警告：在并发场景下，此属性可能返回其他线程的统计结果。
-        推荐使用 review_document 返回的 ReviewStats 对象。
+        Warning: In concurrent scenarios, this property may return statistics from other threads.
+        Recommended to use the ReviewStats object returned by review_document.
 
-        返回:
-            Dict[str, int]: 统计信息字典副本
+        Returns:
+            Dict[str, int]: Copy of statistics dictionary
         """
         with self._last_stats_lock:
             if self._last_stats is None:
@@ -158,35 +158,35 @@ class ChartReviewService:
         save_on_repair: bool = True
     ) -> ReviewStats:
         """
-        审查并修复文档中的所有图表。
+        Review and repair all charts in the document.
 
-        遍历所有章节的 blocks，检测图表类型的 widget，
-        对未审查过的图表进行验证和修复。
+        Iterates through blocks in all chapters, detects chart-type widgets,
+        and validates and repairs charts that haven't been reviewed yet.
 
-        线程安全：每次调用创建独立的 ReviewStats，避免并发竞争。
+        Thread Safety: Creates independent ReviewStats on each call to avoid concurrency race conditions.
 
-        参数:
-            document_ir: Document IR 数据
-            ir_file_path: IR 文件路径，如果提供且有修复，会自动保存
-            reset_stats: 保留参数以保持向后兼容，不再有实际作用
-            save_on_repair: 修复后是否自动保存到文件
+        Args:
+            document_ir: Document IR data
+            ir_file_path: IR file path; if provided and repairs are made, will auto-save
+            reset_stats: Reserved parameter for backward compatibility, no actual effect
+            save_on_repair: Whether to auto-save to file after repair
 
-        返回:
-            ReviewStats: 本次审查的统计信息（线程安全）
+        Returns:
+            ReviewStats: Statistics for this review (thread-safe)
         """
-        # 每次调用创建独立的统计对象，避免并发竞争
+        # Create independent stats object on each call to avoid concurrency race conditions
         session_stats = ReviewStats()
 
         if not document_ir:
-            logger.warning("ChartReviewService: document_ir 为空，跳过审查")
-            # 更新 _last_stats 以保持向后兼容
+            logger.warning("ChartReviewService: document_ir is empty, skipping review")
+            # Update _last_stats for backward compatibility
             with self._last_stats_lock:
                 self._last_stats = session_stats
             return session_stats
 
         has_repairs = False
 
-        # 遍历所有章节
+        # Iterate through all chapters
         for chapter in document_ir.get("chapters", []) or []:
             if not isinstance(chapter, dict):
                 continue
@@ -196,14 +196,14 @@ class ChartReviewService:
                 if chapter_repairs:
                     has_repairs = True
 
-        # 输出统计信息
+        # Output statistics
         self._log_stats(session_stats)
 
-        # 更新 _last_stats 以保持向后兼容
+        # Update _last_stats for backward compatibility
         with self._last_stats_lock:
             self._last_stats = session_stats
 
-        # 如果有修复且提供了文件路径，保存到文件
+        # Save to file if repairs were made and file path is provided
         if has_repairs and ir_file_path and save_on_repair:
             self._save_ir_to_file(document_ir, ir_file_path)
 
@@ -216,15 +216,15 @@ class ChartReviewService:
         session_stats: ReviewStats
     ) -> bool:
         """
-        递归遍历 blocks 并审查图表。
+        Recursively traverse blocks and review charts.
 
-        参数:
-            blocks: 要遍历的 block 列表
-            chapter_context: 章节上下文
-            session_stats: 本次审查会话的统计对象
+        Args:
+            blocks: List of blocks to traverse
+            chapter_context: Chapter context
+            session_stats: Statistics object for this review session
 
-        返回:
-            bool: 是否有修复发生
+        Returns:
+            bool: Whether any repairs were made
         """
         has_repairs = False
 
@@ -232,26 +232,26 @@ class ChartReviewService:
             if not isinstance(block, dict):
                 continue
 
-            # 检查是否是图表 widget
+            # Check if it's a chart widget
             if block.get("type") == "widget":
                 repaired = self._review_chart_block(block, chapter_context, session_stats)
                 if repaired:
                     has_repairs = True
 
-            # 递归处理嵌套的 blocks
+            # Recursively process nested blocks
             nested_blocks = block.get("blocks")
             if isinstance(nested_blocks, list):
                 if self._walk_and_review_blocks(nested_blocks, chapter_context, session_stats):
                     has_repairs = True
 
-            # 处理 list 类型的 items
+            # Process list-type items
             if block.get("type") == "list":
                 for item in block.get("items", []):
                     if isinstance(item, list):
                         if self._walk_and_review_blocks(item, chapter_context, session_stats):
                             has_repairs = True
 
-            # 处理 table 类型的 cells
+            # Process table-type cells
             if block.get("type") == "table":
                 for row in block.get("rows", []):
                     if not isinstance(row, dict):
@@ -272,21 +272,21 @@ class ChartReviewService:
         session_stats: ReviewStats
     ) -> bool:
         """
-        审查单个图表 block。
+        Review a single chart block.
 
-        参数:
-            block: 要审查的 block
-            chapter_context: 章节上下文
-            session_stats: 本次审查会话的统计对象
+        Args:
+            block: The block to review
+            chapter_context: Chapter context
+            session_stats: Statistics object for this review session
 
-        返回:
-            bool: 是否进行了修复
+        Returns:
+            bool: Whether any repairs were made
         """
         widget_type = block.get("widgetType", "")
         if not isinstance(widget_type, str):
             return False
 
-        # 只处理 chart.js 类型（词云单独处理，不需要修复）
+        # Only process chart.js types (word clouds handled separately, no repair needed)
         is_chart = widget_type.startswith("chart.js")
         is_wordcloud = "wordcloud" in widget_type.lower()
 
@@ -295,14 +295,14 @@ class ChartReviewService:
 
         widget_id = block.get("widgetId", "unknown")
 
-        # 检查是否已审查过
+        # Check if already reviewed
         if block.get("_chart_reviewed"):
-            logger.debug(f"图表 {widget_id} 已审查过，跳过")
+            logger.debug(f"Chart {widget_id} already reviewed, skipping")
             return False
 
         session_stats.total += 1
 
-        # 词云直接标记为有效
+        # Word clouds directly marked as valid
         if is_wordcloud:
             session_stats.valid += 1
             block["_chart_reviewed"] = True
@@ -310,35 +310,35 @@ class ChartReviewService:
             block["_chart_review_method"] = "none"
             return False
 
-        # 先进行数据规范化（从章节上下文补充数据）
+        # Normalize chart data first (supplement data from chapter context)
         self._normalize_chart_block(block, chapter_context)
 
-        # 验证图表
+        # Validate chart
         validation_result = self.validator.validate(block)
 
         if validation_result.is_valid:
-            # 验证通过
+            # Validation passed
             session_stats.valid += 1
             block["_chart_reviewed"] = True
             block["_chart_review_status"] = "valid"
             block["_chart_review_method"] = "none"
             if validation_result.warnings:
-                logger.debug(f"图表 {widget_id} 验证通过，但有警告: {validation_result.warnings}")
+                logger.debug(f"Chart {widget_id} validation passed with warnings: {validation_result.warnings}")
             return False
 
-        # 验证失败，尝试修复
-        logger.warning(f"图表 {widget_id} 验证失败: {validation_result.errors}")
+        # Validation failed, attempt repair
+        logger.warning(f"Chart {widget_id} validation failed: {validation_result.errors}")
 
         repair_result = self.repairer.repair(block, validation_result)
 
         if repair_result.success and repair_result.repaired_block:
-            # 修复成功，覆盖原始 block 数据
+            # Repair successful, overwrite original block data
             repaired_block = repair_result.repaired_block
-            # 保留原始的一些元信息
+            # Preserve some original metadata
             original_widget_id = block.get("widgetId")
             block.clear()
             block.update(repaired_block)
-            # 确保 widgetId 不丢失
+            # Ensure widgetId is not lost
             if original_widget_id and not block.get("widgetId"):
                 block["widgetId"] = original_widget_id
 
@@ -352,10 +352,10 @@ class ChartReviewService:
             block["_chart_review_status"] = "repaired"
             block["_chart_review_method"] = method
 
-            logger.info(f"图表 {widget_id} 修复成功 (方法: {method}): {repair_result.changes}")
+            logger.info(f"Chart {widget_id} repair successful (method: {method}): {repair_result.changes}")
             return True
 
-        # 修复失败
+        # Repair failed
         session_stats.failed += 1
         block["_chart_reviewed"] = True
         block["_chart_renderable"] = False
@@ -363,7 +363,7 @@ class ChartReviewService:
         block["_chart_review_method"] = "none"
         block["_chart_error_reason"] = self._format_error_reason(validation_result)
 
-        logger.warning(f"图表 {widget_id} 修复失败，已标记为不可渲染")
+        logger.warning(f"Chart {widget_id} repair failed, marked as non-renderable")
         return False
 
     def _normalize_chart_block(
@@ -372,14 +372,14 @@ class ChartReviewService:
         chapter_context: Dict[str, Any] | None = None
     ) -> None:
         """
-        规范化图表数据，补全缺失字段（如props、scales、datasets），提升容错性。
+        Normalize chart data, filling in missing fields (like props, scales, datasets) to improve fault tolerance.
 
-        与 HTMLRenderer._normalize_chart_block() 保持一致：
-        - 确保 props 存在
-        - 将顶层 scales 合并进 props.options
-        - 确保 data 存在
-        - 尝试使用章节级 data 作为兜底
-        - 自动生成 labels
+        Consistent with HTMLRenderer._normalize_chart_block():
+        - Ensure props exists
+        - Merge top-level scales into props.options
+        - Ensure data exists
+        - Try to use chapter-level data as fallback
+        - Auto-generate labels
         """
         if not isinstance(block, dict):
             return
@@ -391,25 +391,25 @@ class ChartReviewService:
         if not (isinstance(widget_type, str) and widget_type.startswith("chart.js")):
             return
 
-        # 确保 props 存在
+        # Ensure props exists
         props = block.get("props")
         if not isinstance(props, dict):
             block["props"] = {}
             props = block["props"]
 
-        # 将顶层 scales 合并进 options，避免配置丢失
+        # Merge top-level scales into options to avoid configuration loss
         scales = block.get("scales")
         if isinstance(scales, dict):
             options = props.get("options") if isinstance(props.get("options"), dict) else {}
             props["options"] = self._merge_dicts(options, {"scales": scales})
 
-        # 确保 data 存在
+        # Ensure data exists
         data = block.get("data")
         if not isinstance(data, dict):
             data = {}
             block["data"] = data
 
-        # 如果 datasets 为空，尝试使用章节级 data 填充
+        # If datasets is empty, try to fill with chapter-level data
         if chapter_context and self._is_chart_data_empty(data):
             chapter_data = chapter_context.get("data") if isinstance(chapter_context, dict) else None
             if isinstance(chapter_data, dict):
@@ -423,7 +423,7 @@ class ChartReviewService:
 
                     block["data"] = merged_data
 
-        # 若仍缺少 labels 且数据点包含 x 值，自动生成便于 fallback 和坐标刻度
+        # If still missing labels and data points contain x values, auto-generate for fallback and axis scales
         data_ref = block.get("data")
         if isinstance(data_ref, dict) and not data_ref.get("labels"):
             datasets_ref = data_ref.get("datasets")
@@ -434,9 +434,9 @@ class ChartReviewService:
                     labels_from_data = []
                     for idx, point in enumerate(ds_data):
                         if isinstance(point, dict):
-                            label_text = point.get("x") or point.get("label") or f"点{idx + 1}"
+                            label_text = point.get("x") or point.get("label") or f"Point{idx + 1}"
                         else:
-                            label_text = f"点{idx + 1}"
+                            label_text = f"Point{idx + 1}"
                         labels_from_data.append(str(label_text))
 
                     if labels_from_data:
@@ -444,7 +444,7 @@ class ChartReviewService:
 
     @staticmethod
     def _is_chart_data_empty(data: Dict[str, Any] | None) -> bool:
-        """检查图表数据是否为空或缺少有效 datasets"""
+        """Check if chart data is empty or missing valid datasets"""
         if not isinstance(data, dict):
             return True
 
@@ -466,7 +466,8 @@ class ChartReviewService:
         base: Dict[str, Any] | None, override: Dict[str, Any] | None
     ) -> Dict[str, Any]:
         """
-        递归合并两个字典，override 覆盖 base，均为新副本，避免副作用。
+        Recursively merge two dictionaries, with override taking precedence over base.
+        Both are new copies to avoid side effects.
         """
         result = copy.deepcopy(base) if isinstance(base, dict) else {}
         if not isinstance(override, dict):
@@ -479,29 +480,29 @@ class ChartReviewService:
         return result
 
     def _format_error_reason(self, validation_result: ValidationResult | None) -> str:
-        """格式化错误原因"""
+        """Format error reason"""
         if not validation_result:
-            return "未知错误"
+            return "Unknown error"
         errors = validation_result.errors or []
         if not errors:
-            return "验证失败但无具体错误信息"
+            return "Validation failed but no specific error information"
         return "; ".join(errors[:3])
 
     def _log_stats(self, stats: ReviewStats) -> None:
-        """输出统计信息"""
+        """Output statistics"""
         if stats.total == 0:
-            logger.debug("ChartReviewService: 没有图表需要审查")
+            logger.debug("ChartReviewService: No charts to review")
             return
 
         logger.info(
-            f"ChartReviewService 图表审查完成: "
-            f"总计 {stats.total} 个, "
-            f"有效 {stats.valid} 个, "
-            f"修复 {stats.repaired_total} 个 (本地 {stats.repaired_locally}, API {stats.repaired_api}), "
-            f"失败 {stats.failed} 个"
+            f"ChartReviewService review completed: "
+            f"Total {stats.total}, "
+            f"Valid {stats.valid}, "
+            f"Repaired {stats.repaired_total} (Local {stats.repaired_locally}, API {stats.repaired_api}), "
+            f"Failed {stats.failed}"
         )
 
-    # 内部元数据键，不应保存到 IR 文件
+    # Internal metadata keys that should not be saved to IR files
     _INTERNAL_METADATA_KEYS = frozenset([
         "_chart_reviewed",
         "_chart_renderable",
@@ -512,36 +513,37 @@ class ChartReviewService:
 
     def _strip_internal_metadata(self, document_ir: Dict[str, Any]) -> Dict[str, Any]:
         """
-        移除文档中所有内部元数据键，返回干净的副本用于持久化。
+        Remove all internal metadata keys from the document, returning a clean copy for persistence.
 
-        这些内部标记仅用于渲染过程的状态跟踪，不应保存到 IR 文件中，
-        以避免污染文档结构和导致重复使用时的不一致行为。
+        These internal markers are only used for status tracking during rendering and should not be
+        saved to IR files to avoid polluting document structure and causing inconsistent behavior
+        on reuse.
         """
         cleaned = copy.deepcopy(document_ir)
 
         def strip_from_block(block: Dict[str, Any]) -> None:
-            """递归移除 block 及其嵌套结构中的内部元数据"""
+            """Recursively remove internal metadata from block and its nested structures"""
             if not isinstance(block, dict):
                 return
 
-            # 移除当前 block 的内部键
+            # Remove internal keys from current block
             for key in self._INTERNAL_METADATA_KEYS:
                 block.pop(key, None)
 
-            # 递归处理嵌套的 blocks
+            # Recursively process nested blocks
             nested_blocks = block.get("blocks")
             if isinstance(nested_blocks, list):
                 for nested in nested_blocks:
                     strip_from_block(nested)
 
-            # 处理 list 类型的 items
+            # Process list-type items
             if block.get("type") == "list":
                 for item in block.get("items", []):
                     if isinstance(item, list):
                         for sub_block in item:
                             strip_from_block(sub_block)
 
-            # 处理 table 类型的 cells
+            # Process table-type cells
             if block.get("type") == "table":
                 for row in block.get("rows", []):
                     if not isinstance(row, dict):
@@ -553,7 +555,7 @@ class ChartReviewService:
                                 for cell_block in cell_blocks:
                                     strip_from_block(cell_block)
 
-        # 处理所有章节
+        # Process all chapters
         for chapter in cleaned.get("chapters", []) or []:
             if not isinstance(chapter, dict):
                 continue
@@ -565,29 +567,29 @@ class ChartReviewService:
         return cleaned
 
     def _save_ir_to_file(self, document_ir: Dict[str, Any], file_path: str | Path) -> None:
-        """保存 IR 到文件（移除内部元数据后）"""
+        """Save IR to file (after removing internal metadata)"""
         try:
             path = Path(file_path)
             path.parent.mkdir(parents=True, exist_ok=True)
 
-            # 移除内部元数据键，保持 IR 文件干净
+            # Remove internal metadata keys to keep IR file clean
             cleaned_ir = self._strip_internal_metadata(document_ir)
 
             path.write_text(
                 json.dumps(cleaned_ir, ensure_ascii=False, indent=2),
                 encoding="utf-8"
             )
-            logger.info(f"ChartReviewService: 修复后的 IR 已保存到 {path}")
+            logger.info(f"ChartReviewService: Repaired IR saved to {path}")
         except Exception as e:
-            logger.exception(f"ChartReviewService: 保存 IR 文件失败: {e}")
+            logger.exception(f"ChartReviewService: Failed to save IR file: {e}")
 
 
-# 全局单例实例
+# Global singleton instance
 _chart_review_service: Optional[ChartReviewService] = None
 
 
 def get_chart_review_service() -> ChartReviewService:
-    """获取 ChartReviewService 单例实例"""
+    """Get ChartReviewService singleton instance"""
     global _chart_review_service
     if _chart_review_service is None:
         _chart_review_service = ChartReviewService()
@@ -602,16 +604,16 @@ def review_document_charts(
     save_on_repair: bool = True
 ) -> ReviewStats:
     """
-    便捷函数：审查并修复文档中的所有图表。
+    Convenience function: Review and repair all charts in the document.
 
-    参数:
-        document_ir: Document IR 数据
-        ir_file_path: IR 文件路径，如果提供且有修复，会自动保存
-        reset_stats: 保留参数以保持向后兼容，不再有实际作用
-        save_on_repair: 修复后是否自动保存到文件
+    Args:
+        document_ir: Document IR data
+        ir_file_path: IR file path; if provided and repairs are made, will auto-save
+        reset_stats: Reserved parameter for backward compatibility, no actual effect
+        save_on_repair: Whether to auto-save to file after repair
 
-    返回:
-        ReviewStats: 本次审查的统计信息
+    Returns:
+        ReviewStats: Statistics for this review
     """
     service = get_chart_review_service()
     return service.review_document(

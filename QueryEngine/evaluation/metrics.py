@@ -1,14 +1,14 @@
 """
-评估指标实现
+Evaluation metrics implementation
 
-参考：架构文档 v2.0 Part 3 § 12
+Reference: Architecture Doc v2.0 Part 3 § 12
 
-指标体系：
-  SCS  Stance Coverage Score    — 核心，衡量各立场是否被充分覆盖
-  SDI  Source Diversity Index   — Shannon 熵归一化，衡量来源平台分散度
-  SBS  Stance Balance Score     — 1 - Gini系数，衡量立场分布是否均衡
-  TSM  Trust Score Mean         — 平均可信度
-  E2E  End-to-End Latency       — 端到端延迟（调用方传入）
+Metrics System:
+  SCS  Stance Coverage Score    — Core metric, measures if all stances are adequately covered
+  SDI  Source Diversity Index   — Shannon entropy normalized, measures platform diversity
+  SBS  Stance Balance Score     — 1 - Gini coefficient, measures stance distribution balance
+  TSM  Trust Score Mean         — Average trust score
+  E2E  End-to-End Latency       — End-to-end latency (passed by caller)
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import math
 from collections import Counter
 from typing import Dict, List, Optional
 
-# Phase 2 目标阈值
+# Phase 2 target thresholds
 PHASE2_TARGETS = {
     "scs": 0.70,
     "sdi": 0.50,
@@ -26,7 +26,7 @@ PHASE2_TARGETS = {
     "e2e": 180.0,
 }
 
-# 立场覆盖度计算用的最低阈值（与 coverage_check.py 保持一致）
+# Minimum thresholds for stance coverage calculation (consistent with coverage_check.py)
 _STANCE_THRESHOLDS: Dict[str, int] = {
     "support":  2,
     "oppose":   2,
@@ -41,11 +41,11 @@ _STANCE_THRESHOLDS: Dict[str, int] = {
 
 def stance_coverage_score(output: dict) -> float:
     """
-    立场覆盖度评分（0–1）。
+    Stance coverage score (0–1).
 
     SCS = (1/K) × Σ min(count(stance_k) / threshold_k, 1.0)
 
-    目标：≥ 0.70（Phase 2），≥ 0.75（Phase 3）
+    Target: ≥ 0.70 (Phase 2), ≥ 0.75 (Phase 3)
     """
     sources: List[dict] = output.get("sources") or []
     stance_counts = Counter(
@@ -71,11 +71,11 @@ def stance_coverage_score(output: dict) -> float:
 
 def source_diversity_index(output: dict) -> float:
     """
-    来源多样性指数（0–1），基于归一化 Shannon 熵。
+    Source diversity index (0–1), based on normalized Shannon entropy.
 
     SDI = H(platforms) / log2(|unique_platforms|)
 
-    目标：≥ 0.50（Phase 2）
+    Target: ≥ 0.50 (Phase 2)
     """
     sources: List[dict] = output.get("sources") or []
     if not sources:
@@ -103,14 +103,14 @@ def source_diversity_index(output: dict) -> float:
 
 def stance_balance_score(output: dict) -> float:
     """
-    立场均衡度（0–1），基于 1 - Gini 系数。
+    Stance balance score (0–1), based on 1 - Gini coefficient.
 
-    完全均衡 → SBS = 1.0；完全偏向一个立场 → SBS → 0。
+    Perfect balance → SBS = 1.0; Skewed to one stance → SBS → 0.
 
-    目标：≥ 0.50（Phase 2）
+    Target: ≥ 0.50 (Phase 2)
     """
     dist: Dict[str, float] = output.get("stance_distribution") or {}
-    # 过滤掉 unclassified
+    # Filter out unclassified
     values = [v for k, v in dist.items() if k != "unclassified"]
 
     if not values or len(values) <= 1:
@@ -132,9 +132,9 @@ def stance_balance_score(output: dict) -> float:
 
 def trust_score_mean(output: dict) -> float:
     """
-    平均可信度（0–1）。
+    Average trust score (0–1).
 
-    目标：≥ 0.50（Phase 2）
+    Target: ≥ 0.50 (Phase 2)
     """
     sources: List[dict] = output.get("sources") or []
     if not sources:
@@ -145,7 +145,7 @@ def trust_score_mean(output: dict) -> float:
 
 
 # ---------------------------------------------------------------------------
-# 综合计算
+# Comprehensive Calculation
 # ---------------------------------------------------------------------------
 
 def compute_all_metrics(
@@ -153,14 +153,14 @@ def compute_all_metrics(
     elapsed_seconds: Optional[float] = None,
 ) -> Dict[str, float]:
     """
-    一次性计算所有评估指标。
+    Compute all evaluation metrics at once.
 
     Args:
-        output:          QueryAgentOutput 字典
-        elapsed_seconds: 端到端耗时（秒），None 表示未测量
+        output:          QueryAgentOutput dictionary
+        elapsed_seconds: End-to-end elapsed time (seconds), None if not measured
 
     Returns:
-        包含 scs/sdi/sbs/tsm/e2e 的字典
+        Dictionary containing scs/sdi/sbs/tsm/e2e
     """
     return {
         "scs": stance_coverage_score(output),
@@ -176,7 +176,7 @@ def compute_all_metrics(
 
 def check_phase2_pass(metrics: Dict[str, float]) -> bool:
     """
-    检查是否通过 Phase 2 验收标准：
+    Check if Phase 2 acceptance criteria are met:
       SCS ≥ 0.70, SDI ≥ 0.50, E2E < 180s
     """
     e2e = metrics.get("e2e", -1.0)
@@ -188,7 +188,7 @@ def check_phase2_pass(metrics: Dict[str, float]) -> bool:
 
 
 def format_metrics_report(query: str, metrics: Dict[str, float]) -> str:
-    """格式化输出单条查询的评估结果。"""
+    """Format evaluation results for a single query."""
     passed = check_phase2_pass(metrics)
     status = "✅ PASS" if passed else "❌ FAIL"
 

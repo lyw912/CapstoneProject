@@ -1,5 +1,5 @@
 """
-Query Agent LangGraph 子图包
+Query Agent LangGraph Subgraph Package
 """
 
 from .builder import build_query_agent_graph

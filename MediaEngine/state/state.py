@@ -1,6 +1,6 @@
 """
-Deep Search Agent状态管理
-定义所有状态数据结构和操作方法
+Deep Search Agent state management
+Defines all state data structures and operations
 """
 
 from dataclasses import dataclass, field
@@ -11,19 +11,19 @@ from datetime import datetime
 
 @dataclass
 class Search:
-    """单个搜索结果的状态"""
-    query: str = ""                    # 搜索查询
-    url: str = ""                      # 搜索结果的链接
-    title: str = ""                    # 搜索结果标题
-    content: str = ""                  # 搜索返回的内容
-    score: Optional[float] = None      # 相关度评分
-    paragraph_title: str = ""          # 段落标题，便于展示归属
-    search_tool: str = ""              # 使用的搜索工具
-    has_result: bool = True            # 是否有返回结果
+    """Status of a single search result"""
+    query: str = ""                    # Search query
+    url: str = ""                      # URL of search result
+    title: str = ""                    # Title of search result
+    content: str = ""                  # Content returned from search
+    score: Optional[float] = None      # Relevance score
+    paragraph_title: str = ""          # Paragraph title for display归属
+    search_tool: str = ""              # Search tool used
+    has_result: bool = True            # Whether result is returned
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典格式"""
+        """Convert to dictionary format"""
         return {
             "query": self.query,
             "url": self.url,
@@ -38,7 +38,7 @@ class Search:
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Search":
-        """从字典创建Search对象"""
+        """Create Search object from dictionary"""
         return cls(
             query=data.get("query", ""),
             url=data.get("url", ""),
@@ -102,19 +102,19 @@ class Research:
             )
     
     def get_search_count(self) -> int:
-        """获取搜索次数"""
+        """Get search count"""
         return len(self.search_history)
     
     def increment_reflection(self):
-        """增加反思次数"""
+        """Increment reflection count"""
         self.reflection_iteration += 1
     
     def mark_completed(self):
-        """标记为完成"""
+        """Mark as completed"""
         self.is_completed = True
     
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典格式"""
+        """Convert to dictionary format"""
         return {
             "search_history": [search.to_dict() for search in self.search_history],
             "latest_summary": self.latest_summary,
@@ -124,7 +124,7 @@ class Research:
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Research":
-        """从字典创建Research对象"""
+        """Create Research object from dictionary"""
         search_history = [Search.from_dict(search_data) for search_data in data.get("search_history", [])]
         return cls(
             search_history=search_history,
@@ -136,22 +136,22 @@ class Research:
 
 @dataclass
 class Paragraph:
-    """报告中单个段落的状态"""
-    title: str = ""                                                # 段落标题
-    content: str = ""                                              # 段落的预期内容（初始规划）
-    research: Research = field(default_factory=Research)          # 研究进度
-    order: int = 0                                                 # 段落顺序
+    """Status of a single paragraph in the report"""
+    title: str = ""                                                # Paragraph title
+    content: str = ""                                              # Expected paragraph content (initial planning)
+    research: Research = field(default_factory=Research)          # Research progress
+    order: int = 0                                                 # Paragraph order
     
     def is_completed(self) -> bool:
-        """检查段落是否完成"""
+        """Check if paragraph is completed"""
         return self.research.is_completed and bool(self.research.latest_summary)
     
     def get_final_content(self) -> str:
-        """获取最终内容"""
+        """Get final content"""
         return self.research.latest_summary or self.content
     
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典格式"""
+        """Convert to dictionary format"""
         return {
             "title": self.title,
             "content": self.content,
@@ -161,7 +161,7 @@ class Paragraph:
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Paragraph":
-        """从字典创建Paragraph对象"""
+        """Create Paragraph object from dictionary"""
         research_data = data.get("research", {})
         research = Research.from_dict(research_data) if research_data else Research()
         
@@ -175,25 +175,25 @@ class Paragraph:
 
 @dataclass
 class State:
-    """整个报告的状态"""
-    query: str = ""                                                # 原始查询
-    report_title: str = ""                                         # 报告标题
-    paragraphs: List[Paragraph] = field(default_factory=list)     # 段落列表
-    final_report: str = ""                                         # 最终报告内容
-    is_completed: bool = False                                     # 是否完成
+    """Status of the entire report"""
+    query: str = ""                                                # Original query
+    report_title: str = ""                                         # Report title
+    paragraphs: List[Paragraph] = field(default_factory=list)     # List of paragraphs
+    final_report: str = ""                                         # Final report content
+    is_completed: bool = False                                     # Whether completed
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
     
     def add_paragraph(self, title: str, content: str) -> int:
         """
-        添加段落
+        Add paragraph
         
         Args:
-            title: 段落标题
-            content: 段落内容
+            title: Paragraph title
+            content: Paragraph content
             
         Returns:
-            段落索引
+            Paragraph index
         """
         order = len(self.paragraphs)
         paragraph = Paragraph(title=title, content=content, order=order)
@@ -202,34 +202,34 @@ class State:
         return order
     
     def get_paragraph(self, index: int) -> Optional[Paragraph]:
-        """获取指定索引的段落"""
+        """Get paragraph at specified index"""
         if 0 <= index < len(self.paragraphs):
             return self.paragraphs[index]
         return None
     
     def get_completed_paragraphs_count(self) -> int:
-        """获取已完成段落数量"""
+        """Get count of completed paragraphs"""
         return sum(1 for p in self.paragraphs if p.is_completed())
     
     def get_total_paragraphs_count(self) -> int:
-        """获取总段落数量"""
+        """Get total paragraph count"""
         return len(self.paragraphs)
     
     def is_all_paragraphs_completed(self) -> bool:
-        """检查是否所有段落都完成"""
+        """Check if all paragraphs are completed"""
         return all(p.is_completed() for p in self.paragraphs) if self.paragraphs else False
     
     def mark_completed(self):
-        """标记整个报告为完成"""
+        """Mark entire report as completed"""
         self.is_completed = True
         self.update_timestamp()
     
     def update_timestamp(self):
-        """更新时间戳"""
+        """Update timestamp"""
         self.updated_at = datetime.now().isoformat()
     
     def get_progress_summary(self) -> Dict[str, Any]:
-        """获取进度摘要"""
+        """Get progress summary"""
         completed = self.get_completed_paragraphs_count()
         total = self.get_total_paragraphs_count()
         
@@ -243,7 +243,7 @@ class State:
         }
     
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典格式"""
+        """Convert to dictionary format"""
         return {
             "query": self.query,
             "report_title": self.report_title,
@@ -255,12 +255,12 @@ class State:
         }
     
     def to_json(self, indent: int = 2) -> str:
-        """转换为JSON字符串"""
+        """Convert to JSON string"""
         return json.dumps(self.to_dict(), indent=indent, ensure_ascii=False)
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "State":
-        """从字典创建State对象"""
+        """Create State object from dictionary"""
         paragraphs = [Paragraph.from_dict(p_data) for p_data in data.get("paragraphs", [])]
         
         return cls(
@@ -275,18 +275,18 @@ class State:
     
     @classmethod
     def from_json(cls, json_str: str) -> "State":
-        """从JSON字符串创建State对象"""
+        """Create State object from JSON string"""
         data = json.loads(json_str)
         return cls.from_dict(data)
     
     def save_to_file(self, filepath: str):
-        """保存状态到文件"""
+        """Save state to file"""
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(self.to_json())
     
     @classmethod
     def load_from_file(cls, filepath: str) -> "State":
-        """从文件加载状态"""
+        """Load state from file"""
         with open(filepath, 'r', encoding='utf-8') as f:
             json_str = f.read()
         return cls.from_json(json_str)

@@ -1,7 +1,7 @@
 """
-Report Engine渲染器集合。
+Report Engine Renderer Collection.
 
-提供 HTMLRenderer 和 PDFRenderer，支持HTML和PDF输出。
+Provides HTMLRenderer and PDFRenderer for HTML and PDF output.
 """
 
 from .html_renderer import HTMLRenderer

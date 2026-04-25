@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-微舆配置文件
+Micro-Sentiment Configuration File
 
-此模块使用 pydantic-settings 管理全局配置，支持从环境变量和 .env 文件自动加载。
-数据模型定义位置：
-- 本文件 - 配置模型定义
+This module uses pydantic-settings to manage global configuration, supporting automatic loading from environment variables and .env files.
+Data model definition locations:
+- This file - Configuration model definitions
 """
 
 from pathlib import Path
@@ -14,7 +14,7 @@ from typing import Optional, Literal
 from loguru import logger
 
 
-# 计算 .env 优先级：优先当前工作目录，其次项目根目录
+# Calculate .env priority: prefer current working directory, then project root directory
 PROJECT_ROOT: Path = Path(__file__).resolve().parent
 CWD_ENV: Path = Path.cwd() / ".env"
 ENV_FILE: str = str(CWD_ENV if CWD_ENV.exists() else (PROJECT_ROOT / ".env"))
@@ -22,87 +22,91 @@ ENV_FILE: str = str(CWD_ENV if CWD_ENV.exists() else (PROJECT_ROOT / ".env"))
 
 class Settings(BaseSettings):
     """
-    全局配置；支持 .env 和环境变量自动加载。
-    变量名与原 config.py 大写一致，便于平滑过渡。
+    Global configuration; supports automatic loading from .env and environment variables.
+    Variable names are uppercase, consistent with the original config.py for smooth transition.
     """
-    # ================== Flask 服务器配置 ====================
-    HOST: str = Field("0.0.0.0", description="BETTAFISH 主机地址，例如 0.0.0.0 或 127.0.0.1")
-    PORT: int = Field(5000, description="Flask服务器端口号，默认5000")
-    OUTPUT_DIR: Path = Field(Path("output"), description="输出文件目录")
+    # ================== Flask Server Configuration ====================
+    HOST: str = Field("0.0.0.0", description="Flask server host address, e.g., 0.0.0.0 or 127.0.0.1")
+    PORT: int = Field(5000, description="Flask server port number, default 5000")
+    OUTPUT_DIR: Path = Field(Path("output"), description="Output file directory")
+    SAVE_INTERMEDIATE_STATES: bool = Field(
+        False,
+        description="Whether to write intermediate state JSON when saving research reports (MediaEngine / QueryEngine)",
+    )
 
-    # ====================== 数据库配置 ======================
-    DB_DIALECT: str = Field("postgresql", description="数据库类型，可选 mysql 或 postgresql；请与其他连接信息同时配置")
-    DB_HOST: str = Field("your_db_host", description="数据库主机，例如localhost 或 127.0.0.1")
-    DB_PORT: int = Field(3306, description="数据库端口号，默认为3306")
-    DB_USER: str = Field("your_db_user", description="数据库用户名")
-    DB_PASSWORD: str = Field("your_db_password", description="数据库密码")
-    DB_NAME: str = Field("your_db_name", description="数据库名称")
-    DB_CHARSET: str = Field("utf8mb4", description="数据库字符集，推荐utf8mb4，兼容emoji")
+    # ====================== Database Configuration ======================
+    DB_DIALECT: str = Field("postgresql", description="Database type, optional mysql or postgresql; please configure with other connection information")
+    DB_HOST: str = Field("your_db_host", description="Database host, e.g., localhost or 127.0.0.1")
+    DB_PORT: int = Field(3306, description="Database port number, default 3306")
+    DB_USER: str = Field("your_db_user", description="Database username")
+    DB_PASSWORD: str = Field("your_db_password", description="Database password")
+    DB_NAME: str = Field("your_db_name", description="Database name")
+    DB_CHARSET: str = Field("utf8mb4", description="Database charset, recommended utf8mb4, compatible with emoji")
     
-    # ======================= LLM 相关 =======================
-    # 我们的LLM模型API赞助商有：https://aihubmix.com/?aff=8Ds9，提供了非常全面的模型api
+    # ======================= LLM Related =======================
+    # Our LLM model API sponsor: https://aihubmix.com/?aff=8Ds9, provides a very comprehensive model API
     
-    # Insight Agent（推荐Kimi，申请地址：https://platform.moonshot.cn/）
-    INSIGHT_ENGINE_API_KEY: Optional[str] = Field(None, description="Insight Agent（推荐 kimi-k2，官方申请地址：https://platform.moonshot.cn/）API 密钥，用于主 LLM。🚩请先按推荐配置申请并跑通，再根据需要调整 KEY、BASE_URL 与 MODEL_NAME。")
-    INSIGHT_ENGINE_BASE_URL: Optional[str] = Field("https://api.moonshot.cn/v1", description="Insight Agent LLM BaseUrl，可根据厂商自定义")
-    INSIGHT_ENGINE_MODEL_NAME: str = Field("kimi-k2-0711-preview", description="Insight Agent LLM 模型名称，例如 kimi-k2-0711-preview")
+    # Insight Agent (recommended Kimi, application address: https://platform.moonshot.cn/)
+    INSIGHT_ENGINE_API_KEY: Optional[str] = Field(None, description="Insight Agent (recommended kimi-k2, official application address: https://platform.moonshot.cn/) API key, used for main LLM. 🚩Please apply according to recommended configuration and get it running first, then adjust KEY, BASE_URL, and MODEL_NAME as needed.")
+    INSIGHT_ENGINE_BASE_URL: Optional[str] = Field("https://api.moonshot.cn/v1", description="Insight Agent LLM BaseUrl, can be customized according to vendor")
+    INSIGHT_ENGINE_MODEL_NAME: str = Field("kimi-k2-0711-preview", description="Insight Agent LLM model name, e.g., kimi-k2-0711-preview")
     
-    # Media Agent（推荐Gemini，推荐中转厂商：https://aihubmix.com/?aff=8Ds9）
-    MEDIA_ENGINE_API_KEY: Optional[str] = Field(None, description="Media Agent（推荐 gemini-2.5-pro，中转厂商申请地址：https://aihubmix.com/?aff=8Ds9）API 密钥")
-    MEDIA_ENGINE_BASE_URL: Optional[str] = Field("https://aihubmix.com/v1", description="Media Agent LLM BaseUrl，可根据中转服务调整")
-    MEDIA_ENGINE_MODEL_NAME: str = Field("gemini-2.5-pro", description="Media Agent LLM 模型名称，如 gemini-2.5-pro")
+    # Media Agent (recommended Gemini, recommended relay vendor: https://aihubmix.com/?aff=8Ds9)
+    MEDIA_ENGINE_API_KEY: Optional[str] = Field(None, description="Media Agent (recommended gemini-2.5-pro, relay vendor application address: https://aihubmix.com/?aff=8Ds9) API key")
+    MEDIA_ENGINE_BASE_URL: Optional[str] = Field("https://aihubmix.com/v1", description="Media Agent LLM BaseUrl, can be adjusted according to relay service")
+    MEDIA_ENGINE_MODEL_NAME: str = Field("gemini-2.5-pro", description="Media Agent LLM model name, e.g., gemini-2.5-pro")
     
-    # Query Agent（推荐DeepSeek，申请地址：https://www.deepseek.com/）
-    QUERY_ENGINE_API_KEY: Optional[str] = Field(None, description="Query Agent（推荐 deepseek，官方申请地址：https://platform.deepseek.com/）API 密钥")
+    # Query Agent (recommended DeepSeek, application address: https://www.deepseek.com/)
+    QUERY_ENGINE_API_KEY: Optional[str] = Field(None, description="Query Agent (recommended deepseek, official application address: https://platform.deepseek.com/) API key")
     QUERY_ENGINE_BASE_URL: Optional[str] = Field("https://api.deepseek.com", description="Query Agent LLM BaseUrl")
-    QUERY_ENGINE_MODEL_NAME: str = Field("deepseek-chat", description="Query Agent LLM 模型名称，如 deepseek-reasoner")
+    QUERY_ENGINE_MODEL_NAME: str = Field("deepseek-chat", description="Query Agent LLM model name, e.g., deepseek-reasoner")
     
-    # Report Agent（推荐Gemini，推荐中转厂商：https://aihubmix.com/?aff=8Ds9）
-    REPORT_ENGINE_API_KEY: Optional[str] = Field(None, description="Report Agent（推荐 gemini-2.5-pro，中转厂商申请地址：https://aihubmix.com/?aff=8Ds9）API 密钥")
-    REPORT_ENGINE_BASE_URL: Optional[str] = Field("https://aihubmix.com/v1", description="Report Agent LLM BaseUrl，可根据中转服务调整")
-    REPORT_ENGINE_MODEL_NAME: str = Field("gemini-2.5-pro", description="Report Agent LLM 模型名称，如 gemini-2.5-pro")
+    # Report Agent (recommended Gemini, recommended relay vendor: https://aihubmix.com/?aff=8Ds9)
+    REPORT_ENGINE_API_KEY: Optional[str] = Field(None, description="Report Agent (recommended gemini-2.5-pro, relay vendor application address: https://aihubmix.com/?aff=8Ds9) API key")
+    REPORT_ENGINE_BASE_URL: Optional[str] = Field("https://aihubmix.com/v1", description="Report Agent LLM BaseUrl, can be adjusted according to relay service")
+    REPORT_ENGINE_MODEL_NAME: str = Field("gemini-2.5-pro", description="Report Agent LLM model name, e.g., gemini-2.5-pro")
 
-    # MindSpider Agent（推荐Deepseek，官方申请地址：https://platform.deepseek.com/）
-    MINDSPIDER_API_KEY: Optional[str] = Field(None, description="MindSpider Agent（推荐 deepseek，官方申请地址：https://platform.deepseek.com/）API 密钥")
-    MINDSPIDER_BASE_URL: Optional[str] = Field(None, description="MindSpider Agent BaseUrl，可按所选服务配置")
-    MINDSPIDER_MODEL_NAME: Optional[str] = Field(None, description="MindSpider Agent 模型名称，例如 deepseek-reasoner")
+    # MindSpider Agent (recommended Deepseek, official application address: https://platform.deepseek.com/)
+    MINDSPIDER_API_KEY: Optional[str] = Field(None, description="MindSpider Agent (recommended deepseek, official application address: https://platform.deepseek.com/) API key")
+    MINDSPIDER_BASE_URL: Optional[str] = Field(None, description="MindSpider Agent BaseUrl, can be configured according to selected service")
+    MINDSPIDER_MODEL_NAME: Optional[str] = Field(None, description="MindSpider Agent model name, e.g., deepseek-reasoner")
     
-    # Forum Host（Qwen3最新模型，这里我使用了硅基流动这个平台，申请地址：https://cloud.siliconflow.cn/）
-    FORUM_HOST_API_KEY: Optional[str] = Field(None, description="Forum Host（推荐 qwen-plus，官方申请地址：https://www.aliyun.com/product/bailian）API 密钥")
-    FORUM_HOST_BASE_URL: Optional[str] = Field(None, description="Forum Host LLM BaseUrl，可按所选服务配置")
-    FORUM_HOST_MODEL_NAME: Optional[str] = Field(None, description="Forum Host LLM 模型名称，例如 qwen-plus")
+    # Forum Host (Qwen3 latest model, using Silicon Flow platform here, application address: https://cloud.siliconflow.cn/)
+    FORUM_HOST_API_KEY: Optional[str] = Field(None, description="Forum Host (recommended qwen-plus, official application address: https://www.aliyun.com/product/bailian) API key")
+    FORUM_HOST_BASE_URL: Optional[str] = Field(None, description="Forum Host LLM BaseUrl, can be configured according to selected service")
+    FORUM_HOST_MODEL_NAME: Optional[str] = Field(None, description="Forum Host LLM model name, e.g., qwen-plus")
     
-    # SQL keyword Optimizer（小参数Qwen3模型，这里我使用了硅基流动这个平台，申请地址：https://cloud.siliconflow.cn/）
-    KEYWORD_OPTIMIZER_API_KEY: Optional[str] = Field(None, description="SQL Keyword Optimizer（推荐 qwen-plus，官方申请地址：https://www.aliyun.com/product/bailian）API 密钥")
-    KEYWORD_OPTIMIZER_BASE_URL: Optional[str] = Field(None, description="Keyword Optimizer BaseUrl，可按所选服务配置")
-    KEYWORD_OPTIMIZER_MODEL_NAME: Optional[str] = Field(None, description="Keyword Optimizer LLM 模型名称，例如 qwen-plus")
+    # SQL Keyword Optimizer (small parameter Qwen3 model, using Silicon Flow platform here, application address: https://cloud.siliconflow.cn/)
+    KEYWORD_OPTIMIZER_API_KEY: Optional[str] = Field(None, description="SQL Keyword Optimizer (recommended qwen-plus, official application address: https://www.aliyun.com/product/bailian) API key")
+    KEYWORD_OPTIMIZER_BASE_URL: Optional[str] = Field(None, description="Keyword Optimizer BaseUrl, can be configured according to selected service")
+    KEYWORD_OPTIMIZER_MODEL_NAME: Optional[str] = Field(None, description="Keyword Optimizer LLM model name, e.g., qwen-plus")
     
-    # ================== 网络工具配置 ====================
-    # Tavily API（申请地址：https://www.tavily.com/）
-    TAVILY_API_KEY: Optional[str] = Field(None, description="Tavily API（申请地址：https://www.tavily.com/）API密钥，用于Tavily网络搜索")
+    # ================== Network Tool Configuration ====================
+    # Tavily API (application address: https://www.tavily.com/)
+    TAVILY_API_KEY: Optional[str] = Field(None, description="Tavily API (application address: https://www.tavily.com/) API key, used for Tavily web search")
 
-    SEARCH_TOOL_TYPE: Literal["AnspireAPI", "BochaAPI"] = Field("AnspireAPI", description="网络搜索工具类型，支持BochaAPI或AnspireAPI两种，默认为AnspireAPI")
-    # Bocha API（申请地址：https://open.bochaai.com/）
-    BOCHA_BASE_URL: Optional[str] = Field("https://api.bocha.cn/v1/ai-search", description="Bocha AI 搜索BaseUrl或博查网页搜索BaseUrl")
-    BOCHA_WEB_SEARCH_API_KEY: Optional[str] = Field(None, description="Bocha API（申请地址：https://open.bochaai.com/）API密钥，用于Bocha搜索")
+    SEARCH_TOOL_TYPE: Literal["AnspireAPI", "BochaAPI"] = Field("AnspireAPI", description="Network search tool type, supports BochaAPI or AnspireAPI, default is AnspireAPI")
+    # Bocha API (application address: https://open.bochaai.com/)
+    BOCHA_BASE_URL: Optional[str] = Field("https://api.bocha.cn/v1/ai-search", description="Bocha AI Search BaseUrl or Bocha Web Search BaseUrl")
+    BOCHA_WEB_SEARCH_API_KEY: Optional[str] = Field(None, description="Bocha API (application address: https://open.bochaai.com/) API key, used for Bocha search")
 
-    # Anspire AI Search API（申请地址：https://open.anspire.cn/?share_code=3E1FUOUH）
-    ANSPIRE_BASE_URL: Optional[str] = Field("https://plugin.anspire.cn/api/ntsearch/search", description="Anspire AI 搜索BaseUrl")
-    ANSPIRE_API_KEY: Optional[str] = Field(None, description="Anspire AI Search API（申请地址：https://open.anspire.cn/?share_code=3E1FUOUH）API密钥，用于Anspire搜索")
+    # Anspire AI Search API (application address: https://open.anspire.cn/?share_code=3E1FUOUH)
+    ANSPIRE_BASE_URL: Optional[str] = Field("https://plugin.anspire.cn/api/ntsearch/search", description="Anspire AI Search BaseUrl")
+    ANSPIRE_API_KEY: Optional[str] = Field(None, description="Anspire AI Search API (application address: https://open.anspire.cn/?share_code=3E1FUOUH) API key, used for Anspire search")
 
     
-    # ================== Insight Engine 搜索配置 ====================
-    DEFAULT_SEARCH_HOT_CONTENT_LIMIT: int = Field(100, description="热榜内容默认最大数")
-    DEFAULT_SEARCH_TOPIC_GLOBALLY_LIMIT_PER_TABLE: int = Field(50, description="按表全局话题最大数")
-    DEFAULT_SEARCH_TOPIC_BY_DATE_LIMIT_PER_TABLE: int = Field(100, description="按日期话题最大数")
-    DEFAULT_GET_COMMENTS_FOR_TOPIC_LIMIT: int = Field(500, description="单话题评论最大数")
-    DEFAULT_SEARCH_TOPIC_ON_PLATFORM_LIMIT: int = Field(200, description="平台搜索话题最大数")
-    MAX_SEARCH_RESULTS_FOR_LLM: int = Field(0, description="供LLM用搜索结果最大数")
-    MAX_HIGH_CONFIDENCE_SENTIMENT_RESULTS: int = Field(0, description="高置信度情感分析最大数")
-    MAX_REFLECTIONS: int = Field(3, description="最大反思次数")
-    MAX_PARAGRAPHS: int = Field(6, description="最大段落数")
-    SEARCH_TIMEOUT: int = Field(240, description="单次搜索请求超时")
-    MAX_CONTENT_LENGTH: int = Field(500000, description="搜索最大内容长度")
+    # ================== Insight Engine Search Configuration ====================
+    DEFAULT_SEARCH_HOT_CONTENT_LIMIT: int = Field(100, description="Default maximum number of hot list content")
+    DEFAULT_SEARCH_TOPIC_GLOBALLY_LIMIT_PER_TABLE: int = Field(50, description="Maximum number of global topics per table")
+    DEFAULT_SEARCH_TOPIC_BY_DATE_LIMIT_PER_TABLE: int = Field(100, description="Maximum number of topics by date per table")
+    DEFAULT_GET_COMMENTS_FOR_TOPIC_LIMIT: int = Field(500, description="Maximum number of comments per topic")
+    DEFAULT_SEARCH_TOPIC_ON_PLATFORM_LIMIT: int = Field(200, description="Maximum number of topics for platform search")
+    MAX_SEARCH_RESULTS_FOR_LLM: int = Field(0, description="Maximum number of search results for LLM")
+    MAX_HIGH_CONFIDENCE_SENTIMENT_RESULTS: int = Field(0, description="Maximum number of high confidence sentiment analysis results")
+    MAX_REFLECTIONS: int = Field(3, description="Maximum number of reflection iterations")
+    MAX_PARAGRAPHS: int = Field(6, description="Maximum number of paragraphs")
+    SEARCH_TIMEOUT: int = Field(240, description="Single search request timeout")
+    MAX_CONTENT_LENGTH: int = Field(500000, description="Maximum content length for search")
     
     model_config = ConfigDict(
         env_file=ENV_FILE,
@@ -112,19 +116,19 @@ class Settings(BaseSettings):
     )
 
 
-# 创建全局配置实例
+# Create global configuration instance
 settings = Settings()
 
 
 def reload_settings() -> Settings:
     """
-    重新加载配置
+    Reload configuration
     
-    从 .env 文件和环境变量重新加载配置，更新全局 settings 实例。
-    用于在运行时动态更新配置。
+    Reload configuration from .env file and environment variables, updating the global settings instance.
+    Used for dynamically updating configuration at runtime.
     
     Returns:
-        Settings: 新创建的配置实例
+        Settings: Newly created configuration instance
     """
     
     global settings

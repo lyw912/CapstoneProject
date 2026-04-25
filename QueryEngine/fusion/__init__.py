@@ -1,8 +1,8 @@
 """
-QueryEngine fusion 模块
+QueryEngine fusion module
 
-- rrf_fuse:      Reciprocal Rank Fusion 多源结果融合（SIGIR 2009）
-- minhash_dedup: MinHash LSH 内容去重（datasketch）
+- rrf_fuse:      Reciprocal Rank Fusion multi-source result fusion (SIGIR 2009)
+- minhash_dedup: MinHash LSH content deduplication (datasketch)
 """
 
 from .rrf import rrf_fuse

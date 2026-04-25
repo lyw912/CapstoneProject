@@ -1,20 +1,13 @@
 <div align="center">
 
-<img src="static/image/logo_compressed.png" alt="BettaFish Logo" width="100%">
+<img src="static/image/logo_compressed.png" alt="Public Opinion Analysis System" width="100%">
 
-<a href="https://trendshift.io/repositories/15286" target="_blank"><img src="https://trendshift.io/api/badge/repositories/15286" alt="666ghj%2FBettaFish | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 
-<a href="https://aihubmix.com/?aff=8Ds9" target="_blank"><img src="./static/image/logo_aihubmix.png" alt="666ghj%2FBettaFish | Trendshift" height="40"/></a>&ensp;
-<a href="https://open.anspire.cn/?share_code=3E1FUOUH" target="_blank"><img src="./static/image/logo_anspire.png" alt="666ghj%2FBettaFish | Trendshift" height="40"/></a>
+<a href="https://aihubmix.com/?aff=8Ds9" target="_blank"><img src="./static/image/logo_aihubmix.png" alt="AI API Service" height="40"/></a>&ensp;
+<a href="https://open.anspire.cn/?share_code=3E1FUOUH" target="_blank"><img src="./static/image/logo_anspire.png" alt="Agent Capabilities Provider" height="40"/></a>
 
-[![GitHub Stars](https://img.shields.io/github/stars/666ghj/BettaFish?style=flat-square)](https://github.com/666ghj/BettaFish/stargazers)
-[![GitHub Watchers](https://img.shields.io/github/watchers/666ghj/BettaFish?style=flat-square)](https://github.com/666ghj/BettaFish/watchers)
-[![GitHub Forks](https://img.shields.io/github/forks/666ghj/BettaFish?style=flat-square)](https://github.com/666ghj/BettaFish/network)
-[![GitHub Issues](https://img.shields.io/github/issues/666ghj/BettaFish?style=flat-square)](https://github.com/666ghj/BettaFish/issues)
-[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/666ghj/BettaFish?style=flat-square)](https://github.com/666ghj/BettaFish/pulls)
 
-[![GitHub License](https://img.shields.io/github/license/666ghj/BettaFish?style=flat-square)](https://github.com/666ghj/BettaFish/blob/main/LICENSE)
-[![Version](https://img.shields.io/badge/version-v1.2.1-green.svg?style=flat-square)](https://github.com/666ghj/BettaFish)
+[![Version](https://img.shields.io/badge/version-v1.2.1-green.svg?style=flat-square)]()
 [![Docker](https://img.shields.io/badge/Docker-Build-2496ED?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/)
 
 
@@ -22,18 +15,11 @@
 
 </div>
 
-> [!IMPORTANT]  
-> Check out our newly released prediction engine: [MiroFish - A Simple and Universal Swarm Intelligence Engine for Predicting Everything](https://github.com/666ghj/MiroFish)
-> 
-> <img src="static/image/MiroFish_logo_compressed.jpeg" alt="banner" width="300">
->
-> The "Data Analysis Three-Step Approach" is now fully connected: We are excited to announce the official release of MiroFish! With the final piece of the puzzle in place, we have built a complete pipeline from BettaFish (data collection and analysis) to MiroFish (panoramic prediction). The closed loop from raw data to intelligent decision-making is now complete, making it possible to foresee the future!
 
 ## ⚡ Project Overview
 
-**"BettaFish"** is an innovative multi-agent public opinion analysis system built from scratch. It helps break information cocoons, restore the original public sentiment, predict future trends, and assist decision-making. Users only need to raise analysis needs like chatting; the agents automatically analyze 30+ mainstream social platforms at home and abroad and millions of public comments.
+This project is an innovative multi-agent public opinion analysis system built from scratch. It helps break information cocoons, restore the original public sentiment, predict future trends, and assist decision-making. Users only need to raise analysis needs like chatting; the agents automatically analyze 30+ mainstream social platforms at home and abroad and millions of public comments.
 
-> Betta is a small yet combative and beautiful fish, symbolizing "small but powerful, fearless of challenges".
 
 See the system-generated research report on "Wuhan University Public Opinion": [In-depth Analysis Report on Wuhan University's Brand Reputation](./final_reports/final_report__20250827_131630.html)
 
@@ -53,26 +39,24 @@ Beyond just report quality, compared to similar products, we have 🚀 six major
 
 6. **Lightweight and Highly Extensible Framework**: Based on pure Python modular design, achieving lightweight, one-click deployment. Clear code structure allows developers to easily integrate custom models and business logic, enabling rapid platform expansion and deep customization.
 
-**Starting with public opinion, but not limited to public opinion**. The goal of "WeiYu" is to become a simple and universal data analysis engine that drives all business scenarios.
+**Starting with public opinion, but not limited to public opinion**. The goal of this system is to become a simple and universal data analysis engine that drives all business scenarios.
 
 > For example, you only need to simply modify the API parameters and prompts of the Agent toolset to transform it into a financial market analysis system.
 >
 > Here's a relatively active Linux.do project discussion thread: https://linux.do/t/topic/1009280
->
-> Check out the comparison by a Linux.do fellow: [Open Source Project (BettaFish) vs manus|minimax|ChatGPT Comparison](https://linux.do/t/topic/1148040)
 
 <div align="center">
 <img src="static/image/system_schematic.png" alt="banner" width="800">
 
-Say goodbye to traditional data dashboards. In "WeiYu", everything starts with a simple question - you just need to ask your analysis needs like a conversation
+Say goodbye to traditional data dashboards. In this system, everything starts with a simple question - you just need to ask your analysis needs like a conversation
 </div>
 
 ## 🪄 Sponsors
 
-LLM Model API Sponsor: <a href="https://aihubmix.com/?aff=8Ds9" target="_blank"><img src="./static/image/logo_aihubmix.png" alt="666ghj%2FBettaFish | Trendshift" height="40"/></a>
+LLM Model API Sponsor: <a href="https://aihubmix.com/?aff=8Ds9" target="_blank"><img src="./static/image/logo_aihubmix.png" alt="AI API Service" height="40"/></a>
 
 <details>
-<summary>Provider of core agent capabilities including AI web search, file parsing, and web content scraping: <span style="margin-left: 10px"><a href="https://open.anspire.cn/?share_code=3E1FUOUH" target="_blank"><img src="./static/image/logo_anspire.png" alt="666ghj%2FBettaFish | Trendshift" height="50"/></a></span></summary>
+<summary>Provider of core agent capabilities including AI web search, file parsing, and web content scraping: <span style="margin-left: 10px"><a href="https://open.anspire.cn/?share_code=3E1FUOUH" target="_blank"><img src="./static/image/logo_anspire.png" alt="Agent Capabilities Provider" height="50"/></a></span></summary>
 Anspire Open is a leading infrastructure provider for the agent era. We offer developers the core capability stack needed to build powerful agents. Currently available services include AI web search (multiple versions, highly competitive pricing), file parsing (limited-time free), web content scraping (limited-time free), cloud browser automation (Anspire Browser Agent, in beta), multi-turn rewriting, and more. We continue to provide a solid foundation for agents to connect and operate in complex digital worlds. Seamlessly integrates with mainstream agent platforms such as Dify, Coze, and Yuanqi. Through a transparent credit-based billing system and modular design, we provide enterprises with efficient, low-cost customized support to accelerate intelligent transformation.
 </details>
 
@@ -111,7 +95,7 @@ Anspire Open is a leading infrastructure provider for the agent era. We offer de
 ### Project Code Structure Tree
 
 ```
-BettaFish/
+ProjectRoot/
 ├── QueryEngine/                            # Domestic and international news breadth search Agent
 │   ├── agent.py                            # Agent main logic, coordinates search and analysis workflow
 │   ├── llms/                               # LLM interface wrapper
@@ -283,9 +267,9 @@ When you need a database, configure the connection as follows (MySQL field names
 | :--- | :--- | :--- |
 | `DB_HOST` | `db` | Database service name (as defined in `docker-compose.yml`) |
 | `DB_PORT` | `5432` | Default PostgreSQL port |
-| `DB_USER` | `bettafish` | Database username |
-| `DB_PASSWORD` | `bettafish` | Database password |
-| `DB_NAME` | `bettafish` | Database name |
+| `DB_USER` | `dbuser` | Database username |
+| `DB_PASSWORD` | `dbpassword` | Database password |
+| `DB_NAME` | `dbname` | Database name |
 | **Others** | **Keep Default** | Please keep other parameters, such as database connection pool settings, at their default values. |
 
 ### Large Language Model (LLM) Configuration
@@ -294,7 +278,6 @@ All LLM calls use the OpenAI-compatible API format. Configure **Multimodal / Que
 
 ## 🔧 Source Code Startup Guide
 
-> If you are new to building Agent systems, you can start with a very simple demo: [Deep Search Agent Demo](https://github.com/666ghj/DeepSearchAgent-Demo)
 
 ### System Requirements
 
@@ -662,14 +645,6 @@ We welcome all forms of contributions!
 **Please read the following contribution guidelines:**  
 - [CONTRIBUTING-EN.md](./CONTRIBUTING-EN.md)
 
-## 🦖 Next Development Plan
-
-The system has now completed the final prediction step! Visit 【MiroFish - Predict Everything】: https://github.com/666ghj/MiroFish
-
-<div align="center">
-<img src="static/image/MiroFish_logo_compressed.jpeg" alt="banner" width="800">
-<img src="static/image/banner_compressed.png" alt="banner" width="800">
-</div>
 
 ## ⚠️ Disclaimer
 
@@ -711,11 +686,8 @@ This project is licensed under the [GPL-2.0 License](LICENSE). Please see the LI
 
 ### Get Help
 
-  FAQ: https://github.com/666ghj/BettaFish/issues/185
-
-- **Project Homepage**: [GitHub Repository](https://github.com/666ghj/BettaFish)
-- **Issue Reporting**: [Issues Page](https://github.com/666ghj/BettaFish/issues)
-- **Feature Requests**: [Discussions Page](https://github.com/666ghj/BettaFish/discussions)
+- **Issue Reporting**: Please use the project's issue tracking system
+- **Feature Requests**: Please use the project's discussion forum
 
 ### Contact Information
 
@@ -730,25 +702,14 @@ This project is licensed under the [GPL-2.0 License](LICENSE). Please see the LI
 
 ## 👥 Contributors
 
-Thanks to these excellent contributors:
-
-[![Contributors](https://contrib.rocks/image?repo=666ghj/BettaFish)](https://github.com/666ghj/BettaFish/graphs/contributors)
+Thanks to these excellent contributors.
 
 ## 🌟 Join Our Official Community
 
 <div align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=Welcome%20to%20Our%20QQ%20Group!&fontSize=40&fontAlignY=35&desc=Scan%20to%20Join%20Our%20Community&descAlignY=55" alt="Welcome to Our QQ Group!" style="width:60%; max-width:900px; display:block; margin:0 auto;">
-  <img src="static/image/QQ_Light_Horizenal.png" alt="BettaFish QQ Group QR Code" style="width:60%; max-width:360px; display:block; margin:20px auto 0;">
+  <img src="static/image/QQ_Light_Horizenal.png" alt="Official Community QQ Group QR Code" style="width:60%; max-width:360px; display:block; margin:20px auto 0;">
 </div>
 
 ## 📈 Project Statistics
 
-<a href="https://www.star-history.com/#666ghj/BettaFish&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=666ghj/BettaFish&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=666ghj/BettaFish&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=666ghj/BettaFish&type=date&legend=top-left" />
- </picture>
-</a>
-
-![Alt](https://repobeats.axiom.co/api/embed/e04e3eea4674edc39c148a7845c8d09c1b7b1922.svg "Repobeats analytics image")

@@ -1,5 +1,5 @@
 """
-最终报告节点 — 对应原 _generate_final_report
+Finalize Report Node — corresponds to original _generate_final_report
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 def finalize_report_node(agent: DeepSearchAgent, state: MediaAgentState) -> dict:
-    logger.info(f"\n[LangGraph:finalize_report] 生成最终报告...")
+    logger.info(f"\n[LangGraph:finalize_report] Generating final report...")
 
     ps = state["pipeline_state"]
 
@@ -29,7 +29,7 @@ def finalize_report_node(agent: DeepSearchAgent, state: MediaAgentState) -> dict
     try:
         final_report = agent.report_formatting_node.run(report_data)
     except Exception as e:
-        logger.error(f"LLM格式化失败，使用备用方法: {str(e)}")
+        logger.error(f"LLM formatting failed, using fallback method: {str(e)}")
         final_report = agent.report_formatting_node.format_report_manually(
             report_data, ps.report_title
         )
@@ -37,9 +37,9 @@ def finalize_report_node(agent: DeepSearchAgent, state: MediaAgentState) -> dict
     ps.final_report = final_report
     ps.mark_completed()
 
-    logger.info("最终报告生成完成")
+    logger.info("Final report generation completed")
     return {
         "pipeline_state": ps,
         "final_report": final_report,
-        "trace_log": ["[FinalizeReport] 完成"],
+        "trace_log": ["[FinalizeReport] Completed"],
     }

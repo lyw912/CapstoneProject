@@ -1,11 +1,12 @@
 """
-Report Agent主类。
+Report Agent main class.
 
-该模块串联模板选择、布局设计、章节生成、IR装订与HTML渲染等
-所有子流程，是Report Engine的总调度中心。核心职责包括：
-1. 管理输入数据与状态，协调 Media/Query 分析引擎、论坛日志与模板；
-2. 按节点顺序驱动模板选择→布局生成→篇幅规划→章节写作→装订渲染；
-3. 负责错误兜底、流式事件分发、落盘清单与最终成果保存。
+This module orchestrates template selection, layout design, chapter generation,
+IR stitching and HTML rendering sub-processes, serving as the central dispatcher
+for the Report Engine. Core responsibilities include:
+1. Managing input data and state, coordinating Media/Query analysis engines, forum logs and templates;
+2. Driving the node sequence: template selection → layout generation → word budgeting → chapter writing → stitching and rendering;
+3. Handling error fallbacks, streaming event distribution, persistence and final deliverable saving.
 """
 
 import json
@@ -41,64 +42,64 @@ from .utils.config import settings, Settings
 
 
 class StageOutputFormatError(ValueError):
-    """阶段性输出结构不符合预期时抛出的受控异常。"""
+    """Controlled exception raised when stage output structure does not match expectations."""
 
 
 class FileCountBaseline:
     """
-    文件数量基准管理器。
+    File count baseline manager.
 
-    该工具用于：
-    - 在任务启动时记录 Media/Query 两个引擎导出的 Markdown 数量；
-    - 在后续轮询中快速判断是否有新报告落地；
-    - 为 Flask 层提供“输入是否准备完毕”的依据。
+    This utility is used for:
+    - Recording the number of Markdown files exported by Media/Query engines at task startup;
+    - Quickly detecting new report arrivals during subsequent polling;
+    - Providing the Flask layer with a basis for determining“whether inputs are ready”.
     """
     
     def __init__(self):
         """
-        初始化时优先尝试读取既有的基准快照。
+        On initialization, prefer reading existing baseline snapshots.
 
-        若 `logs/report_baseline.json` 不存在则会自动创建一份空快照，
-        以便后续 `initialize_baseline` 在首次运行时写入真实基准。
+        If `logs/report_baseline.json` does not exist, an empty snapshot will be created automatically,
+        so that subsequent `initialize_baseline` can write the real baseline on first run.
         """
         self.baseline_file = 'logs/report_baseline.json'
         self.baseline_data = self._load_baseline()
     
     def _load_baseline(self) -> Dict[str, int]:
         """
-        加载基准数据。
+        Load baseline data.
 
-        - 当快照文件存在时直接解析JSON；
-        - 捕获所有加载异常并返回空字典，保证调用方逻辑简洁。
+        - Parse JSON directly when snapshot file exists;
+        - Catch all loading exceptions and return empty dict to keep caller logic simple.
         """
         try:
             if os.path.exists(self.baseline_file):
                 with open(self.baseline_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
         except Exception as e:
-            logger.exception(f"加载基准数据失败: {e}")
+            logger.exception(f"Failed to load baseline data: {e}")
         return {}
     
     def _save_baseline(self):
         """
-        将当前基准写入磁盘。
+        Write current baseline to disk.
 
-        采用 `ensure_ascii=False` + 缩进格式，方便人工查看；
-        若目标目录缺失则自动创建。
+        Uses `ensure_ascii=False` + indentation format for human readability;
+        automatically creates target directory if missing.
         """
         try:
             os.makedirs(os.path.dirname(self.baseline_file), exist_ok=True)
             with open(self.baseline_file, 'w', encoding='utf-8') as f:
                 json.dump(self.baseline_data, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            logger.exception(f"保存基准数据失败: {e}")
+            logger.exception(f"Failed to save baseline data: {e}")
     
     def initialize_baseline(self, directories: Dict[str, str]) -> Dict[str, int]:
         """
-        初始化文件数量基准。
+        Initialize file count baseline.
 
-        遍历每个引擎目录并统计 `.md` 文件数量，将结果持久化为
-        初始基准。后续 `check_new_files` 会据此对比增量。
+        Traverse each engine directory and count `.md` files, persisting the result
+        as the initial baseline. Subsequent `check_new_files` will compare against this.
         """
         current_counts = {}
         
@@ -109,20 +110,20 @@ class FileCountBaseline:
             else:
                 current_counts[engine] = 0
         
-        # 保存基准数据
+        # Save baseline data
         self.baseline_data = current_counts.copy()
         self._save_baseline()
         
-        logger.info(f"文件数量基准已初始化: {current_counts}")
+        logger.info(f"File count baseline initialized: {current_counts}")
         return current_counts
     
     def check_new_files(self, directories: Dict[str, str]) -> Dict[str, Any]:
         """
-        检查是否有新文件。
+        Check for new files.
 
-        对比当前目录文件数与基准：
-        - 统计新增数量，并判定是否所有引擎都已准备就绪；
-        - 返回详细计数、缺失列表，供 Web 层提示给用户。
+        Compare current directory file counts with baseline:
+        - Count new additions and determine if all engines are ready;
+        - Return detailed counts, missing list for Web layer to display to users.
         """
         current_counts = {}
         new_files_found = {}
@@ -154,10 +155,10 @@ class FileCountBaseline:
     
     def get_latest_files(self, directories: Dict[str, str]) -> Dict[str, str]:
         """
-        获取每个目录的最新文件。
+        Get the latest file in each directory.
 
-        通过 `os.path.getmtime` 找出最近写入的 Markdown，
-        以确保生成流程永远使用最新一版双引擎报告。
+        Find the most recently written Markdown via `os.path.getmtime`,
+        ensuring the generation pipeline always uses the latest dual-engine reports.
         """
         latest_files = {}
         
@@ -173,84 +174,84 @@ class FileCountBaseline:
 
 class ReportAgent:
     """
-    Report Agent主类。
+    Report Agent main class.
 
-    负责集成：
-    - LLM客户端及其上层四个推理节点；
-    - 章节存储、IR装订、渲染器等产出链路；
-    - 状态管理、日志、输入输出校验与持久化。
+    Responsible for integrating:
+    - LLM client and its four upper-level inference nodes;
+    - Chapter storage, IR stitching, renderer and other output pipelines;
+    - State management, logging, input/output validation and persistence.
     """
     _CONTENT_SPARSE_MIN_ATTEMPTS = 3
-    _CONTENT_SPARSE_WARNING_TEXT = "本章LLM生成的内容字数可能过低，必要时可以尝试重新运行程序。"
+    _CONTENT_SPARSE_WARNING_TEXT = "The LLM-generated content for this chapter may be too short; consider re-running the program if necessary."
     _STRUCTURAL_RETRY_ATTEMPTS = 2
     
     def __init__(self, config: Optional[Settings] = None):
         """
-        初始化Report Agent。
-        
+        Initialize Report Agent.
+
         Args:
-            config: 配置对象，如果不提供则自动加载
-        
-        步骤概览：
-            1. 解析配置并接入日志/LLM/渲染等核心组件；
-            2. 构造四个推理节点（模板、布局、篇幅、章节）；
-            3. 初始化文件基准与章节落盘目录；
-            4. 构建可序列化的状态容器，供外部服务查询。
+            config: Configuration object, auto-loaded if not provided
+
+        Steps overview:
+            1. Parse configuration and connect core components like logging/LLM/renderer;
+            2. Construct four inference nodes (template, layout, word budget, chapter);
+            3. Initialize file baseline and chapter output directory;
+            4. Build serializable state container for external service queries.
         """
-        # 加载配置
+        # Load configuration
         self.config = config or settings
         
-        # 初始化文件基准管理器
+        # Initialize file baseline manager
         self.file_baseline = FileCountBaseline()
         
-        # 初始化日志
+        # Initialize logging
         self._setup_logging()
         
-        # 初始化LLM客户端
+        # Initialize LLM client
         self.llm_client = self._initialize_llm()
         self.json_rescue_clients = self._initialize_rescue_llms()
         
-        # 初始化章级存储/校验/渲染组件
+        # Initialize chapter-level storage/validation/renderer components
         self.chapter_storage = ChapterStorage(self.config.CHAPTER_OUTPUT_DIR)
         self.document_composer = DocumentComposer()
         self.validator = IRValidator()
         self.renderer = HTMLRenderer()
         
-        # 初始化节点
+        # Initialize nodes
         self._initialize_nodes()
         
-        # 初始化文件数量基准
+        # Initialize file count baseline
         self._initialize_file_baseline()
         
-        # 状态
+        # State
         self.state = ReportState()
         
-        # 确保输出目录存在
+        # Ensure output directories exist
         os.makedirs(self.config.OUTPUT_DIR, exist_ok=True)
         os.makedirs(self.config.DOCUMENT_IR_OUTPUT_DIR, exist_ok=True)
         
-        logger.info("Report Agent已初始化")
-        logger.info(f"使用LLM: {self.llm_client.get_model_info()}")
+        logger.info("Report Agent initialized")
+        logger.info(f"Using LLM: {self.llm_client.get_model_info()}")
         
     def _setup_logging(self):
         """
-        设置日志。
+        Setup logging.
 
-        - 确保日志目录存在；
-        - 使用独立的 loguru sink 写入 Report Engine 专属 log 文件，
-          避免与其他子系统混淆。
-        - 【修复】配置实时日志写入，禁用缓冲，确保前端实时看到日志
-        - 【修复】防止重复添加handler
+        - Ensure log directory exists;
+        - Use dedicated loguru sink to write Report Engine specific log files,
+          avoiding confusion with other subsystems.
+        - [FIX] Configure real-time log writing, disable buffering to ensure frontend sees logs immediately
+        - [FIX] Prevent duplicate handler additions
         """
-        # 确保日志目录存在
+        # Ensure log directory exists
         log_dir = os.path.dirname(self.config.LOG_FILE)
         os.makedirs(log_dir, exist_ok=True)
 
         def _exclude_other_engines(record):
             """
-            过滤掉其他引擎(Media/Query/Forum)产生的日志，其余日志全部保留。
+            Filter out logs from other engines (Media/Query/Forum), keep all other logs.
 
-            使用路径匹配为主，无法获取路径时退化到模块名。
+            Use path matching primarily, fall back to module name when path is unavailable.
             """
             excluded_keywords = ("MediaEngine", "QueryEngine", "ForumEngine")
             try:
@@ -271,55 +272,55 @@ class ReportAgent:
 
             return True
 
-        # 【修复】检查是否已经添加过这个文件的handler，避免重复
-        # loguru会自动去重，但显式检查更安全
+        # [FIX] Check if handler for this file already exists to avoid duplicates
+        # loguru deduplicates automatically, but explicit check is safer
         log_file_path = str(Path(self.config.LOG_FILE).resolve())
 
-        # 检查现有的handlers
+        # Check existing handlers
         handler_exists = False
         for handler_id, handler_config in logger._core.handlers.items():
             if hasattr(handler_config, 'sink'):
                 sink = handler_config.sink
-                # 检查是否是文件sink且路径相同
+                # Check if file sink with same path
                 if hasattr(sink, '_name') and sink._name == log_file_path:
                     handler_exists = True
-                    logger.debug(f"日志handler已存在，跳过添加: {log_file_path}")
+                    logger.debug(f"Log handler already exists, skipping: {log_file_path}")
                     break
 
         if not handler_exists:
-            # 【修复】创建专用的logger，配置实时写入
-            # - enqueue=False: 禁用异步队列，立即写入
-            # - buffering=1: 行缓冲，每条日志立即刷新到文件
-            # - level="DEBUG": 记录所有级别的日志
-            # - encoding="utf-8": 明确指定UTF-8编码
-            # - mode="a": 追加模式，保留历史日志
+            # [FIX] Create dedicated logger with real-time writing config
+            # - enqueue=False: Disable async queue for immediate writes
+            # - buffering=1: Line buffering, flush each log entry immediately to file
+            # - level="DEBUG": Log all levels
+            # - encoding="utf-8": Explicitly specify UTF-8 encoding
+            # - mode="a": Append mode to preserve history
             handler_id = logger.add(
                 self.config.LOG_FILE,
                 level="DEBUG",
-                enqueue=False,      # 禁用异步队列，同步写入
-                buffering=1,        # 行缓冲，每行立即写入
-                serialize=False,    # 普通文本格式，不序列化为JSON
-                encoding="utf-8",   # 明确UTF-8编码
-                mode="a",           # 追加模式
-                filter=_exclude_other_engines # 过滤掉四个 Engine 的日志，保留其余信息
+                enqueue=False,      # Disable async queue, synchronous write
+                buffering=1,        # Line buffer, each line writes immediately
+                serialize=False,    # Plain text format, do not serialize to JSON
+                encoding="utf-8",   # Explicit UTF-8 encoding
+                mode="a",           # Append mode
+                filter=_exclude_other_engines # Filter logs from four Engines, keep other information
             )
-            logger.debug(f"已添加日志handler (ID: {handler_id}): {self.config.LOG_FILE}")
+            logger.debug(f"Added log handler (ID: {handler_id}): {self.config.LOG_FILE}")
 
-        # 【修复】验证日志文件可写
+        # [FIX] Verify log file is writable
         try:
             with open(self.config.LOG_FILE, 'a', encoding='utf-8') as f:
-                f.write('')  # 尝试写入空字符串验证权限
-                f.flush()    # 立即刷新
+                f.write('')  # Try writing empty string to verify permissions
+                f.flush()    # Flush immediately
         except Exception as e:
-            logger.error(f"日志文件无法写入: {self.config.LOG_FILE}, 错误: {e}")
+            logger.error(f"Cannot write to log file: {self.config.LOG_FILE}, error: {e}")
             raise
         
     def _initialize_file_baseline(self):
         """
-        初始化文件数量基准。
+        Initialize file count baseline.
 
-        将 Media/Query 两个目录传入 `FileCountBaseline`，
-        生成一次性的参考值，之后按增量判断两引擎是否产出新报告。
+        Pass Media/Query directories to `FileCountBaseline`,
+        generate one-time reference values, then judge by increment whether engines produced new reports.
         """
         directories = {
             'media': 'media_engine_streamlit_reports',
@@ -329,10 +330,10 @@ class ReportAgent:
     
     def _initialize_llm(self) -> LLMClient:
         """
-        初始化LLM客户端。
+        Initialize LLM client.
 
-        利用配置中的 API Key / 模型 / Base URL 构建统一的
-        `LLMClient` 实例，为所有节点提供复用的推理入口。
+        Build unified `LLMClient` instance using API Key / model / Base URL from config,
+        providing a reusable inference entry point for all nodes.
         """
         return LLMClient(
             api_key=self.config.REPORT_ENGINE_API_KEY,
@@ -342,9 +343,9 @@ class ReportAgent:
 
     def _initialize_rescue_llms(self) -> List[Tuple[str, LLMClient]]:
         """
-        初始化跨引擎章节修复所需的LLM客户端列表。
+        Initialize list of LLM clients needed for cross-engine chapter repair.
 
-        顺序遵循“Report → Forum → Media”，缺失配置会被自动跳过。
+        Order follows“Report → Forum → Media”, missing configs are automatically skipped.
         """
         clients: List[Tuple[str, LLMClient]] = []
         if self.llm_client:
@@ -369,17 +370,17 @@ class ReportAgent:
             try:
                 client = LLMClient(api_key=api_key, model_name=model_name, base_url=base_url)
             except Exception as exc:
-                logger.warning(f"{label} LLM初始化失败，跳过该修复通道: {exc}")
+                logger.warning(f"{label} LLM initialization failed, skipping this repair channel: {exc}")
                 continue
             clients.append((label, client))
         return clients
     
     def _initialize_nodes(self):
         """
-        初始化处理节点。
+        Initialize processing nodes.
 
-        顺序实例化模板选择、文档布局、篇幅规划、章节生成四个节点，
-        其中章节节点额外依赖 IR 校验器与章节存储器。
+        Instantiate four nodes in sequence: template selection, document layout, word budget, chapter generation,
+        where the chapter node additionally depends on IR validator and chapter storage.
         """
         self.template_selection_node = TemplateSelectionNode(
             self.llm_client,
@@ -399,28 +400,28 @@ class ReportAgent:
                         custom_template: str = "", save_report: bool = True,
                         stream_handler: Optional[Callable[[str, Dict[str, Any]], None]] = None) -> str:
         """
-        生成综合报告（章节JSON → IR → HTML）。
+        Generate comprehensive report (Chapter JSON → IR → HTML).
 
-        主要阶段：
-            1. 归一化双引擎报告 + 论坛日志，并输出流式事件；
-            2. 模板选择 → 模板切片 → 文档布局 → 篇幅规划；
-            3. 结合篇幅目标逐章调用LLM，遇到解析错误会自动重试；
-            4. 将章节装订成Document IR，再交给HTML渲染器生成成品；
-            5. 可选地将HTML/IR/状态落盘，并向外界回传路径信息。
+        Main stages:
+            1. Normalize dual-engine reports + forum logs, and emit streaming events;
+            2. Template selection → template slicing → document layout → word budget planning;
+            3. Invoke LLM chapter by chapter with word targets, auto-retry on parse errors;
+            4. Stitch chapters into Document IR, then hand to HTML renderer for final product;
+            5. Optionally persist HTML/IR/state to disk and return path info externally.
 
-        参数:
-            query: 最终要生成的报告主题或提问语句。
-            reports: 来自 Query/Media 等分析引擎的原始输出，允许传入字符串或更复杂的对象。
-            forum_logs: 论坛/协同记录，供LLM理解多人讨论上下文。
-            custom_template: 用户指定的Markdown模板，如为空则交由模板节点自动挑选。
-            save_report: 是否在生成后自动将HTML、IR与状态写入磁盘。
-            stream_handler: 可选的流式事件回调，接收阶段标签与payload，用于UI实时展示。
+        Args:
+            query: The final report topic or query statement to generate.
+            reports: Raw outputs from Query/Media analysis engines, can be strings or more complex objects.
+            forum_logs: Forum/collaboration records for LLM to understand multi-person discussion context.
+            custom_template: User-specified Markdown template, if empty let template node auto-select.
+            save_report: Whether to auto-write HTML, IR and state to disk after generation.
+            stream_handler: Optional streaming event callback receiving stage labels and payloads for real-time UI display.
 
-        返回:
-            dict: 包含 `html_content` 以及HTML/IR/状态文件路径的字典；若 `save_report=False` 则仅返回HTML字符串。
+        Returns:
+            dict: Contains `html_content` and HTML/IR/state file paths; if `save_report=False` returns HTML string only.
 
-        异常:
-            Exception: 任一子节点或渲染阶段失败时抛出，外层调用方负责兜底。
+        Raises:
+            Exception: Thrown when any sub-node or rendering stage fails, outer caller handles fallback.
         """
         start_time = datetime.now()
         report_id = f"report-{uuid4().hex[:8]}"
@@ -432,23 +433,23 @@ class ReportAgent:
         normalized_reports = self._normalize_reports(reports)
 
         def emit(event_type: str, payload: Dict[str, Any]):
-            """面向Report Engine流通道的事件分发器，保证错误不外泄。"""
+            """Event dispatcher for Report Engine streaming channel, ensuring errors do not leak out."""
             if not stream_handler:
                 return
             try:
                 stream_handler(event_type, payload)
-            except Exception as callback_error:  # pragma: no cover - 仅记录
-                logger.warning(f"流式事件回调失败: {callback_error}")
+            except Exception as callback_error:  # pragma: no cover - logging only
+                logger.warning(f"Streaming event callback failed: {callback_error}")
 
-        logger.info(f"开始生成报告 {report_id}: {query}")
-        logger.info(f"输入数据 - 报告数量: {len(reports)}, 论坛日志长度: {len(str(forum_logs))}")
+        logger.info(f"Starting report generation {report_id}: {query}")
+        logger.info(f"Input data - report count: {len(reports)}, forum log length: {len(str(forum_logs))}")
         emit('stage', {'stage': 'agent_start', 'report_id': report_id, 'query': query})
 
         try:
             template_result = self._select_template(query, reports, forum_logs, custom_template)
             template_result = self._ensure_mapping(
                 template_result,
-                "模板选择结果",
+                "template selection result",
                 expected_keys=["template_name", "template_content"],
             )
             self.state.metadata.template_used = template_result.get('template_name', '')
@@ -457,17 +458,17 @@ class ReportAgent:
                 'template': template_result.get('template_name'),
                 'reason': template_result.get('selection_reason')
             })
-            emit('progress', {'progress': 10, 'message': '模板选择完成'})
+            emit('progress', {'progress': 10, 'message': 'Template selection complete'})
             sections = self._slice_template(template_result.get('template_content', ''))
             if not sections:
-                raise ValueError("模板无法解析出章节，请检查模板内容。")
+                raise ValueError("Template cannot be parsed into chapters, please check template content.")
             emit('stage', {'stage': 'template_sliced', 'section_count': len(sections)})
 
             template_text = template_result.get('template_content', '')
             template_overview = self._build_template_overview(template_text, sections)
-            # 基于模板骨架+双引擎内容设计全局标题、目录与视觉主题
+            # Design global title, TOC and visual theme based on template skeleton + dual-engine content
             layout_design = self._run_stage_with_retry(
-                "文档设计",
+                "document design",
                 lambda: self.document_layout_node.run(
                     sections,
                     template_text,
@@ -476,7 +477,7 @@ class ReportAgent:
                     query,
                     template_overview,
                 ),
-                # toc 字段已被 tocPlan 取代，这里按最新Schema挑选/校验
+                # toc field replaced by tocPlan, select/validate per latest Schema here
                 expected_keys=["title", "hero", "tocPlan", "tocTitle"],
             )
             emit('stage', {
@@ -484,10 +485,10 @@ class ReportAgent:
                 'title': layout_design.get('title'),
                 'toc': layout_design.get('tocTitle')
             })
-            emit('progress', {'progress': 15, 'message': '文档标题/目录设计完成'})
-            # 使用刚生成的设计稿对全书进行篇幅规划，约束各章字数与重点
+            emit('progress', {'progress': 15, 'message': 'Document title/TOC design complete'})
+            # Use newly generated design draft for book-wide word budget planning, constraining each chapter's word count and focus
             word_plan = self._run_stage_with_retry(
-                "章节篇幅规划",
+                "chapter word budget planning",
                 lambda: self.word_budget_node.run(
                     sections,
                     layout_design,
@@ -503,8 +504,8 @@ class ReportAgent:
                 'stage': 'word_plan_ready',
                 'chapter_targets': len(word_plan.get('chapters', []))
             })
-            emit('progress', {'progress': 20, 'message': '章节字数规划已生成'})
-            # 记录每个章节的目标字数/强调点，后续传给章节LLM
+            emit('progress', {'progress': 20, 'message': 'Chapter word budget generated'})
+            # Record each chapter's target word count/emphasis points, pass to chapter LLM later
             chapter_targets = {
                 entry.get("chapterId"): entry
                 for entry in word_plan.get("chapters", [])
@@ -521,10 +522,10 @@ class ReportAgent:
                 word_plan,
                 template_overview,
             )
-            # IR/渲染需要的全局元数据，带上设计稿给出的标题/主题/目录/篇幅信息
+            # Global metadata needed for IR/rendering, carrying title/theme/TOC/word count info from design draft
             manifest_meta = {
                 "query": query,
-                "title": layout_design.get("title") or (f"{query} - 舆情洞察报告" if query else template_result.get("template_name")),
+                "title": layout_design.get("title") or (f"{query} - Sentiment Insight Report" if query else template_result.get("template_name")),
                 "subtitle": layout_design.get("subtitle"),
                 "tagline": layout_design.get("tagline"),
                 "templateName": template_result.get("template_name"),
@@ -533,7 +534,7 @@ class ReportAgent:
                 "toc": {
                     "depth": 3,
                     "autoNumbering": True,
-                    "title": layout_design.get("tocTitle") or "目录",
+                    "title": layout_design.get("tocTitle") or "Table of Contents",
                 },
                 "hero": layout_design.get("hero"),
                 "layoutNotes": layout_design.get("layoutNotes"),
@@ -547,7 +548,7 @@ class ReportAgent:
                 manifest_meta["themeTokens"] = layout_design["themeTokens"]
             if layout_design.get("tocPlan"):
                 manifest_meta["toc"]["customEntries"] = layout_design["tocPlan"]
-            # 初始化章节输出目录并写入manifest，方便流式存盘
+            # Initialize chapter output directory and write manifest for streaming storage
             run_dir = self.chapter_storage.start_session(report_id, manifest_meta)
             self._persist_planning_artifacts(run_dir, layout_design, word_plan, template_overview)
             emit('stage', {'stage': 'storage_ready', 'run_dir': str(run_dir)})
@@ -556,25 +557,25 @@ class ReportAgent:
             chapter_max_attempts = max(
                 self._CONTENT_SPARSE_MIN_ATTEMPTS, self.config.CHAPTER_JSON_MAX_ATTEMPTS
             )
-            total_chapters = len(sections)  # 总章节数
-            completed_chapters = 0  # 已完成章节数
+            total_chapters = len(sections)  # Total chapter count
+            completed_chapters = 0  # Completed chapter count
 
             for section in sections:
-                logger.info(f"生成章节: {section.title}")
+                logger.info(f"Generating chapter: {section.title}")
                 emit('chapter_status', {
                     'chapterId': section.chapter_id,
                     'title': section.title,
                     'status': 'running'
                 })
-                # 章节流式回调：把LLM返回的delta透传给SSE，便于前端实时渲染
+                # Chapter streaming callback: pass LLM returned delta to SSE for real-time frontend rendering
                 def chunk_callback(delta: str, meta: Dict[str, Any], section_ref: TemplateSection = section):
                     """
-                    章节内容流式回调。
+                    Chapter content streaming callback.
 
                     Args:
-                        delta: LLM最新输出的增量文本。
-                        meta: 节点回传的章节元数据，兜底时使用。
-                        section_ref: 默认指向当前章节，保证在缺失元信息时也能定位。
+                        delta: The latest incremental text output from LLM.
+                        meta: Chapter metadata returned by node, used for fallback.
+                        section_ref: Defaults to current chapter, ensuring positioning when metadata is missing.
                     """
                     emit('chapter_chunk', {
                         'chapterId': meta.get('chapterId') or section_ref.chapter_id,
@@ -599,13 +600,13 @@ class ReportAgent:
                     except (ChapterJsonParseError, ChapterContentError, ChapterValidationError) as structured_error:
                         if isinstance(structured_error, ChapterContentError):
                             error_kind = "content_sparse"
-                            readable_label = "内容密度异常"
+                            readable_label = "content density anomaly"
                         elif isinstance(structured_error, ChapterValidationError):
                             error_kind = "validation"
-                            readable_label = "结构校验失败"
+                            readable_label = "structure validation failed"
                         else:
                             error_kind = "json_parse"
-                            readable_label = "JSON解析失败"
+                            readable_label = "JSON parse failed"
                         if isinstance(structured_error, ChapterContentError):
                             candidate = getattr(structured_error, "chapter_payload", None)
                             candidate_score = getattr(structured_error, "body_characters", 0) or 0
@@ -620,7 +621,7 @@ class ReportAgent:
                             and best_sparse_candidate is not None
                         )
                         logger.warning(
-                            "章节 {title} {label}（第 {attempt}/{total} 次尝试）: {error}",
+                            "Chapter {title} {label} (attempt {attempt}/{total}): {error}",
                             title=section.title,
                             label=readable_label,
                             attempt=attempt,
@@ -645,7 +646,7 @@ class ReportAgent:
                         emit('chapter_status', status_payload)
                         if will_fallback:
                             logger.warning(
-                                "章节 {title} 达到最大尝试次数，保留字数最多（约 {score} 字）的版本作为兜底输出",
+                                "Chapter {title} reached max attempts, keeping version with most characters (~{score} chars) as fallback",
                                 title=section.title,
                                 score=best_sparse_score,
                             )
@@ -657,17 +658,17 @@ class ReportAgent:
                         attempt += 1
                         continue
                     except (AttributeError, TypeError, KeyError, IndexError, ValueError, json.JSONDecodeError) as structure_error:
-                        # 捕获因 JSON 结构异常导致的运行时错误，包装为可重试异常
-                        # 包括：
-                        # - AttributeError: 如 list.get() 调用失败
-                        # - TypeError: 类型不匹配
-                        # - KeyError: 字典键缺失
-                        # - IndexError: 列表索引越界
-                        # - ValueError: 值错误（如 LLM 返回空内容、缺少必要字段）
-                        # - json.JSONDecodeError: JSON 解析失败（未被内部捕获的情况）
+                        # Catch runtime errors caused by JSON structure anomalies, wrap as retryable exceptions
+                        # Includes:
+                        # - AttributeError: e.g., list.get() call failed
+                        # - TypeError: type mismatch
+                        # - KeyError: missing dict key
+                        # - IndexError: list index out of bounds
+                        # - ValueError: value error (e.g., LLM returned empty content, missing required fields)
+                        # - json.JSONDecodeError: JSON parse failure (cases not caught internally)
                         error_type = type(structure_error).__name__
                         logger.warning(
-                            "章节 {title} 生成过程中发生 {error_type}（第 {attempt}/{total} 次尝试），将尝试重新生成: {error}",
+                            "Chapter {title} encountered {error_type} during generation (attempt {attempt}/{total}), will retry: {error}",
                             title=section.title,
                             error_type=error_type,
                             attempt=attempt,
@@ -684,9 +685,9 @@ class ReportAgent:
                             'error_type': error_type
                         })
                         if attempt >= chapter_max_attempts:
-                            # 达到最大重试次数，包装为 ChapterJsonParseError 抛出
+                            # Reached max retry attempts, wrap as ChapterJsonParseError and raise
                             raise ChapterJsonParseError(
-                                f"{section.title} 章节因 {error_type} 在 {chapter_max_attempts} 次尝试后仍无法生成: {structure_error}"
+                                f"Chapter {section.title} failed due to {error_type} after {chapter_max_attempts} attempts: {structure_error}"
                             ) from structure_error
                         attempt += 1
                         continue
@@ -694,7 +695,7 @@ class ReportAgent:
                         if not self._should_retry_inappropriate_content_error(chapter_error):
                             raise
                         logger.warning(
-                            "章节 {title} 触发内容安全限制（第 {attempt}/{total} 次尝试），准备重新生成: {error}",
+                            "Chapter {title} triggered content safety restriction (attempt {attempt}/{total}), preparing to regenerate: {error}",
                             title=section.title,
                             attempt=attempt,
                             total=chapter_max_attempts,
@@ -714,15 +715,15 @@ class ReportAgent:
                         continue
                 if chapter_payload is None:
                     raise ChapterJsonParseError(
-                        f"{section.title} 章节JSON在 {chapter_max_attempts} 次尝试后仍无法解析"
+                        f"Chapter {section.title} JSON could not be parsed after {chapter_max_attempts} attempts"
                     )
                 chapters.append(chapter_payload)
-                completed_chapters += 1  # 更新已完成章节数
-                # 计算当前进度：20% + 80% * (已完成章节数 / 总章节数)，四舍五入
+                completed_chapters += 1  # Update completed chapter count
+                # Calculate current progress: 20% + 80% * (completed / total), rounded
                 chapter_progress = 20 + round(80 * completed_chapters / total_chapters)
                 emit('progress', {
                     'progress': chapter_progress,
-                    'message': f'章节 {completed_chapters}/{total_chapters} 已完成'
+                    'message': f'Chapter {completed_chapters}/{total_chapters} completed'
                 })
                 completion_status = {
                     'chapterId': section.chapter_id,
@@ -730,7 +731,7 @@ class ReportAgent:
                     'status': 'completed',
                     'attempt': attempt,
                 }
-                if fallback_used:
+                if fallback_used:  # using fallback
                     completion_status['warning'] = 'content_sparse_fallback'
                     completion_status['warningMessage'] = self._CONTENT_SPARSE_WARNING_TEXT
                 emit('chapter_status', completion_status)
@@ -754,7 +755,7 @@ class ReportAgent:
 
             generation_time = (datetime.now() - start_time).total_seconds()
             self.state.metadata.generation_time = generation_time
-            logger.info(f"报告生成完成，耗时: {generation_time:.2f} 秒")
+            logger.info(f"Report generation complete, elapsed: {generation_time:.2f} seconds")
             emit('metrics', {'generation_seconds': generation_time})
             return {
                 'html_content': html_report,
@@ -764,36 +765,36 @@ class ReportAgent:
 
         except Exception as e:
             self.state.mark_failed(str(e))
-            logger.exception(f"报告生成过程中发生错误: {str(e)}")
+            logger.exception(f"Error occurred during report generation: {str(e)}")
             emit('error', {'stage': 'agent_failed', 'message': str(e)})
             raise
     
     def _select_template(self, query: str, reports: List[Any], forum_logs: str, custom_template: str):
         """
-        选择报告模板。
+        Select report template.
 
-        优先使用用户指定的模板；否则将查询、双引擎报告与论坛日志
-        作为上下文交给 TemplateSelectionNode，由 LLM 返回最契合的
-        模板名称、内容及理由，并自动记录在状态中。
+        Prefer user-specified template; otherwise pass query, dual-engine reports and forum logs
+        as context to TemplateSelectionNode, letting LLM return the most suitable
+        template name, content and reason, automatically recorded in state.
 
-        参数:
-            query: 报告主题，用于提示词聚焦行业/事件。
-            reports: 多来源报告原文，帮助LLM判断结构复杂度。
-            forum_logs: 对应论坛或协作讨论的文本，用于补充背景。
-            custom_template: CLI/前端传入的自定义Markdown模板，非空时直接采用。
+        Args:
+            query: Report topic for prompt focusing on industry/event.
+            reports: Multi-source report originals to help LLM judge structure complexity.
+            forum_logs: Forum or collaboration discussion text for background supplementation.
+            custom_template: Custom Markdown template from CLI/frontend, used directly if non-empty.
 
-        返回:
-            dict: 包含 `template_name`、`template_content` 与 `selection_reason` 的结构化结果，供后续节点消费。
+        Returns:
+            dict: Structured result containing `template_name`, `template_content` and `selection_reason` for downstream nodes.
         """
-        logger.info("选择报告模板...")
+        logger.info("Selecting report template...")
         
-        # 如果用户提供了自定义模板，直接使用
+        # If user provided custom template, use it directly
         if custom_template:
-            logger.info("使用用户自定义模板")
+            logger.info("Using user custom template")
             return {
                 'template_name': 'custom',
                 'template_content': custom_template,
-                'selection_reason': '用户指定的自定义模板'
+                'selection_reason': 'User-specified custom template'
             }
         
         template_input = {
@@ -805,51 +806,51 @@ class ReportAgent:
         try:
             template_result = self.template_selection_node.run(template_input)
             
-            # 更新状态
+            # Update state
             self.state.metadata.template_used = template_result['template_name']
             
-            logger.info(f"选择模板: {template_result['template_name']}")
-            logger.info(f"选择理由: {template_result['selection_reason']}")
+            logger.info(f"Selected template: {template_result['template_name']}")
+            logger.info(f"Selection reason: {template_result['selection_reason']}")
             
             return template_result
         except Exception as e:
-            logger.error(f"模板选择失败，使用默认模板: {str(e)}")
-            # 直接使用备用模板
+            logger.error(f"Template selection failed, using default template: {str(e)}")
+            # Use fallback template directly
             fallback_template = {
-                'template_name': '社会公共热点事件分析报告模板',
+                'template_name': 'Social Public Hot Event Analysis Report Template',
                 'template_content': self._get_fallback_template_content(),
-                'selection_reason': '模板选择失败，使用默认社会热点事件分析模板'
+                'selection_reason': 'Template selection failed, using default social hot event analysis template'
             }
             self.state.metadata.template_used = fallback_template['template_name']
             return fallback_template
     
     def _slice_template(self, template_markdown: str) -> List[TemplateSection]:
         """
-        将模板切成章节列表，若为空则提供fallback。
+        Slice template into chapter list, providing fallback if empty.
 
-        委托 `parse_template_sections` 将Markdown标题/编号解析为
-        `TemplateSection` 列表，确保后续章节生成有稳定的章节ID。
-        当模板格式异常时，会回退到内置的简单骨架避免崩溃。
+        Delegate to `parse_template_sections` to parse Markdown headings/numbers into
+        `TemplateSection` list, ensuring stable chapter IDs for subsequent chapter generation.
+        When template format is abnormal, falls back to built-in simple skeleton to avoid crash.
 
-        参数:
-            template_markdown: 完整的模板Markdown文本。
+        Args:
+            template_markdown: Complete template Markdown text.
 
-        返回:
-            list[TemplateSection]: 解析后的章节序列；如解析失败则返回单章兜底结构。
+        Returns:
+            list[TemplateSection]: Parsed chapter sequence; returns single-chapter fallback structure if parsing fails.
         """
         sections = parse_template_sections(template_markdown)
         if sections:
             return sections
-        logger.warning("模板未解析出章节，使用默认章节骨架")
+        logger.warning("Template did not parse into chapters, using default chapter skeleton")
         fallback = TemplateSection(
-            title="1.0 综合分析",
+            title="1.0 Comprehensive Analysis",
             slug="section-1-0",
             order=10,
             depth=1,
-            raw_title="1.0 综合分析",
+            raw_title="1.0 Comprehensive Analysis",
             number="1.0",
             chapter_id="S1",
-            outline=["1.1 摘要", "1.2 数据亮点", "1.3 风险提示"],
+            outline=["1.1 Abstract", "1.2 Data Highlights", "1.3 Risk Warnings"],
         )
         return [fallback]
 
@@ -865,26 +866,26 @@ class ReportAgent:
         template_overview: Dict[str, Any],
     ) -> Dict[str, Any]:
         """
-        构造章节生成所需的共享上下文。
+        Build shared context needed for chapter generation.
 
-        将模板名称、布局设计、主题配色、篇幅规划、论坛日志等
-        一次性整合为 `generation_context`，后续每章调用 LLM 时
-        直接复用，确保所有章节共享一致的语调和视觉约束。
+        Integrate template name, layout design, theme colors, word budget, forum logs etc.
+        into `generation_context` in one go, reused directly when calling LLM for each chapter
+        later, ensuring all chapters share consistent tone and visual constraints.
 
-        参数:
-            query: 用户查询词。
-            reports: 归一化后的 query/media 报告映射。
-            forum_logs: 引擎讨论记录。
-            template_result: 模板节点返回的模板元信息。
-            layout_design: 文档布局节点产出的标题/目录/主题设计。
-            chapter_directives: 字数规划节点返回的章节指令映射。
-            word_plan: 篇幅规划原始结果，包含全局字数约束。
-            template_overview: 模板切片提炼的章节骨架摘要。
+        Args:
+            query: User query keywords.
+            reports: Normalized query/media report mapping.
+            forum_logs: Engine discussion records.
+            template_result: Template metadata returned by template node.
+            layout_design: Title/TOC/theme design produced by document layout node.
+            chapter_directives: Chapter directive mapping returned by word budget node.
+            word_plan: Raw word budget result containing global word count constraints.
+            template_overview: Chapter skeleton summary extracted from template slicing.
 
-        返回:
-            dict: LLM章节生成所需的全集上下文，包含主题色、布局、约束等键。
+        Returns:
+            dict: Complete context needed for LLM chapter generation, containing theme colors, layout, constraints etc.
         """
-        # 优先使用设计稿定制的主题色，否则退回默认主题
+        # Prefer theme colors customized in design draft, otherwise fall back to default theme
         theme_tokens = (
             layout_design.get("themeTokens")
             if layout_design else None
@@ -911,16 +912,16 @@ class ReportAgent:
 
     def _normalize_reports(self, reports: List[Any]) -> Dict[str, str]:
         """
-        将不同来源的报告统一转为字符串。
+        Normalize reports from different sources into strings.
 
-        约定顺序为 Query/Media，引擎提供的对象可能是
-        字典或自定义类型，因此统一走 `_stringify` 做容错。
+        Conventional order is Query/Media, engine-provided objects may be
+        dicts or custom types, so uniformly go through `_stringify` for fault tolerance.
 
-        参数:
-            reports: 任意类型的报告列表，允许缺失或顺序混乱。
+        Args:
+            reports: Report list of any type, allowing missing or out-of-order items.
 
-        返回:
-            dict: 包含 `query_engine`/`media_engine` 两个字符串字段的映射。
+        Returns:
+            dict: Mapping containing `query_engine` and `media_engine` string fields.
         """
         keys = ["query_engine", "media_engine"]
         normalized: Dict[str, str] = {}
@@ -931,16 +932,16 @@ class ReportAgent:
 
     def _should_retry_inappropriate_content_error(self, error: Exception) -> bool:
         """
-        判断LLM异常是否由内容安全/不当内容导致。
+        Determine if LLM exception was caused by content safety/inappropriate content.
 
-        当检测到供应商返回的错误包含特定关键词时，允许章节生成
-        重新尝试，以便绕过偶发的内容审查触发。
+        When specific keywords are detected in vendor-returned errors, allow chapter generation
+        to retry to bypass sporadic content moderation triggers.
 
-        参数:
-            error: LLM客户端抛出的异常对象。
+        Args:
+            error: Exception object thrown by LLM client.
 
-        返回:
-            bool: 若匹配到内容审查关键词则返回True，否则为False。
+        Returns:
+            bool: True if content moderation keywords matched, False otherwise.
         """
         message = str(error) if error else ""
         if not message:
@@ -962,9 +963,9 @@ class ReportAgent:
         postprocess: Optional[Callable[[Dict[str, Any], str], Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """
-        运行单个LLM阶段并在结构异常时有限次重试。
+        Run single LLM stage with limited retries on structure anomalies.
 
-        该方法只针对结构类错误做本地修复/重试，避免整个Agent重启。
+        This method only does local fix/retry for structure errors, avoiding full Agent restart.
         """
         last_error: Optional[Exception] = None
         for attempt in range(1, self._STRUCTURAL_RETRY_ATTEMPTS + 1):
@@ -977,7 +978,7 @@ class ReportAgent:
             except StageOutputFormatError as exc:
                 last_error = exc
                 logger.warning(
-                    "{stage} 输出结构异常（第 {attempt}/{total} 次），将尝试修复或重试: {error}",
+                    "{stage} output structure anomaly (attempt {attempt}/{total}), will try fix or retry: {error}",
                     stage=stage_name,
                     attempt=attempt,
                     total=self._STRUCTURAL_RETRY_ATTEMPTS,
@@ -994,7 +995,7 @@ class ReportAgent:
         expected_keys: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
-        确保阶段输出为dict；若返回列表则尝试提取最佳匹配元素。
+        Ensure stage output is dict; if list returned, try to extract best matching element.
         """
         if isinstance(value, dict):
             return value
@@ -1010,22 +1011,22 @@ class ReportAgent:
                     )
                     best = candidates[0]
                 logger.warning(
-                    "{context} 返回列表，已自动提取包含最多预期键的元素继续执行",
+                    "{context} returned list, automatically extracted element with most expected keys to continue",
                     context=context,
                 )
                 return best
-            raise StageOutputFormatError(f"{context} 返回列表但缺少可用的对象元素")
+            raise StageOutputFormatError(f"{context} returned list but lacks available object elements")
 
         if value is None:
-            raise StageOutputFormatError(f"{context} 返回空结果")
+            raise StageOutputFormatError(f"{context} returned empty result")
 
         raise StageOutputFormatError(
-            f"{context} 返回类型 {type(value).__name__}，期望字典"
+            f"{context} returned type {type(value).__name__}, expected dict"
         )
 
     def _normalize_word_plan(self, word_plan: Dict[str, Any], stage_name: str) -> Dict[str, Any]:
         """
-        清洗篇幅规划结果，确保 chapters/globalGuidelines/totalWords 类型安全。
+        Clean word budget result, ensuring chapters/globalGuidelines/totalWords type safety.
         """
         raw_chapters = word_plan.get("chapters", [])
         if isinstance(raw_chapters, dict):
@@ -1044,21 +1045,21 @@ class ReportAgent:
                 dict_candidate = next((item for item in entry if isinstance(item, dict)), None)
                 if dict_candidate:
                     logger.warning(
-                        "{stage} 第 {idx} 个章节条目为列表，已提取首个对象用于后续流程",
+                        "{stage} chapter entry #{idx} is list, extracted first object for downstream",
                         stage=stage_name,
                         idx=idx + 1,
                     )
                     normalized.append(dict_candidate)
                     continue
             logger.warning(
-                "{stage} 跳过无法解析的章节条目#{idx}（类型: {type_name}）",
+                "{stage} skipping unparsable chapter entry #{idx} (type: {type_name})",
                 stage=stage_name,
                 idx=idx + 1,
                 type_name=type(entry).__name__,
             )
 
         if not normalized:
-            raise StageOutputFormatError(f"{stage_name} 缺少有效的章节规划，无法继续")
+            raise StageOutputFormatError(f"{stage_name} lacks valid chapter planning, cannot continue")
 
         word_plan["chapters"] = normalized
 
@@ -1068,14 +1069,14 @@ class ReportAgent:
                 word_plan["globalGuidelines"] = []
             else:
                 logger.warning(
-                    "{stage} globalGuidelines 类型异常，已转换为列表封装",
+                    "{stage} globalGuidelines type anomaly, converted to list wrapper",
                     stage=stage_name,
                 )
                 word_plan["globalGuidelines"] = [guidelines]
 
         if not isinstance(word_plan.get("totalWords"), (int, float)):
             logger.warning(
-                "{stage} totalWords 类型异常，使用默认值 10000",
+                "{stage} totalWords type anomaly, using default value 10000",
                 stage=stage_name,
             )
             word_plan["totalWords"] = 10000
@@ -1084,7 +1085,7 @@ class ReportAgent:
 
     def _finalize_sparse_chapter(self, chapter: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        构造内容稀疏兜底章节：复制原始payload并插入温馨提示段落。
+        Construct content-sparse fallback chapter: copy original payload and insert warning paragraph.
         """
         safe_chapter = deepcopy(chapter or {})
         if not isinstance(safe_chapter, dict):
@@ -1094,7 +1095,7 @@ class ReportAgent:
 
     def _ensure_sparse_warning_block(self, chapter: Dict[str, Any]) -> None:
         """
-        将提示段落插在章节标题后，提醒读者该章字数偏少。
+        Insert warning paragraph after chapter heading to alert readers that chapter is short.
         """
         warning_block = {
             "type": "paragraph",
@@ -1126,16 +1127,16 @@ class ReportAgent:
 
     def _stringify(self, value: Any) -> str:
         """
-        安全地将对象转成字符串。
+        Safely convert object to string.
 
-        - dict/list 统一序列化为格式化 JSON，便于提示词消费；
-        - 其他类型走 `str()`，None 则返回空串，避免 None 传播。
+        - dict/list uniformly serialized to formatted JSON for prompt consumption;
+        - Other types go through `str()`, None returns empty string to avoid None propagation.
 
-        参数:
-            value: 任意Python对象。
+        Args:
+            value: Any Python object.
 
-        返回:
-            str: 适配提示词/日志的字符串表现。
+        Returns:
+            str: String representation suitable for prompts/logs.
         """
         if value is None:
             return ""
@@ -1150,12 +1151,12 @@ class ReportAgent:
 
     def _default_theme_tokens(self) -> Dict[str, Any]:
         """
-        构造默认主题变量，供渲染器/LLM共用。
+        Construct default theme variables for renderer/LLM shared use.
 
-        当布局节点未返回专属配色时使用该套色板，保持报告风格统一。
+        Use this color palette when layout node does not return dedicated colors, keeping report style consistent.
 
-        返回:
-            dict: 包含颜色、字体、间距、布尔开关等渲染参数的主题字典。
+        Returns:
+            dict: Theme dictionary containing colors, fonts, spacing, boolean switches and other rendering parameters.
         """
         return {
             "colors": {
@@ -1172,7 +1173,7 @@ class ReportAgent:
             },
             "fonts": {
                 "body": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif",
-                "heading": "'Source Han Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif",
+                "heading": "'Source Han Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif",  # Chinese fonts
             },
             "spacing": {"container": "1200px", "gutter": "24px"},
             "vars": {
@@ -1188,16 +1189,16 @@ class ReportAgent:
         sections: List[TemplateSection],
     ) -> Dict[str, Any]:
         """
-        提取模板标题与章节骨架，供设计/篇幅规划统一引用。
+        Extract template title and chapter skeleton for design/word budget unified reference.
 
-        同时记录章节ID/slug/order等辅助字段，保证多节点对齐。
+        Also record auxiliary fields like chapter ID/slug/order to ensure multi-node alignment.
 
-        参数:
-            template_markdown: 模板原文，用于解析全局标题。
-            sections: `TemplateSection` 列表，作为章节骨架。
+        Args:
+            template_markdown: Original template text for parsing global title.
+            sections: `TemplateSection` list as chapter skeleton.
 
-        返回:
-            dict: 包含模板标题与章节元数据的概览结构。
+        Returns:
+            dict: Overview structure containing template title and chapter metadata.
         """
         fallback_title = sections[0].title if sections else ""
         overview = {
@@ -1222,17 +1223,17 @@ class ReportAgent:
     @staticmethod
     def _extract_template_title(template_markdown: str, fallback: str = "") -> str:
         """
-        尝试从Markdown中提取首个标题。
+        Try to extract first heading from Markdown.
 
-        优先返回首个 `#` 语法标题；如果模板首行就是正文，则回退到
-        第一行非空文本或调用方提供的 fallback。
+        Prefer returning first `#` syntax heading; if template first line is body text,
+        fall back to first non-empty line or caller-provided fallback.
 
-        参数:
-            template_markdown: 模板原文。
-            fallback: 备用标题，当文档缺少显式标题时使用。
+        Args:
+            template_markdown: Original template text.
+            fallback: Fallback title when document lacks explicit heading.
 
-        返回:
-            str: 解析到的标题文本。
+        Returns:
+            str: Parsed heading text.
         """
         for line in template_markdown.splitlines():
             stripped = line.strip()
@@ -1242,76 +1243,76 @@ class ReportAgent:
                 return stripped.lstrip("#").strip()
             if stripped:
                 fallback = fallback or stripped
-        return fallback or "智能舆情分析报告"
+        return fallback or "Intelligent Sentiment Analysis Report"
     
     def _get_fallback_template_content(self) -> str:
         """
-        获取备用模板内容。
+        Get fallback template content.
 
-        当模板目录不可用或LLM选择失败时使用该 Markdown 模板，
-        保证后续流程仍能给出结构化章节。
+        Use this Markdown template when template directory is unavailable or LLM selection fails,
+        ensuring subsequent workflow can still provide structured chapters.
         """
-        return """# 社会公共热点事件分析报告
+        return """# Social Public Hot Event Analysis Report
 
-## 执行摘要
-本报告针对当前社会热点事件进行综合分析，整合了多方信息源的观点和数据。
+## Executive Summary
+This report comprehensively analyzes current social hot events, integrating perspectives and data from multiple information sources.
 
-## 事件概况
-### 基本信息
-- 事件性质：{event_nature}
-- 发生时间：{event_time}
-- 涉及范围：{event_scope}
+## Event Overview
+### Basic Information
+- Event Nature: {event_nature}
+- Event Time: {event_time}
+- Event Scope: {event_scope}
 
-## 舆情态势分析
-### 整体趋势
+## Sentiment Situation Analysis
+### Overall Trend
 {sentiment_analysis}
 
-### 主要观点分布
+### Main Opinion Distribution
 {opinion_distribution}
 
-## 媒体报道分析
-### 主流媒体态度
+## Media Reporting Analysis
+### Mainstream Media Attitude
 {media_analysis}
 
-### 报道重点
+### Reporting Focus
 {report_focus}
 
-## 社会影响评估
-### 直接影响
+## Social Impact Assessment
+### Direct Impact
 {direct_impact}
 
-### 潜在影响
+### Potential Impact
 {potential_impact}
 
-## 应对建议
-### 即时措施
+## Response Recommendations
+### Immediate Measures
 {immediate_actions}
 
-### 长期策略
+### Long-term Strategy
 {long_term_strategy}
 
-## 结论与展望
+## Conclusion and Outlook
 {conclusion}
 
 ---
-*报告类型：社会公共热点事件分析*
-*生成时间：{generation_time}*
+*Report Type: Social Public Hot Event Analysis*
+*Generation Time: {generation_time}*
 """
     
     def _save_report(self, html_content: str, document_ir: Dict[str, Any], report_id: str) -> Dict[str, Any]:
         """
-        保存HTML与IR到文件并返回路径信息。
+        Save HTML and IR to files and return path information.
 
-        生成基于查询和时间戳的易读文件名，同时也把运行态的
-        `ReportState` 写入 JSON，方便下游排障或断点续跑。
+        Generate human-readable filenames based on query and timestamp, also write
+        runtime `ReportState` to JSON for downstream troubleshooting or resumable execution.
 
-        参数:
-            html_content: 渲染后的HTML正文。
-            document_ir: Document IR结构化数据。
-            report_id: 当前任务ID，用于创建独立文件名。
+        Args:
+            html_content: Rendered HTML content.
+            document_ir: Document IR structured data.
+            report_id: Current task ID for creating unique filenames.
 
-        返回:
-            dict: 记录HTML/IR/State文件的绝对与相对路径信息。
+        Returns:
+            dict: Records absolute and relative paths for HTML/IR/State files.
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         query_safe = "".join(
@@ -1335,9 +1336,9 @@ class ReportAgent:
         state_abs = str(state_path.resolve())
         state_rel = os.path.relpath(state_abs, os.getcwd())
 
-        logger.info(f"HTML报告已保存: {html_path}")
-        logger.info(f"Document IR已保存: {ir_path}")
-        logger.info(f"状态已保存到: {state_path}")
+        logger.info(f"HTML report saved: {html_path}")
+        logger.info(f"Document IR saved: {ir_path}")
+        logger.info(f"State saved to: {state_path}")
         
         return {
             'report_filename': html_filename,
@@ -1353,18 +1354,18 @@ class ReportAgent:
 
     def _save_document_ir(self, document_ir: Dict[str, Any], query_safe: str, timestamp: str) -> Path:
         """
-        将整本IR写入独立目录。
+        Write entire IR to separate directory.
 
-        `Document IR` 与 HTML 解耦保存，便于调试渲染差异以及
-        在不重新跑 LLM 的情况下再次渲染或导出其他格式。
+        Decouple `Document IR` from HTML storage for debugging rendering differences and
+        re-rendering or exporting other formats without re-running LLM.
 
-        参数:
-            document_ir: 整本报告的IR结构。
-            query_safe: 已清洗的查询短语，用于文件命名。
-            timestamp: 运行时间戳，保证文件名唯一。
+        Args:
+            document_ir: Entire report IR structure.
+            query_safe: Cleaned query phrase for file naming.
+            timestamp: Runtime timestamp ensuring filename uniqueness.
 
-        返回:
-            Path: 指向保存后的IR文件路径。
+        Returns:
+            Path: Path to saved IR file.
         """
         filename = f"report_ir_{query_safe}_{timestamp}.json"
         ir_path = Path(self.config.DOCUMENT_IR_OUTPUT_DIR) / filename
@@ -1382,17 +1383,17 @@ class ReportAgent:
         template_overview: Dict[str, Any],
     ):
         """
-        将文档设计稿、篇幅规划与模板概览另存成JSON。
+        Save document design draft, word budget and template overview as JSON.
 
-        这些中间件文件（document_layout/word_plan/template_overview）
-        方便在调试或复盘时快速定位：标题/目录/主题是如何确定的、
-        字数分配有什么要求，以便后续人工校正。
+        These intermediate files (document_layout/word_plan/template_overview)
+        facilitate quick positioning during debugging or post-analysis: how title/TOC/theme were determined,
+        word allocation requirements, for subsequent manual correction.
 
-        参数:
-            run_dir: 章节输出根目录。
-            layout_design: 文档布局节点的原始输出。
-            word_plan: 篇幅规划节点输出。
-            template_overview: 模板概览JSON。
+        Args:
+            run_dir: Chapter output root directory.
+            layout_design: Raw output from document layout node.
+            word_plan: Word budget node output.
+            template_overview: Template overview JSON.
         """
         artifacts = {
             "document_layout": layout_design,
@@ -1406,47 +1407,47 @@ class ReportAgent:
             try:
                 path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
             except Exception as exc:
-                logger.warning(f"写入{name}失败: {exc}")
+                logger.warning(f"Failed to write {name}: {exc}")
     
     def get_progress_summary(self) -> Dict[str, Any]:
-        """获取进度摘要，直接返回可序列化的状态字典供API层查询。"""
+        """Get progress summary, directly returning serializable state dict for API layer queries."""
         return self.state.to_dict()
     
     def load_state(self, filepath: str):
-        """从文件加载状态并覆盖当前state，便于断点恢复。"""
+        """Load state from file and override current state for breakpoint resumption."""
         self.state = ReportState.load_from_file(filepath)
-        logger.info(f"状态已从 {filepath} 加载")
+        logger.info(f"State loaded from {filepath}")
     
     def save_state(self, filepath: str):
-        """保存状态到文件，通常用于任务完成后的分析与备份。"""
+        """Save state to file, typically for post-task analysis and backup."""
         self.state.save_to_file(filepath)
-        logger.info(f"状态已保存到 {filepath}")
+        logger.info(f"State saved to {filepath}")
     
     def check_input_files(self, media_dir: str, query_dir: str, forum_log_path: str) -> Dict[str, Any]:
         """
-        检查输入文件是否准备就绪（基于文件数量增加）。
-        
+        Check if input files are ready (based on file count increase).
+
         Args:
-            media_dir: MediaEngine报告目录
-            query_dir: QueryEngine报告目录
-            forum_log_path: 论坛日志文件路径
-            
+            media_dir: MediaEngine report directory
+            query_dir: QueryEngine report directory
+            forum_log_path: Forum log file path
+
         Returns:
-            检查结果字典，包含文件计数、缺失列表、最新文件路径等
+            Check result dict containing file counts, missing list, latest file paths etc.
         """
-        # 检查各个报告目录的文件数量变化
+        # Check file count changes in each report directory
         directories = {
             'media': media_dir,
             'query': query_dir
         }
         
-        # 使用文件基准管理器检查新文件
+        # Use file baseline manager to check for new files
         check_result = self.file_baseline.check_new_files(directories)
         
-        # 检查论坛日志
+        # Check forum logs
         forum_ready = os.path.exists(forum_log_path)
         
-        # 构建返回结果
+        # Build return result
         result = {
             'ready': check_result['ready'] and forum_ready,
             'baseline_counts': check_result['baseline_counts'],
@@ -1457,23 +1458,23 @@ class ReportAgent:
             'latest_files': {}
         }
         
-        # 构建详细信息
+        # Build detailed information
         for engine, new_count in check_result['new_files_found'].items():
             current_count = check_result['current_counts'][engine]
             baseline_count = check_result['baseline_counts'].get(engine, 0)
             
             if new_count > 0:
-                result['files_found'].append(f"{engine}: {current_count}个文件 (新增{new_count}个)")
+                result['files_found'].append(f"{engine}: {current_count} files ({new_count} new)")
             else:
-                result['missing_files'].append(f"{engine}: {current_count}个文件 (基准{baseline_count}个，无新增)")
+                result['missing_files'].append(f"{engine}: {current_count} files (baseline {baseline_count}, no new)")
         
-        # 检查论坛日志
+        # Check forum logs
         if forum_ready:
             result['files_found'].append(f"forum: {os.path.basename(forum_log_path)}")
         else:
-            result['missing_files'].append("forum: 日志文件不存在")
+            result['missing_files'].append("forum: log file does not exist")
         
-        # 获取最新文件路径（用于实际报告生成）
+        # Get latest file paths (for actual report generation)
         if result['ready']:
             result['latest_files'] = self.file_baseline.get_latest_files(directories)
             if forum_ready:
@@ -1483,20 +1484,20 @@ class ReportAgent:
     
     def load_input_files(self, file_paths: Dict[str, str]) -> Dict[str, Any]:
         """
-        加载输入文件内容
-        
+        Load input file contents
+
         Args:
-            file_paths: 文件路径字典
-            
+            file_paths: Dictionary of file paths
+
         Returns:
-            加载的内容字典，包含 `reports` 列表与 `forum_logs` 字符串
+            Loaded content dict containing `reports` list and `forum_logs` string
         """
         content = {
             'reports': [],
             'forum_logs': ''
         }
         
-        # 加载报告文件
+        # Load report files
         engines = ['query', 'media']
         for engine in engines:
             if engine in file_paths:
@@ -1504,35 +1505,35 @@ class ReportAgent:
                     with open(file_paths[engine], 'r', encoding='utf-8') as f:
                         report_content = f.read()
                     content['reports'].append(report_content)
-                    logger.info(f"已加载 {engine} 报告: {len(report_content)} 字符")
+                    logger.info(f"Loaded {engine} report: {len(report_content)} characters")
                 except Exception as e:
-                    logger.exception(f"加载 {engine} 报告失败: {str(e)}")
+                    logger.exception(f"Failed to load {engine} report: {str(e)}")
                     content['reports'].append("")
         
-        # 加载论坛日志
+        # Load forum logs
         if 'forum' in file_paths:
             try:
                 with open(file_paths['forum'], 'r', encoding='utf-8') as f:
                     content['forum_logs'] = f.read()
-                logger.info(f"已加载论坛日志: {len(content['forum_logs'])} 字符")
+                logger.info(f"Loaded forum logs: {len(content['forum_logs'])} characters")
             except Exception as e:
-                logger.exception(f"加载论坛日志失败: {str(e)}")
+                logger.exception(f"Failed to load forum logs: {str(e)}")
         
         return content
 
 
 def create_agent(config_file: Optional[str] = None) -> ReportAgent:
     """
-    创建Report Agent实例的便捷函数。
-    
-    Args:
-        config_file: 配置文件路径
-        
-    Returns:
-        ReportAgent实例
+    Convenience function to create Report Agent instance.
 
-    目前以环境变量驱动 `Settings`，保留 `config_file` 参数便于未来扩展。
+    Args:
+        config_file: Configuration file path
+
+    Returns:
+        ReportAgent instance
+
+    Currently driven by environment variables for `Settings`, keeping `config_file` parameter for future extension.
     """
     
-    config = Settings() # 以空配置初始化，而从从环境变量初始化
+    config = Settings()  # Initialize with empty config, populated from environment variables
     return ReportAgent(config)
