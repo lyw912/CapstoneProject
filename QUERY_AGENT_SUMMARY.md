@@ -273,12 +273,6 @@ python -m QueryEngine.evaluation.run_evaluation --full
 streamlit run SingleEngineApp/query_agent_temp_app.py
 ```
 
-### 4.3.1 新增可视化界面英文版本
-
-```bash
-streamlit run SingleEngineApp/query_agent_temp_app_en.py
-```
-
 四个 Tab：立场分布 / 来源列表（可按立场筛选）/ 观点聚类 / 知识缺口
 
 ### 4.4 ForumEngine 对接（⚠️ 当前断开，需要处理）
