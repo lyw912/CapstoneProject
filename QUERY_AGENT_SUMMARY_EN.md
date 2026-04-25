@@ -66,13 +66,13 @@ QueryEngine/
 
 ### 2.1 Comparison with Existing Systems
 
-| System | Query Decomposition | Stance Awareness | Closed-loop Termination | Trustworthiness Eval |
-| :--- | :--- | :--- | :--- | :--- |
-| GPT-Researcher | what/why/how dimensions | ❌ | ❌ Fixed Rounds | ❌ |
-| STORM (ACL 2024) | Expert Roles (Knowledge) | ❌ Role ≠ Stance | ❌ | ❌ |
-| MindSearch (2024) | DAG Logical Sub-queries | ❌ | ❌ | ❌ |
-| Self-RAG (ICLR 2024) | No Decomposition | ❌ | Relevance Self-reflection | ❌ |
-| **Query Agent v2** | **5D Stance Matrix** | **✅ Core Design** | **✅ SCS Driven** | **✅ TrustScore** |
+| System               | Query Decomposition      | Stance Awareness   | Closed-loop Termination   | Trustworthiness Eval |
+| :------------------- | :----------------------- | :----------------- | :------------------------ | :------------------- |
+| GPT-Researcher       | what/why/how dimensions  | ❌                 | ❌ Fixed Rounds           | ❌                   |
+| STORM (ACL 2024)     | Expert Roles (Knowledge) | ❌ Role ≠ Stance   | ❌                        | ❌                   |
+| MindSearch (2024)    | DAG Logical Sub-queries  | ❌                 | ❌                        | ❌                   |
+| Self-RAG (ICLR 2024) | No Decomposition         | ❌                 | Relevance Self-reflection | ❌                   |
+| **Query Agent v2**   | **5D Stance Matrix**     | **✅ Core Design** | **✅ SCS Driven**         | **✅ TrustScore**    |
 
 ### 2.2 Innovation 1: Stance Matrix Sub-query Planning
 
@@ -228,12 +228,12 @@ User Query (str)
 
 **Information flow of the three engines (independent of each other, search results are not shared):**
 
-| Engine | Data Source | Writing | Reading |
-| :--- | :--- | :--- | :--- |
-| QueryEngine (Original process) | Tavily | query.log | forum.log (HOST message) |
-| **Query Agent v2 (New process)** | Tavily + Anspire + InsightDB | Not yet integrated | — |
-| MediaEngine | Bocha | media.log | forum.log |
-| InsightEngine | MySQL | insight.log | forum.log |
+| Engine                           | Data Source                  | Writing            | Reading                  |
+| :------------------------------- | :--------------------------- | :----------------- | :----------------------- |
+| QueryEngine (Original process)   | Tavily                       | query.log          | forum.log (HOST message) |
+| **Query Agent v2 (New process)** | Tavily + Anspire + InsightDB | Not yet integrated | —                        |
+| MediaEngine                      | Bocha                        | media.log          | forum.log                |
+| InsightEngine                    | MySQL                        | insight.log        | forum.log                |
 
 ---
 
@@ -271,7 +271,7 @@ python -m QueryEngine.evaluation.run_evaluation --full
 ### 4.3 Visualization Interface
 
 ```bash
-streamlit run SingleEngineApp/query_agent_temp_app.py
+streamlit run SingleEngineApp/query_agent_temp_app_2.0.py
 ```
 
 Four Tabs: Stance Distribution / Source List (filterable by stance) / Opinion Clustering / Knowledge Gaps
@@ -324,10 +324,10 @@ QueryAgent using InsightEngine data: Just via `MediaCrawlerDB` (already implemen
 
 ### 5.1 Architectural Issues
 
-| Problem | Severity | Description |
-| :--- | :--- | :--- |
-| **ForumEngine Disconnect** | High | `research_structured()` logs don't match monitor patterns. QueryAgent is "silent" in collaboration. (Fix: add one-line call). |
-| **Isolated Engines** | Medium | MediaEngine, InsightEngine, and QueryAgent do not share search results, leading to potential redundant searches. |
+| Problem                    | Severity | Description                                                                                                                   |
+| :------------------------- | :------- | :---------------------------------------------------------------------------------------------------------------------------- |
+| **ForumEngine Disconnect** | High     | `research_structured()` logs don't match monitor patterns. QueryAgent is "silent" in collaboration. (Fix: add one-line call). |
+| **Isolated Engines**       | Medium   | MediaEngine, InsightEngine, and QueryAgent do not share search results, leading to potential redundant searches.              |
 
 ### 5.2 MediaEngine Multimodal Problems
 
@@ -347,4 +347,5 @@ webpages:    List[WebpageResult]    # Only text is processed
 Current integration method (Spider → MySQL → InsightEngine.MediaCrawlerDB → QueryAgent's InsightDB source). Spider is asynchronous background collection (hourly), while QueryAgent is synchronous real-time query (within minutes). **Considerable?**.
 
 ---
+
 _Document Version: v2.0 | 2026-04-07_
