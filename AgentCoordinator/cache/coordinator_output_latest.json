@@ -1,0 +1,643 @@
+{
+  "schema_version": "1.0",
+  "query": "DeepSeek发布新模型 各方舆论",
+  "analysis_type": "general",
+  "generated_at": "2026-05-02T15:02:49.890605+00:00",
+  "pipeline_duration_seconds": 129.51,
+  "divergence_matrix": {
+    "pairs": {
+      "query_agent|bilibili": 0.691,
+      "query_agent|weibo": 0.6736,
+      "query_agent|zhihu": 0.7431,
+      "query_agent|social_media_overall": 0.6674,
+      "query_agent|media_agent": 0.0877,
+      "bilibili|weibo": 0.5195,
+      "bilibili|zhihu": 0.1565,
+      "bilibili|social_media_overall": 0.0027,
+      "bilibili|media_agent": 0.6667,
+      "weibo|zhihu": 1.0,
+      "weibo|social_media_overall": 0.464,
+      "weibo|media_agent": 0.8346,
+      "zhihu|social_media_overall": 0.1793,
+      "zhihu|media_agent": 0.7226,
+      "social_media_overall|media_agent": 0.6674
+    },
+    "hotspots": [
+      "weibo vs zhihu: CSSD=1.000 — notable divergence detected",
+      "weibo vs media_agent: CSSD=0.835 — notable divergence detected",
+      "query_agent vs zhihu: CSSD=0.743 — notable divergence detected",
+      "zhihu vs media_agent: CSSD=0.723 — notable divergence detected",
+      "query_agent vs bilibili: CSSD=0.691 — notable divergence detected",
+      "query_agent vs weibo: CSSD=0.674 — notable divergence detected",
+      "query_agent vs social_media_overall: CSSD=0.667 — notable divergence detected",
+      "social_media_overall vs media_agent: CSSD=0.667 — notable divergence detected",
+      "bilibili vs media_agent: CSSD=0.667 — notable divergence detected",
+      "bilibili vs weibo: CSSD=0.519 — notable divergence detected",
+      "weibo vs social_media_overall: CSSD=0.464 — notable divergence detected"
+    ],
+    "max_divergence": {
+      "pair": "weibo|zhihu",
+      "value": 1.0
+    },
+    "min_divergence": {
+      "pair": "bilibili|social_media_overall",
+      "value": 0.0027
+    }
+  },
+  "deliberation": {
+    "analysis_type": "general",
+    "perspectives_used": [
+      "Facts & Data",
+      "Public Emotion & Social Psychology",
+      "Stakeholder Analysis",
+      "Historical & Cross-Domain Reflection"
+    ],
+    "phases": [
+      {
+        "phase": "independent",
+        "summary": "",
+        "consensus_points": [],
+        "dissent_points": []
+      },
+      {
+        "phase": "cross_examination",
+        "summary": "",
+        "consensus_points": [
+          "The official Chinese media stance (42.2% of web sources) frames the model as a success, while international/opposition sources (15.6%) criticize it for failing to close the U.S.-China AI gap and allege IP theft—reflecting a deep polarization between national pride and skeptical global competition.",
+          "Social media platforms show varied responses: Zhihu is 100% neutral/analytical (technical community), Bilibili is mixed support/neutral (38.9%/61.1%) with national pride themes, while Weibo shows high support (66.7%) but data reliability is questionable (unrelated sample).",
+          "Key data gaps hamper full understanding: specific performance benchmarks are missing, as is user sentiment from non-English-speaking regions (e.g., Latin America, Africa) and platforms like GitHub China.",
+          "All perspectives agree that the discourse resembles historical patterns of Chinese technological nationalism (e.g., semiconductors, high-speed rail, 5G) with recurring themes of self-reliance, IP disputes, and balancing pride with scrutiny."
+        ],
+        "dissent_points": [
+          "Whether the social media distribution (56.5% neutral, 39.1% support) fully represents genuine public emotion or is inflated by platform biases (e.g., Weibo sample issue) and cultural norms (Zhihu neutrality). type: different_data (sample quality) and genuine_uncertainty",
+          "The role of Zhihu's 100% neutral stance: Is it a sign of critical scrutiny, analytical detachment, or a community withholding judgment pending performance benchmarks? All perspectives acknowledge it but interpret it differently. type: different_frameworks (psychological vs. stakeholder vs. historical) and genuine_uncertainty",
+          "Whether the national pride emotion (e.g., 'breaking Nvidia moat') is a genuine driver for most users or primarily reflects state-aligned framing on specific platforms (Bilibili). type: different_frameworks (sociological vs. stakeholder) and genuine_uncertainty",
+          "The absence of performance benchmarks makes it impossible to resolve whether the model is a true 'leapfrog' (historical narrative) or still significantly behind (opposition claim). This disagreement is rooted in genuine_uncertainty due to data gaps."
+        ]
+      },
+      {
+        "phase": "synthesis_arbitration",
+        "summary": "All four perspectives agree that the discourse around DeepSeek's new model is deeply polarized between official Chinese narratives of national technological achievement and skeptical international criticisms, with social media showing platform-specific patterns (Zhihu neutral, Bilibili mixed supportive/neutral, Weibo high support but potentially unreliable). Persistent disagreements exist over data reliability (e.g., Weibo sample issue) and the interpretation of Zhihu's neutrality (critical scru",
+        "consensus_points": [
+          "Official Chinese media (42.2% of web sources) frames the model as a success symbolizing AI self-sufficiency, while international/opposition sources (15.6%) criticize it for failing to close the U.S.-China AI gap and allege IP theft.",
+          "Social media sentiment varies by platform: Zhihu is 100% neutral/analytical, Bilibili shows 38.9% support and 61.1% neutral, and Weibo shows 66.7% support but includes an unrelated laptop review, casting doubt on its reliability.",
+          "The discourse resembles historical patterns of Chinese technological nationalism (e.g., semiconductors, high-speed rail, 5G) with recurring themes of self-reliance, IP disputes, and a balance between national pride and technical scrutiny.",
+          "Key data gaps remain on specific performance benchmarks (accuracy, speed) and user sentiment from non-English-speaking regions (e.g., Latin America, Africa) and platforms like GitHub China.",
+          "The official Chinese media stance (42.2% of web sources) frames the model as a success, while international/opposition sources (15.6%) criticize it for failing to close the U.S.-China AI gap and allege IP theft—reflecting a deep polarization between national pride and skeptical global competition.",
+          "Social media platforms show varied responses: Zhihu is 100% neutral/analytical (technical community), Bilibili is mixed support/neutral (38.9%/61.1%) with national pride themes, while Weibo shows high support (66.7%) but data reliability is questionable (unrelated sample).",
+          "Key data gaps hamper full understanding: specific performance benchmarks are missing, as is user sentiment from non-English-speaking regions (e.g., Latin America, Africa) and platforms like GitHub China.",
+          "All perspectives agree that the discourse resembles historical patterns of Chinese technological nationalism (e.g., semiconductors, high-speed rail, 5G) with recurring themes of self-reliance, IP disputes, and balancing pride with scrutiny."
+        ],
+        "dissent_points": [
+          "Whether the social media distribution (56.5% neutral, 39.1% support) genuinely represents public emotion or is inflated by platform biases (Weibo sample issue) and cultural norms (Zhihu neutrality).",
+          "Interpretation of Zhihu's 100% neutral stance: Is it critical scrutiny, analytical detachment, or a community withholding judgment pending performance benchmarks?",
+          "Whether the national pride emotion (e.g., 'breaking Nvidia moat') is a genuine driver for most users or primarily reflects state-aligned framing on specific platforms (Bilibili).",
+          "Whether the model is a true 'leapfrog' (historical narrative) or still significantly behind (opposition claim) cannot be resolved due to absence of performance benchmarks.",
+          "Whether the social media distribution (56.5% neutral, 39.1% support) fully represents genuine public emotion or is inflated by platform biases (e.g., Weibo sample issue) and cultural norms (Zhihu neutrality). type: different_data (sample quality) and genuine_uncertainty",
+          "The role of Zhihu's 100% neutral stance: Is it a sign of critical scrutiny, analytical detachment, or a community withholding judgment pending performance benchmarks? All perspectives acknowledge it but interpret it differently. type: different_frameworks (psychological vs. stakeholder vs. historical) and genuine_uncertainty",
+          "Whether the national pride emotion (e.g., 'breaking Nvidia moat') is a genuine driver for most users or primarily reflects state-aligned framing on specific platforms (Bilibili). type: different_frameworks (sociological vs. stakeholder) and genuine_uncertainty",
+          "The absence of performance benchmarks makes it impossible to resolve whether the model is a true 'leapfrog' (historical narrative) or still significantly behind (opposition claim). This disagreement is rooted in genuine_uncertainty due to data gaps."
+        ]
+      }
+    ],
+    "final_consensus": [
+      "Official Chinese media (42.2% of web sources) frames the model as a success symbolizing AI self-sufficiency, while international/opposition sources (15.6%) criticize it for failing to close the U.S.-China AI gap and allege IP theft.",
+      "Social media sentiment varies by platform: Zhihu is 100% neutral/analytical, Bilibili shows 38.9% support and 61.1% neutral, and Weibo shows 66.7% support but includes an unrelated laptop review, casting doubt on its reliability.",
+      "The discourse resembles historical patterns of Chinese technological nationalism (e.g., semiconductors, high-speed rail, 5G) with recurring themes of self-reliance, IP disputes, and a balance between national pride and technical scrutiny.",
+      "Key data gaps remain on specific performance benchmarks (accuracy, speed) and user sentiment from non-English-speaking regions (e.g., Latin America, Africa) and platforms like GitHub China.",
+      "The official Chinese media stance (42.2% of web sources) frames the model as a success, while international/opposition sources (15.6%) criticize it for failing to close the U.S.-China AI gap and allege IP theft—reflecting a deep polarization between national pride and skeptical global competition.",
+      "Social media platforms show varied responses: Zhihu is 100% neutral/analytical (technical community), Bilibili is mixed support/neutral (38.9%/61.1%) with national pride themes, while Weibo shows high support (66.7%) but data reliability is questionable (unrelated sample).",
+      "Key data gaps hamper full understanding: specific performance benchmarks are missing, as is user sentiment from non-English-speaking regions (e.g., Latin America, Africa) and platforms like GitHub China.",
+      "All perspectives agree that the discourse resembles historical patterns of Chinese technological nationalism (e.g., semiconductors, high-speed rail, 5G) with recurring themes of self-reliance, IP disputes, and balancing pride with scrutiny."
+    ],
+    "final_dissents": [
+      "Whether the social media distribution (56.5% neutral, 39.1% support) genuinely represents public emotion or is inflated by platform biases (Weibo sample issue) and cultural norms (Zhihu neutrality).",
+      "Interpretation of Zhihu's 100% neutral stance: Is it critical scrutiny, analytical detachment, or a community withholding judgment pending performance benchmarks?",
+      "Whether the national pride emotion (e.g., 'breaking Nvidia moat') is a genuine driver for most users or primarily reflects state-aligned framing on specific platforms (Bilibili).",
+      "Whether the model is a true 'leapfrog' (historical narrative) or still significantly behind (opposition claim) cannot be resolved due to absence of performance benchmarks.",
+      "Whether the social media distribution (56.5% neutral, 39.1% support) fully represents genuine public emotion or is inflated by platform biases (e.g., Weibo sample issue) and cultural norms (Zhihu neutrality). type: different_data (sample quality) and genuine_uncertainty",
+      "The role of Zhihu's 100% neutral stance: Is it a sign of critical scrutiny, analytical detachment, or a community withholding judgment pending performance benchmarks? All perspectives acknowledge it but interpret it differently. type: different_frameworks (psychological vs. stakeholder vs. historical) and genuine_uncertainty",
+      "Whether the national pride emotion (e.g., 'breaking Nvidia moat') is a genuine driver for most users or primarily reflects state-aligned framing on specific platforms (Bilibili). type: different_frameworks (sociological vs. stakeholder) and genuine_uncertainty",
+      "The absence of performance benchmarks makes it impossible to resolve whether the model is a true 'leapfrog' (historical narrative) or still significantly behind (opposition claim). This disagreement is rooted in genuine_uncertainty due to data gaps."
+    ],
+    "confidence": 0.65
+  },
+  "gap_filling": {
+    "rounds_performed": 0,
+    "gaps_detected": [],
+    "results_found": 0
+  },
+  "platform_interpretations": {
+    "bilibili": "**Bilibili (B站)** (18 posts)\nStance distribution: support: 39%, neutral: 61%\nDominant: neutral (61%)\nDemographic context: Represents Gen-Z attitudes; may signal future trends but skews very young\nInterpretation: Bilibili's neutral stance reflects Gen-Z attitudes and may signal future trends. Consider: (1) extreme age skew toward under-30; (2) subculture echo chambers within interest communities; (3) danmaku format encourages bandwagon/meme behavior.",
+    "weibo": "**Weibo (微博)** (3 posts)\nStance distribution: background: 33%, support: 67%\nDominant: support (67%)\nDemographic context: Represents immediate emotional reactions of the urban mass public\nInterpretation: Weibo's support stance likely reflects mass public's immediate emotional reaction. Consider: (1) potential astroturfing or viral marketing campaigns; (2) trending-topic algorithm amplification effects; (3) short-form format favors emotional expression over deliberation.",
+    "zhihu": "**Zhihu (知乎)** (2 posts)\nStance distribution: neutral: 100%\nDominant: neutral (100%)\nDemographic context: Represents rational analysis of the educated elite; may miss grassroots sentiment\nInterpretation: Zhihu's neutral stance represents the educated elite's rational analysis. Consider: (1) knowledge-mass cognitive gap; (2) long-form discussions may over-theorize; (3) platform skews toward professionals and academics."
+  },
+  "bias_analysis": {
+    "echo_warnings": [],
+    "silent_majority_hypothesis": null
+  },
+  "fact_opinion_separation": {
+    "verified_facts": [
+      {
+        "fact": "DeepSeek-V4 was released in April 2026, employing a large-scale MoE architecture with multimodal and ultra-long context capabilities, achieving domestic leading performance comparable to top closed-source models.",
+        "sources": [
+          "Web Search (background)"
+        ],
+        "verification_status": "cross_verified",
+        "confidence": 0.9
+      },
+      {
+        "fact": "Official sources account for 42.2% of web search results, emphasizing China's AI self-innovation and technological confidence using DeepSeek as an example.",
+        "sources": [
+          "Web Search (official)"
+        ],
+        "verification_status": "cross_verified",
+        "confidence": 0.8
+      },
+      {
+        "fact": "Opposition sources account for 15.6% of web results, arguing the new model fails to narrow the U.S.-China AI gap, and raising allegations of IP theft and mediocre performance.",
+        "sources": [
+          "Web Search (oppose)"
+        ],
+        "verification_status": "cross_verified",
+        "confidence": 0.8
+      },
+      {
+        "fact": "Zhihu shows 100% neutral/analytical stance based on available data.",
+        "sources": [
+          "Deliberation Synthesis"
+        ],
+        "verification_status": "single_source",
+        "confidence": 0.7
+      },
+      {
+        "fact": "Bilibili sentiment: 38.9% support, 61.1% neutral.",
+        "sources": [
+          "Deliberation Synthesis"
+        ],
+        "verification_status": "single_source",
+        "confidence": 0.7
+      },
+      {
+        "fact": "Weibo shows 66.7% support but includes an unrelated laptop review, casting doubt on data reliability.",
+        "sources": [
+          "Deliberation Synthesis"
+        ],
+        "verification_status": "disputed",
+        "confidence": 0.5
+      }
+    ],
+    "opinions_sentiments": [
+      {
+        "perspective": "Official Chinese media frame the model as a symbol of AI self-sufficiency and national technological achievement.",
+        "holders": "State media (Xinhua, People's Daily, CCTV) and official sources (42.2% of web)",
+        "sentiment_intensity": "strong",
+        "platform_distribution": {
+          "weibo": 0.667,
+          "zhihu": 0.0
+        },
+        "potential_biases": [
+          "echo_chamber",
+          "astroturfing"
+        ]
+      },
+      {
+        "perspective": "International and opposition sources criticize the model for not closing the U.S.-China AI gap, alleging IP theft and mediocre performance.",
+        "holders": "Opposition sources (15.6% of web), likely international tech critics",
+        "sentiment_intensity": "strong",
+        "platform_distribution": {
+          "weibo": 0.0,
+          "zhihu": 0.0
+        },
+        "potential_biases": [
+          "elite_bias"
+        ]
+      },
+      {
+        "perspective": "Zhihu community maintains a neutral, analytical stance, possibly withholding judgment pending performance benchmarks.",
+        "holders": "Zhihu users (technical audience)",
+        "sentiment_intensity": "mild",
+        "platform_distribution": {
+          "weibo": 0.0,
+          "zhihu": 1.0
+        },
+        "potential_biases": [
+          "elite_bias"
+        ]
+      }
+    ],
+    "analytical_frameworks": [
+      {
+        "framework": "historical",
+        "analysis": "The discourse mirrors previous Chinese technological nationalism cycles (semiconductors, high-speed rail, 5G) with recurring themes of self-reliance, IP disputes, and balance between national pride and technical scrutiny.",
+        "basis": "Consensus in deliberation synthesis that this pattern is historical.",
+        "certainty": "high"
+      },
+      {
+        "framework": "sociological",
+        "analysis": "Social media platform-specific patterns (Zhihu neutral, Bilibili mixed, Weibo high support) suggest that cultural norms and platform algorithms shape expressed sentiment, not just genuine public opinion.",
+        "basis": "Observed distribution differences across Zhihu, Bilibili, and Weibo from the synthesis.",
+        "certainty": "medium"
+      },
+      {
+        "framework": "technical",
+        "analysis": "Key data gaps on performance benchmarks and non-English regional sentiment prevent full resolution of whether the model truly narrows the AI gap.",
+        "basis": "Deliberation synthesis cites missing performance benchmarks and non-English sentiment data.",
+        "certainty": "medium"
+      }
+    ]
+  },
+  "synthesis": {
+    "summary": "The discourse around DeepSeek's new model is deeply polarized between official Chinese media framing it as a symbol of national AI self-sufficiency (42.2% of web sources) and international/opposition sources (15.6%) criticizing it for failing to close the U.S.-China AI gap and alleging IP theft. Social media sentiment varies by platform, with Zhihu 100% neutral (reflecting educated elite analysis), Bilibili 61% neutral and 39% supportive (Gen-Z attitudes), and Weibo 67% supportive but data reliability questioned due to an unrelated laptop review. Persistent disagreements remain over whether the neutral-to-supportive social media distribution genuinely represents public emotion or is inflated by platform biases and cultural norms, and whether the model is a true 'leapfrog' or still significantly behind due to absence of performance benchmarks. Overall confidence is moderate due to strong verified facts about source distribution and platform stances, but significant data gaps on performance benchmarks and non-English-speaking regions weaken the synthesis.",
+    "top_insights": [
+      {
+        "insight": "Official narratives of technological self-sufficiency dominate web sources but face deep skepticism from international and opposition outlets, creating a binary discourse that echoes historical patterns of Chinese technological nationalism.",
+        "basis": "Cross-verified consensus from deliberation and verified facts: official sources 42.2%, opposition 15.6%, and historical patterns (semiconductors, 5G) support this persistent polarization.",
+        "confidence": 0.85
+      },
+      {
+        "insight": "Social media sentiment is predominantly neutral (56.5%), not supportive, challenging the narrative of strong public endorsement; the neutral stance is likely a mix of genuine caution, platform-specific norms (Zhihu's analytical elite, Bilibili's Gen-Z) and data quality issues (Weibo's unreliable sample).",
+        "basis": "Deliberation consensus and platform-specific interpretations: Zhihu 100% neutral, Bilibili 61% neutral, Weibo 67% support but disputed data. Social media distribution shows 56.5% neutral overall.",
+        "confidence": 0.7
+      },
+      {
+        "insight": "The absence of specific performance benchmarks (accuracy, speed) prevents resolving the core dispute over whether DeepSeek's model represents a true 'leapfrog' or remains significantly behind U.S. counterparts, making the discourse largely ideological rather than evidence-based.",
+        "basis": "Persistent disagreements and data gaps identified in deliberation and verified facts: no benchmarks available, and both official celebrations and opposition criticisms lack quantitative performance details.",
+        "confidence": 0.9
+      }
+    ],
+    "key_tensions": [
+      {
+        "tension": "Official Chinese media (42.2%) frame the model as a success symbolizing AI self-sufficiency, while international/opposition sources (15.6%) criticize it for failing to close the U.S.-China AI gap and allege IP theft.",
+        "between": [
+          "web media (official Chinese sources)",
+          "web media (international/opposition sources)"
+        ],
+        "significance": "This binary opposition drives the entire discourse and hinders objective evaluation of the model's true capabilities."
+      },
+      {
+        "tension": "Social media sentiment appears neutral-to-supportive (56.5% neutral, 39.1% support), but data reliability is questioned due to platform biases (Weibo sample issue) and cultural norms (Zhihu's analytical neutrality), creating uncertainty about genuine public emotion.",
+        "between": [
+          "social media overall (aggregate data)",
+          "individual platform data (Zhihu, Weibo, Bilibili)"
+        ],
+        "significance": "Policymakers and analysts cannot confidently assess whether the public truly supports or critically scrutinizes the model, affecting strategic communication and response."
+      },
+      {
+        "tension": "Zhihu's 100% neutral stance is interpreted as either critical scrutiny, analytical detachment, or strategic withholding of judgment pending benchmarks, but the deliberators disagree on its meaning.",
+        "between": [
+          "Zhihu platform data",
+          "interpretation of Zhihu's neutrality (deliberation perspectives)"
+        ],
+        "significance": "Without benchmarks, Zhihu's neutrality cannot be resolved, undercutting the ability to gauge informed elite opinion."
+      }
+    ],
+    "overall_confidence": 0.65,
+    "recommended_investigation": [
+      "Obtain specific performance benchmarks (accuracy, speed, cost) of DeepSeek-V4 to resolve the core dispute over model capability and provide an evidence basis for evaluating official vs. opposition claims.",
+      "Expand sentiment analysis to non-English-speaking platforms (e.g., Reddit, Twitter, YouTube) and regions (Latin America, Africa) to capture a more global perspective and reduce sample bias.",
+      "Investigate the Weibo data sample to determine whether it is contaminated by unrelated content (laptop review) and assess its reliability for public opinion analysis.",
+      "Conduct in-depth qualitative analysis of Zhihu discussions to distinguish between critical scrutiny, analytical detachment, and strategic withholding, clarifying the meaning of its 100% neutral stance."
+    ]
+  },
+  "source_data": {
+    "query_agent": {
+      "total_sources": 15,
+      "stance_distribution": {
+        "official": 0.422,
+        "neutral": 0.133,
+        "support": 0.089,
+        "background": 0.2,
+        "oppose": 0.156
+      },
+      "coverage_score": 1.0,
+      "top_sources": [
+        {
+          "title": "DeepSeek's new AI model does not wow markets in fast-changing ...",
+          "url": "https://www.reuters.com/world/china/deepseeks-new-ai-model-does-not-wow-markets-fast-changing-industry-2026-04-27/",
+          "trust_score": 0.784,
+          "stance": "oppose"
+        },
+        {
+          "title": "自主创新需“率道而行”",
+          "url": "https://www.ncsti.gov.cn/kjdt/kjrd/qtrd_kjrd/202604/t20260427_245018.html",
+          "trust_score": 0.77,
+          "stance": "official"
+        },
+        {
+          "title": "DeepSeek's Long-Awaited New Model Fails to Narrow US Lead in AI",
+          "url": "https://www.bloomberg.com/news/articles/2026-04-24/deepseek-s-long-awaited-new-model-fails-to-narrow-us-lead-in-ai",
+          "trust_score": 0.764,
+          "stance": "oppose"
+        },
+        {
+          "title": "无锡市科技创新服务中心 苏南国家自主创新示范区",
+          "url": "https://wxkjj.wuxi.gov.cn/doc/2026/01/26/4723467.shtml",
+          "trust_score": 0.756,
+          "stance": "official"
+        },
+        {
+          "title": "自主创新需“率道而行”--经济·科技--人民网",
+          "url": "http://finance.people.com.cn/n1/2026/0427/c1004-40709239.html",
+          "trust_score": 0.754,
+          "stance": "official"
+        },
+        {
+          "title": "自主創新需“率道而行”--經濟·科技--人民網",
+          "url": "http://finance.people.com.cn/BIG5/n1/2026/0427/c1004-40709239.html",
+          "trust_score": 0.754,
+          "stance": "official"
+        },
+        {
+          "title": "摩尔线程与智源众智FlagOS社区完成DeepSeek-V4适配_园区和企业_北京市科学技术委员会、中关村科技园区管理委员会",
+          "url": "https://kw.beijing.gov.cn/xwdt/kcyx/xwdtyqqy/202604/t20260427_4616006.html",
+          "trust_score": 0.736,
+          "stance": "official"
+        },
+        {
+          "title": "中国AI的当下与未来--理论-中国共产党新闻网",
+          "url": "http://theory.people.com.cn/n1/2026/0311/c40531-40679459.html",
+          "trust_score": 0.734,
+          "stance": "official"
+        },
+        {
+          "title": "联通云x联通元景上线DeepSeek-V4--经济·科技--人民网",
+          "url": "http://finance.people.com.cn/n1/2026/0429/c1004-40711178.html",
+          "trust_score": 0.733,
+          "stance": "official"
+        },
+        {
+          "title": "人民锐评：这次DeepSeek中断既是警示也是历练",
+          "url": "http://opinion.people.com.cn/n1/2026/0401/c436867-40693502.html",
+          "trust_score": 0.73,
+          "stance": "official"
+        }
+      ],
+      "social_sentiment": {
+        "mode": "available",
+        "platforms_queried": [
+          "bilibili",
+          "weibo",
+          "zhihu"
+        ],
+        "total_posts": 23,
+        "total_comments": 10,
+        "sentiment_distribution": {
+          "support": 0.391,
+          "neutral": 0.565,
+          "background": 0.043
+        },
+        "per_platform": {
+          "bilibili": {
+            "count": 18,
+            "distribution": {
+              "support": 0.389,
+              "neutral": 0.611
+            }
+          },
+          "weibo": {
+            "count": 3,
+            "distribution": {
+              "background": 0.333,
+              "support": 0.667
+            }
+          },
+          "zhihu": {
+            "count": 2,
+            "distribution": {
+              "neutral": 1.0
+            }
+          }
+        },
+        "content_diversity": 1.0,
+        "low_diversity_warning": null,
+        "divergence_score": 0.667,
+        "divergence_summary": "Web search results show a significant plurality of official stance (42.2%) and notable opposition (15.6%), whereas social media discussions are predominantly neutral (56.5%) with higher support (39.1%) and negligible opposition or official framing.",
+        "freshness_hours": 12.6,
+        "top_social_voices": [
+          {
+            "platform": "weibo",
+            "content": "【荣耀笔记本X16 Plus评测：性能续航超强，但YOYO才是亮点】最近几年，轻薄笔记本的发展势头很迅猛。国产厂商们的持续内卷，让轻薄本来到了主流价位，消费者不用花太多钱，就能买到一台外观颜值高、续航和便携性表现好、配置均衡的产品。最近的荣耀新品发布会上，有一款笔记本现身，它就是荣耀笔记本X16 Plus 2026（FHD版），起售价6199元，国补价5269.15元。拿到这款产品，雷科技（ID：leitech）第一时间上手实测，现在来一起看看它的表现吧。（图源：雷科技摄制）全金属机身带来不俗颜值，大尺寸带来出色键盘手感荣耀笔记本X16 Plus 2026基本延续了上代产品的设计风格，走的是简",
+            "url": "https://m.weibo.cn/detail/5293467765838691",
+            "publish_time": "2026-05-01T02:22:06",
+            "stance": "background"
+          },
+          {
+            "platform": "bilibili",
+            "content": "(全球大视野）26.5.1 DeepSeek V4适配八家国产晶片，打破Nvidia护城河！美国战争成本高达500亿美元，油价飙升民众叫苦，粮食危机接踵而至！",
+            "url": "https://www.bilibili.com/video/BV1KYRGBDErC",
+            "publish_time": "2026-05-02T07:46:23",
+            "stance": "support"
+          },
+          {
+            "platform": "bilibili",
+            "content": "深夜引爆！DeepSeek联手清北抛出多模态重磅炸弹，传统视觉模型已被判死刑！| AI日报0430",
+            "url": "https://www.bilibili.com/video/BV11t9eB6EEy",
+            "publish_time": "2026-04-30T20:58:04",
+            "stance": "support"
+          },
+          {
+            "platform": "bilibili",
+            "content": "彻底疯狂！DeepSeek 再次大降价，缓存输入已打骨折！AI圈已沸腾，开发者已疯狂！",
+            "url": "https://www.bilibili.com/video/BV1nsovBGEJu",
+            "publish_time": "2026-04-26T21:41:02",
+            "stance": "support"
+          },
+          {
+            "platform": "weibo",
+            "content": "裂痕与曙光：当黄仁勋的“噩梦”照进现实2026年4月15日，英伟达CEO黄仁勋在播客中发出了近乎悲鸣的警告：“如果DeepSeek的新模型优先在华为平台上发布，对美国来说将是一个可怕的结果。”仅仅九天后的4月24日，随着DeepSeek V4预览版的上线，这句预言精准地击中了硅谷的痛点。这不仅仅是一次产品的迭代，更是一场酝酿已久的“算力突围”，标志着中国AI产业正式撕开了英伟达垄断多年的护城河。长期以来，全球AI开发者都被“锁”在英伟达的CUDA生态中。这种路径依赖如同当年的Wintel联盟，让更换芯片的成本高到令人望而却步。然而，DeepSeek这次选择了最艰难的一条路——“换心手术”。他们",
+            "url": "https://m.weibo.cn/detail/5293376412844566",
+            "publish_time": "2026-04-30T20:19:06",
+            "stance": "support"
+          },
+          {
+            "platform": "bilibili",
+            "content": "解析Deepseek发布的DeepSeek-V4多模态版本的大模型",
+            "url": "https://www.bilibili.com/video/BV1RSRKByEYk",
+            "publish_time": "2026-05-01T11:16:57",
+            "stance": "neutral"
+          },
+          {
+            "platform": "bilibili",
+            "content": "DeepSeek公开多模态技术文档，揭秘AI读图原理",
+            "url": "https://www.bilibili.com/video/BV1GXRKBCEwd",
+            "publish_time": "2026-05-01T09:39:25",
+            "stance": "neutral"
+          },
+          {
+            "platform": "bilibili",
+            "content": "日网网民：DeepSeek V4发布，是第一个完全用华为昇腾950PR芯片来训练和推理的设计，想彻底摆脱对CUDA的依赖",
+            "url": "https://www.bilibili.com/video/BV1yF9bBWE7N",
+            "publish_time": "2026-04-30T10:33:46",
+            "stance": "support"
+          },
+          {
+            "platform": "bilibili",
+            "content": "硅谷看DeepSeek V4：模型效率、算力突围与AGI必经之路【硅谷101视频播客】",
+            "url": "https://www.bilibili.com/video/BV1Kq9SBSE7N",
+            "publish_time": "2026-04-29T11:54:36",
+            "stance": "neutral"
+          },
+          {
+            "platform": "bilibili",
+            "content": "彭博社评论DeepSeek V4：符合预期，就是便宜——尽管缺乏“惊艳”元素，DeepSeek V4 为何依然令人印象深刻",
+            "url": "https://www.bilibili.com/video/BV11DokBqEbr",
+            "publish_time": "2026-04-27T22:46:00",
+            "stance": "neutral"
+          }
+        ],
+        "comment_sentiment": {
+          "total": 14,
+          "distribution": {
+            "neutral": 0.357,
+            "support": 0.214,
+            "oppose": 0.357,
+            "background": 0.071
+          },
+          "top_comments": [
+            {
+              "platform": "bilibili",
+              "content": "DeepSeek是用英伟达芯片训练的... v4英文版技术报告写得很清楚，报告16页,20页提到的TCGenO5、MegaMoE²等等几个相关算子，是只有CUDA上才有的，在华为昇腾上压根就没有相关适配。\n而且v4Pro模型是mxFP4+FP8混合精度框架，模型的权重记忆、CSA索引、MoE等等基于FP4精度进行的训练，而昇腾卡还不支持FP4训练。按华为规划，最快最快 要等到年末的950DT发布，",
+              "like_count": 142,
+              "publish_time": null,
+              "stance": "neutral"
+            },
+            {
+              "platform": "bilibili",
+              "content": "deepseek的恩情还不完",
+              "like_count": 76,
+              "publish_time": null,
+              "stance": "support"
+            },
+            {
+              "platform": "bilibili",
+              "content": "deepseek：这都啥问题啊，不如睡觉",
+              "like_count": 72,
+              "publish_time": null,
+              "stance": "neutral"
+            },
+            {
+              "platform": "bilibili",
+              "content": "灰到咯，传了一张图片，deepseek理解很准确，就是输出答案之后立马把答案吞回去了[doge]",
+              "like_count": 58,
+              "publish_time": null,
+              "stance": "support"
+            },
+            {
+              "platform": "bilibili",
+              "content": "你用deepseek，标签为啥加chathpt",
+              "like_count": 52,
+              "publish_time": null,
+              "stance": "neutral"
+            },
+            {
+              "platform": "bilibili",
+              "content": "DeepSeek爹给我个名额吧😭",
+              "like_count": 18,
+              "publish_time": null,
+              "stance": "support"
+            },
+            {
+              "platform": "bilibili",
+              "content": "这东西真的是进行部分用户测试的吗？这个月总共才用了不到五次deepseek，我刚才点进去看一下有识图模式这个功能[笑哭]",
+              "like_count": 15,
+              "publish_time": null,
+              "stance": "neutral"
+            },
+            {
+              "platform": "bilibili",
+              "content": "deepseek V4 效果不怎么好，代码编写能力也不怎么强，算有无之争",
+              "like_count": 10,
+              "publish_time": null,
+              "stance": "oppose"
+            },
+            {
+              "platform": "bilibili",
+              "content": "deepseek V4 效果不怎么好，代码编写能力也不怎么强，还没有多模态，和国内的豆包和Qwen大概一个级别。当然从技术上看，有一些重新和特点，但是效果上，算不上多惊艳，成本估计低一些。",
+              "like_count": 8,
+              "publish_time": null,
+              "stance": "oppose"
+            },
+            {
+              "platform": "bilibili",
+              "content": "DeepSeek是算法又不是算力，算力能堆的过美国算我输",
+              "like_count": 5,
+              "publish_time": null,
+              "stance": "oppose"
+            }
+          ]
+        },
+        "sentiment_trend": {
+          "buckets": [
+            {
+              "date": "2026-04-26",
+              "post_count": 1,
+              "distribution": {
+                "support": 1.0
+              }
+            },
+            {
+              "date": "2026-04-27",
+              "post_count": 2,
+              "distribution": {
+                "neutral": 1.0
+              }
+            },
+            {
+              "date": "2026-04-29",
+              "post_count": 2,
+              "distribution": {
+                "neutral": 1.0
+              }
+            },
+            {
+              "date": "2026-04-30",
+              "post_count": 6,
+              "distribution": {
+                "support": 0.667,
+                "neutral": 0.333
+              }
+            },
+            {
+              "date": "2026-05-01",
+              "post_count": 3,
+              "distribution": {
+                "neutral": 0.667,
+                "background": 0.333
+              }
+            },
+            {
+              "date": "2026-05-02",
+              "post_count": 1,
+              "distribution": {
+                "support": 1.0
+              }
+            }
+          ],
+          "trend_direction": "rising",
+          "trend_summary": "自4月26日以来，公众对DeepSeek新模型的舆论从全面支持转向中立主导，随后在4月30日出现强烈反弹（支持率67%），但5月1日再度回归中立基调（67%），而5月2日最新表态又重回完全支持，整体呈现波动上升趋势，支持立场在关键节点仍具主导性。"
+        },
+        "crawl_triggered": false
+      }
+    },
+    "media_agent": {
+      "available": true,
+      "mode": "live",
+      "summary_length": 2270
+    }
+  },
+  "coordinator_trace": [
+    "[MediaAgentNode] test_data_injected — 2270 chars in 0.0s",
+    "[QueryAgentNode] Loaded from cache in 0.0s",
+    "[DataBridge] Total bridged propositions: 17",
+    "[DivergenceMatrix] 6 sources, 15 pairs — max divergence: weibo|zhihu = 1.000, min divergence: bilibili|social_media_overall = 0.003, hotspots: 11",
+    "[PerspectiveGen] analysis_type=general → perspectives: ['Facts & Data', 'Public Emotion & Social Psychology', 'Stakeholder Analysis', 'Historical & Cross-Domain Reflection']",
+    "[Deliberation] 3-phase complete in 98.3s — consensus=8, dissents=8, confidence=0.80",
+    "[EchoChamber] 0 warning(s) detected",
+    "[FactOpinion] facts=6, opinions=3, frameworks=3",
+    "[PlatformInterpreter] Generated interpretations for 3 platforms: ['bilibili', 'weibo', 'zhihu']",
+    "[Synthesis] MoA aggregation complete in 15.7s — confidence=0.65, insights=3",
+    "[ReportAgentNode] academic_report — 26082 chars in 0.0s"
+  ],
+  "agent_errors": []
+}

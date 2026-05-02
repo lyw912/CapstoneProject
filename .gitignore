@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+DeepWiki/
 # C extensions
 *.so
 
@@ -296,7 +297,8 @@ secrets.json
 *.pem
 *.crt
 #config.py
-#MindSpider/config.py
+MindSpider/config.py
+MindSpider
 
 # API keys
 api_keys.txt
@@ -354,3 +356,11 @@ CLAUDE.md
 findings.md
 progress.md
 task_plan.md
+
+# AgentCoordinator runtime cache (large JSON, regenerated on each run)
+AgentCoordinator/cache/query_agent_*.json
+AgentCoordinator/cache/test_results_*.json
+AgentCoordinator/cache/coordinator_output_2*.json
+
+# Cookie file (contains platform login secrets)
+cookie.txt
