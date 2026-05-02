@@ -3,6 +3,7 @@ Query Agent Graph Node Package
 
 Phase 1 Nodes: query_planner, unified_search, dedup_filter, output_assemble
 Phase 2 Nodes: trust_scorer, stance_classify, coverage_check, gap_filler
+Phase 3 Nodes: social_enrichment
 """
 
 from .query_planner  import query_planner_node
@@ -16,6 +17,9 @@ from .stance_classify import stance_classify_node
 from .coverage_check  import coverage_check_node
 from .gap_filler      import gap_filler_node
 
+# Phase 3 New Nodes
+from .social_enrichment import social_enrichment_node
+
 __all__ = [
     # Phase 1
     "query_planner_node",
@@ -27,4 +31,6 @@ __all__ = [
     "stance_classify_node",
     "coverage_check_node",
     "gap_filler_node",
+    # Phase 3
+    "social_enrichment_node",
 ]

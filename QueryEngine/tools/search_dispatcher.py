@@ -40,14 +40,14 @@ except Exception as _anspire_err:
     logger.debug(f"[Dispatcher] AnspireAISearch not available, Chinese search will fallback to Tavily: {_anspire_err}")
 
 # ---------------------------------------------------------------------------
-# InsightDB Optional Dependency (social media database)
+# MindSpiderDB Optional Dependency (social media database)
 # ---------------------------------------------------------------------------
 try:
-    from InsightEngine.tools.search import MediaCrawlerDB as _MediaCrawlerDB
-    _INSIGHTDB_AVAILABLE = True
-except Exception as _insight_err:
-    _INSIGHTDB_AVAILABLE = False
-    logger.debug(f"[Dispatcher] MediaCrawlerDB not available, social media queries will be skipped: {_insight_err}")
+    from .mindspider_search import MindSpiderDB as _MindSpiderDB
+    _MINDSPIDERDB_AVAILABLE = True
+except Exception as _mindspider_err:
+    _MINDSPIDERDB_AVAILABLE = False
+    logger.debug(f"[Dispatcher] MindSpiderDB not available, social media queries will be skipped: {_mindspider_err}")
 
 
 # ---------------------------------------------------------------------------
@@ -138,23 +138,22 @@ def _anspire_to_source_items(response, sq: Dict) -> List[Dict]:
     return items
 
 
-def _insightdb_to_source_items(response, sq: Dict) -> List[Dict]:
-    """Convert InsightDB (MediaCrawlerDB) response to unified SourceItem format"""
+def _mindspiderdb_to_source_items(response, sq: Dict) -> List[Dict]:
+    """Convert MindSpiderDB response to unified SourceItem format."""
     items = []
     if not response or not hasattr(response, "results"):
         return items
 
     for r in response.results:
-        # QueryResult object
         url = r.url or ""
         title = r.title_or_content[:100] if r.title_or_content else ""
         snippet = r.title_or_content[:500] if r.title_or_content else ""
 
         items.append(dict(
             source_id=str(uuid.uuid4()),
-            url=url or f"{r.platform}://{r.source_table}",  # Use platform identifier when no URL
+            url=url or f"{r.platform}://{r.source_table}",
             title=title,
-            source_api="insight_db",
+            source_api="mindspider_db",
             platform=r.platform,
             snippet=snippet,
             full_content=r.title_or_content if len(r.title_or_content) > 500 else None,
@@ -163,7 +162,7 @@ def _insightdb_to_source_items(response, sq: Dict) -> List[Dict]:
             stance_label=None,
             stance_confidence=0.0,
             sub_query_ref=sq["query"],
-            rrf_score=r.hotness_score / 100.0 if r.hotness_score else 0.0,  # Normalize
+            rrf_score=r.hotness_score / 100.0 if r.hotness_score else 0.0,
             _target_stance=sq.get("target_stance", ""),
         ))
     return items
@@ -217,17 +216,17 @@ class UnifiedSearchDispatcher:
         Route single sub-query to corresponding search backend by target_source.
 
         Phase 2.5 Routing Logic:
-          anspire      → AnspireAISearch (Chinese news/analysis)
-          insight_db   → MediaCrawlerDB (social media data)
-          tavily / any → TavilyNewsAgency
+          anspire        → AnspireAISearch (Chinese news/analysis)
+          mindspider_db  → MindSpiderDB (social media data)
+          tavily / any   → TavilyNewsAgency
         """
         target = sq.get("target_source", "any")
 
         if target == "anspire" and _ANSPIRE_AVAILABLE:
             return await self._search_anspire(sq)
 
-        if target == "insight_db" and _INSIGHTDB_AVAILABLE:
-            return await self._search_insight_db(sq)
+        if target == "mindspider_db" and _MINDSPIDERDB_AVAILABLE:
+            return await self._search_mindspider_db(sq)
 
         return await self._search_tavily(sq)
 
@@ -271,17 +270,17 @@ class UnifiedSearchDispatcher:
             logger.warning(f"[Dispatcher] Anspire search failed [{sq['query']}]: {exc}")
             return None
 
-    async def _search_insight_db(self, sq: Dict) -> List[Dict]:
-        """Async wrapper for MediaCrawlerDB synchronous call (social media data)."""
+    async def _search_mindspider_db(self, sq: Dict) -> List[Dict]:
+        """Async wrapper for MindSpiderDB synchronous call (social media data)."""
         loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(None, self._call_insightdb_sync, sq)
-        return _insightdb_to_source_items(response, sq)
+        response = await loop.run_in_executor(None, self._call_mindspiderdb_sync, sq)
+        return _mindspiderdb_to_source_items(response, sq)
 
-    def _call_insightdb_sync(self, sq: Dict):
-        """Call MediaCrawlerDB.search_topic_globally()."""
+    def _call_mindspiderdb_sync(self, sq: Dict):
+        """Call MindSpiderDB.search_topic_globally()."""
         try:
-            db = _MediaCrawlerDB()
+            db = _MindSpiderDB()
             return db.search_topic_globally(sq["query"], limit_per_table=20)
         except Exception as exc:
-            logger.warning(f"[Dispatcher] InsightDB search failed [{sq['query']}]: {exc}")
+            logger.warning(f"[Dispatcher] MindSpiderDB search failed [{sq['query']}]: {exc}")
             return None

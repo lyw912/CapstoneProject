@@ -6,6 +6,7 @@ Responsible for configuring and invoking MediaCrawler for multi-platform crawlin
 """
 
 import os
+import re
 import sys
 import subprocess
 import tempfile
@@ -155,6 +156,34 @@ postgres_db_config = {{
             logger.exception(f"Failed to configure MediaCrawler database: {e}")
             return False
     
+    # ── cookie helpers ────────────────────────────────────────────────────────
+
+    _COOKIE_FILE_PLATFORM_MAP = {
+        "xiaohongshu": "xhs",
+        "douyin": "dy",
+        "bilibili": "bili",
+        "weibo": "wb",
+        "tieba": "tieba",
+        "zhihu": "zhihu",
+    }
+
+    def _load_cookies_from_file(self) -> dict:
+        """Load per-platform cookies from <project_root>/cookie.txt."""
+        cookie_file = project_root.parent / "cookie.txt"
+        if not cookie_file.exists():
+            return {}
+        cookies = {}
+        for line in cookie_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            name, _, value = line.partition("=")
+            name = name.strip()
+            code = self._COOKIE_FILE_PLATFORM_MAP.get(name)
+            if code:
+                cookies[code] = value.strip()
+        return cookies
+
     def create_base_config(self, platform: str, keywords: List[str],
                           crawler_type: str = "search", max_notes: int = 50) -> bool:
         """
@@ -177,6 +206,14 @@ postgres_db_config = {{
 
             base_config_path = self.mediacrawler_path / "config" / "base_config.py"
 
+            # Load per-platform cookie from cookie.txt
+            platform_cookies = self._load_cookies_from_file()
+            platform_cookie = platform_cookies.get(platform, "")
+            if platform_cookie:
+                logger.info(f"Loaded cookie for {platform} from cookie.txt ({len(platform_cookie)} chars)")
+            else:
+                logger.warning(f"No cookie found for {platform} in cookie.txt — will use existing config value")
+
             # Convert keywords list to comma-separated string
             keywords_str = ",".join(keywords)
 
@@ -185,14 +222,11 @@ postgres_db_config = {{
                 content = f.read()
 
             # Modify key configuration items
-            # skip_until_paren: When original line is multi-line assignment (ends with "(") and is replaced with single line,
-            # skip continuation lines until matching ")" is found
             lines = content.split('\n')
             new_lines = []
             skip_until_paren = False
 
             for line in lines:
-                # Skip continuation lines of multi-line assignment
                 if skip_until_paren:
                     if line.strip() == ')':
                         skip_until_paren = False
@@ -215,10 +249,18 @@ postgres_db_config = {{
                     replaced = 'CRAWLER_MAX_COMMENTS_COUNT_SINGLENOTES = 20'
                 elif line.startswith('HEADLESS = '):
                     replaced = 'HEADLESS = True'
+                elif line.startswith('SAVE_LOGIN_STATE = '):
+                    replaced = 'SAVE_LOGIN_STATE = False'
+                elif line.startswith('LOGIN_TYPE = '):
+                    replaced = 'LOGIN_TYPE = "cookie"  # qrcode or phone or cookie'
+                elif line.startswith('COOKIES = ') and platform_cookie:
+                    safe = platform_cookie.replace("\\", "\\\\").replace('"', '\\"')
+                    replaced = f'COOKIES = "{safe}"'
+                elif line.startswith('ENABLE_CDP_MODE = '):
+                    replaced = 'ENABLE_CDP_MODE = False'
 
                 if replaced is not None:
                     new_lines.append(replaced)
-                    # If original line is start of multi-line assignment (ends with "("), skip continuation lines
                     if line.rstrip().endswith('('):
                         skip_until_paren = True
                 else:
@@ -258,9 +300,26 @@ postgres_db_config = {{
         start_message = f"\nStarting crawling for platform: {platform}"
         start_message += f"\nKeywords: {keywords[:5]}{'...' if len(keywords) > 5 else ''} (total {len(keywords)})"
         logger.info(start_message)
-        
+
         start_time = datetime.now()
-        
+
+        # Bilibili uses dedicated API path to bypass Playwright 412 rate limiting
+        if platform == "bili":
+            return self._run_bili_api_crawler(keywords, max_notes, start_time)
+
+        # Zhihu: refresh z_c0 cookie before crawling (expires within hours)
+        if platform == "zhihu":
+            try:
+                from DeepSentimentCrawling.zhihu_cookie_refresher import refresh_sync
+                logger.info("[Zhihu] Attempting to refresh z_c0 cookie...")
+                ok = refresh_sync(timeout=30)
+                if ok:
+                    logger.info("[Zhihu] z_c0 cookie refreshed successfully")
+                else:
+                    logger.warning("[Zhihu] z_c0 refresh failed, continuing with existing cookie (may cause login failure)")
+            except Exception as e:
+                logger.warning(f"[Zhihu] z_c0 refresh error: {e}, continuing with existing cookie")
+
         try:
             # Configure database
             if not self.configure_mediacrawler_db():
@@ -279,10 +338,10 @@ postgres_db_config = {{
             cmd = [
                 sys.executable, "main.py",
                 "--platform", platform,
-                "--lt", login_type,
+                "--lt", "cookie",
                 "--type", "search",
                 "--save_data_option", save_data_option,
-                "--headless", "false"
+                "--headless", "true"
             ]
 
             logger.info(f"Executing command: {' '.join(cmd)}")
@@ -479,6 +538,41 @@ postgres_db_config = {{
         
         return total_stats
     
+    def _run_bili_api_crawler(self, keywords: List[str], max_notes: int, start_time) -> Dict:
+        """B站专用：用 bilibili-api-python 替代 Playwright，绕开 412 风控"""
+        try:
+            import asyncio
+            from DeepSentimentCrawling.bilibili_api_crawler import search_and_crawl
+        except ImportError:
+            logger.error("bilibili_api_crawler 导入失败，请确认已安装 bilibili-api-python")
+            return {"success": False, "error": "bilibili_api_crawler import failed", "platform": "bili"}
+
+        try:
+            result = asyncio.run(search_and_crawl(keywords, max_videos=max_notes, max_comments=20))
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            stats = {
+                "platform": "bili",
+                "keywords_count": len(keywords),
+                "duration_seconds": duration,
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "return_code": 0 if result["success"] else 1,
+                "success": result["success"],
+                "notes_count": result["videos"],
+                "comments_count": result["comments"],
+                "errors_count": 0,
+            }
+            self.crawl_stats["bili"] = stats
+            if result["success"]:
+                logger.info(f"✅ bili crawling completed via API, videos={result['videos']}, comments={result['comments']}, time={duration:.1f}s")
+            else:
+                logger.error("❌ bili API crawling returned no data")
+            return stats
+        except Exception as e:
+            logger.exception(f"❌ bili API crawling error: {e}")
+            return {"success": False, "error": str(e), "platform": "bili"}
+
     def get_crawl_statistics(self) -> Dict:
         """Get crawling statistics"""
         return {

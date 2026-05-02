@@ -50,7 +50,8 @@ Rules:
 - Chinese topics prefer Chinese sub-queries; international topics can mix Chinese and English
 - Each sub-query specifies: target_stance, target_source, priority (1-5)
 - "official" stance uses "tavily", priority set to 1-2 (deep search)
-- "support"/"oppose" use "any", priority set to 3-4
+- "support"/"oppose" for Chinese topics should use "mindspider_db" (social media data from Weibo/Zhihu/Bilibili), priority set to 3-4
+- "support"/"oppose" for international topics use "tavily" or "any", priority set to 3-4
 - "neutral"/"background" Chinese content uses "anspire", international content uses "tavily", priority set to 3-4
 
 Output only a JSON array, no other text:
@@ -89,7 +90,7 @@ def _classify_query_type(query: str, llm: LLMClient) -> str:
     try:
         prompt = ANALYSIS_TYPE_PROMPT.format(query=query)
         result = llm.invoke(
-            system_prompt="你是分类专家。只输出一个英文单词。",
+            system_prompt="You are a classification expert. Output exactly one English word.",
             user_prompt=prompt,
         )
         result = result.strip().lower()
@@ -169,10 +170,11 @@ def _ensure_stance_coverage(sub_queries: List[SubQueryItem], query: str) -> List
     }
 
     for stance in missing:
+        target = "mindspider_db" if stance in ("support", "oppose") else "any"
         sub_queries.append({
             "query": fallback_templates[stance],
             "target_stance": stance,
-            "target_source": "any",
+            "target_source": target,
             "priority": 4,
             "search_params": {},
         })

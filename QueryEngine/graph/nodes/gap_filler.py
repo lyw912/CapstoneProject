@@ -146,9 +146,9 @@ async def gap_filler_node(state: QueryAgentState) -> dict:
         if item["target_stance"] == "official" and not item["search_params"].get("include_domains"):
             item["search_params"]["include_domains"] = OFFICIAL_DOMAINS_CN
 
-        # support/oppose prefer insight_db (social media data more likely to have public support/opposition voices)
+        # support/oppose prefer mindspider_db (social media data more likely to have public support/opposition voices)
         if item["target_stance"] in ("support", "oppose") and item["target_source"] == "any":
-            item["target_source"] = "insight_db"
+            item["target_source"] = "mindspider_db"
 
         processed.append(item)
 

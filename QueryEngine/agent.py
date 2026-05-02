@@ -503,6 +503,8 @@ class DeepSearchAgent:
             "missing_stances": [],
             "gap_queries": [],
             "query_agent_output": None,
+            "mindspider_mode": "disabled",
+            "social_sentiment": None,
             "trace_log": [],
             "error_log": [],
         }

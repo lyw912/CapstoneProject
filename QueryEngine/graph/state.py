@@ -21,7 +21,7 @@ class SubQueryItem(TypedDict):
 
     query: str
     target_stance: Literal["official", "support", "oppose", "neutral", "background"]
-    target_source: Literal["tavily", "bocha", "insight_db", "any"]
+    target_source: Literal["tavily", "bocha", "insight_db", "mindspider_db", "any"]
     priority: int                        # 1 (highest) ~ 5 (lowest)
     search_params: Optional[Dict]        # e.g., include_domains, time_range, etc.
 
@@ -32,7 +32,7 @@ class SourceItem(TypedDict):
     source_id: str                       # UUID
     url: str
     title: str
-    source_api: str                      # "tavily" / "bocha" / "insight_db"
+    source_api: str                      # "tavily" / "bocha" / "insight_db" / "mindspider_db"
     platform: str                        # Extracted domain, e.g., "reuters.com"
     snippet: str                         # Summary (≤500 characters)
     full_content: Optional[str]          # Full text (if returned by search API)
@@ -70,6 +70,7 @@ class QueryAgentOutput(TypedDict):
     knowledge_gaps: List[str]
     coverage_score: float                # 0–1 stance coverage score
     structured_summary: str              # LLM-generated comprehensive summary
+    social_sentiment: Optional[Dict]     # Phase 3: MindSpider social media sentiment
     trace_log: List[str]
 
 
@@ -109,6 +110,10 @@ class QueryAgentState(TypedDict):
 
     # === Final Output ===
     query_agent_output: Optional[QueryAgentOutput]
+
+    # === Social Media Enrichment (Phase 3) ===
+    mindspider_mode: Optional[str]                  # "disabled" / "available" / "stale"
+    social_sentiment: Optional[Dict]                # SocialSentiment dict
 
     # === Monitoring ===
     trace_log: Annotated[List[str], operator.add]

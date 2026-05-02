@@ -19,8 +19,12 @@ Reference: Architecture Document v2.0 Part 2 § 8.5
 
 from __future__ import annotations
 
-from typing import Tuple
+import json
+import re
+from typing import List, Optional, Tuple
 from urllib.parse import urlparse
+
+from loguru import logger
 
 # ---------------------------------------------------------------------------
 # Official domain set
@@ -209,3 +213,109 @@ class HybridStanceClassifier:
 
         # No clear tendency
         return "neutral", 0.45
+
+    # ------------------------------------------------------------------
+    # LLM batch classification for social media posts
+    # ------------------------------------------------------------------
+
+    _BATCH_CLASSIFY_PROMPT = """You are a public opinion stance classifier. For the topic "{query}", classify each social media post below.
+
+Stance categories:
+- support: Supports/praises/recommends the topic
+- oppose: Criticizes/questions/warns about risks
+- neutral: Objective analysis without clear stance
+- background: Historical context or factual description
+
+Posts to classify:
+{posts_text}
+
+Output ONLY a JSON array with one object per post, in the same order:
+[{{"id": 0, "stance": "support", "confidence": 0.85}}, ...]
+
+Rules:
+- confidence range: 0.50 to 0.95
+- Detect sarcasm and implicit sentiment (social media often uses indirect expression)
+- A post with mixed signals should get lower confidence
+- Do NOT output anything except the JSON array"""
+
+    def classify_batch_llm(
+        self,
+        sources: List[dict],
+        query: str,
+        llm,
+    ) -> Optional[List[Tuple[str, float]]]:
+        """
+        Classify a batch of social media posts via a single LLM call.
+
+        Args:
+            sources: List of dicts with "snippet" or "content" keys
+            query: The original user query for context
+            llm: LLMClient instance
+
+        Returns:
+            List of (stance, confidence) tuples aligned with input,
+            or None if LLM call fails (caller should fall back to rule-based).
+        """
+        if not sources:
+            return []
+
+        posts_text = "\n".join(
+            f"[{i}] {(s.get('snippet') or s.get('content') or '')[:300]}"
+            for i, s in enumerate(sources)
+        )
+
+        prompt = self._BATCH_CLASSIFY_PROMPT.format(
+            query=query, posts_text=posts_text,
+        )
+
+        try:
+            response = llm.invoke(
+                system_prompt=(
+                    "You are a stance classification expert. "
+                    "Output ONLY a JSON array, no other text."
+                ),
+                user_prompt=prompt,
+            )
+            return self._parse_batch_response(response, len(sources))
+        except Exception as exc:
+            logger.warning(f"[StanceClassifier] LLM batch call failed: {exc}")
+            return None
+
+    @staticmethod
+    def _parse_batch_response(
+        text: str, expected_count: int,
+    ) -> Optional[List[Tuple[str, float]]]:
+        """Parse LLM JSON array response into (stance, confidence) tuples."""
+        text = re.sub(r"```(?:json)?", "", text).strip()
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError:
+            match = re.search(r"\[.*\]", text, re.DOTALL)
+            if not match:
+                return None
+            try:
+                data = json.loads(match.group())
+            except json.JSONDecodeError:
+                return None
+
+        if not isinstance(data, list):
+            return None
+
+        results: List[Tuple[str, float]] = []
+        valid_stances = {"support", "oppose", "neutral", "background", "official"}
+
+        for i in range(expected_count):
+            if i < len(data) and isinstance(data[i], dict):
+                stance = str(data[i].get("stance", "neutral")).lower()
+                conf = data[i].get("confidence", 0.60)
+                if stance not in valid_stances:
+                    stance = "neutral"
+                try:
+                    conf = max(0.50, min(float(conf), 0.95))
+                except (TypeError, ValueError):
+                    conf = 0.60
+                results.append((stance, conf))
+            else:
+                results.append(("neutral", 0.50))
+
+        return results

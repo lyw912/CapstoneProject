@@ -4,17 +4,22 @@ Provides external tool interfaces, such as web search
 """
 
 from .search import (
-    TavilyNewsAgency, 
-    SearchResult, 
-    TavilyResponse, 
+    TavilyNewsAgency,
+    SearchResult,
+    TavilyResponse,
     ImageResult,
     print_response_summary
 )
+from .mindspider_search import MindSpiderDB, MindSpiderResponse, MindSpiderResult, MindSpiderComment
 
 __all__ = [
-    "TavilyNewsAgency", 
-    "SearchResult", 
-    "TavilyResponse", 
+    "TavilyNewsAgency",
+    "SearchResult",
+    "TavilyResponse",
     "ImageResult",
-    "print_response_summary"
+    "print_response_summary",
+    "MindSpiderDB",
+    "MindSpiderResponse",
+    "MindSpiderResult",
+    "MindSpiderComment",
 ]

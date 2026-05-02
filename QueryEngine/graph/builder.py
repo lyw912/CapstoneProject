@@ -1,22 +1,21 @@
 """
-Query Agent LangGraph Subgraph Builder — Phase 2
+Query Agent LangGraph Subgraph Builder — Phase 3
 
-Phase 2 Complete Graph Structure (with conditional edges):
+Phase 3 Complete Graph Structure (with social enrichment):
 
   START
     → query_planner        (Stance matrix subquery generation)
-    → unified_search       (Tavily + Bocha parallel search)
+    → unified_search       (Tavily + Anspire + MindSpider parallel search)
     → dedup_filter         (URL + MinHash content deduplication)
-    → trust_scorer         (Multi-dimensional trust scoring)       ← Phase 2 New
-    → stance_classify      (Hybrid stance classification)          ← Phase 2 New
-    → coverage_check       (Stance coverage check)                 ← Phase 2 New
+    → trust_scorer         (Multi-dimensional trust scoring)
+    → stance_classify      (Hybrid stance classification)
+    → social_enrichment    (MindSpider probe + NSDS divergence detection)  ← Phase 3 New
+    → coverage_check       (Stance coverage check)
     → [coverage_router]
         ├─ "sufficient"  → output_assemble → END
         ├─ "max_reached" → output_assemble → END
-        └─ "need_more"   → gap_filler               ← Phase 2 New
+        └─ "need_more"   → gap_filler
                             → unified_search (Loop back for supplementary search)
-
-Phase 3 Extension Points (commented): Integrate Crawl4AI deep extraction, LLM-based StanceClassifier.
 """
 
 from __future__ import annotations
@@ -29,6 +28,7 @@ from .nodes import (
     gap_filler_node,
     output_assemble_node,
     query_planner_node,
+    social_enrichment_node,
     stance_classify_node,
     trust_scorer_node,
     unified_search_node,
@@ -79,24 +79,26 @@ def build_query_agent_graph():
     # ------------------------------------------------------------------
     # Register Nodes
     # ------------------------------------------------------------------
-    graph.add_node("query_planner",   query_planner_node)
-    graph.add_node("unified_search",  unified_search_node)
-    graph.add_node("dedup_filter",    dedup_filter_node)
-    graph.add_node("trust_scorer",    trust_scorer_node)    # Phase 2
-    graph.add_node("stance_classify", stance_classify_node) # Phase 2
-    graph.add_node("coverage_check",  coverage_check_node)  # Phase 2
-    graph.add_node("gap_filler",      gap_filler_node)      # Phase 2
-    graph.add_node("output_assemble", output_assemble_node)
+    graph.add_node("query_planner",      query_planner_node)
+    graph.add_node("unified_search",     unified_search_node)
+    graph.add_node("dedup_filter",       dedup_filter_node)
+    graph.add_node("trust_scorer",       trust_scorer_node)
+    graph.add_node("stance_classify",    stance_classify_node)
+    graph.add_node("social_enrichment",  social_enrichment_node)  # Phase 3
+    graph.add_node("coverage_check",     coverage_check_node)
+    graph.add_node("gap_filler",         gap_filler_node)
+    graph.add_node("output_assemble",    output_assemble_node)
 
     # ------------------------------------------------------------------
     # Main Flow Edges
     # ------------------------------------------------------------------
-    graph.add_edge(START,            "query_planner")
-    graph.add_edge("query_planner",  "unified_search")
-    graph.add_edge("unified_search", "dedup_filter")
-    graph.add_edge("dedup_filter",   "trust_scorer")    # Phase 2
-    graph.add_edge("trust_scorer",   "stance_classify") # Phase 2
-    graph.add_edge("stance_classify","coverage_check")  # Phase 2
+    graph.add_edge(START,              "query_planner")
+    graph.add_edge("query_planner",    "unified_search")
+    graph.add_edge("unified_search",   "dedup_filter")
+    graph.add_edge("dedup_filter",     "trust_scorer")
+    graph.add_edge("trust_scorer",     "stance_classify")
+    graph.add_edge("stance_classify",  "social_enrichment")   # Phase 3
+    graph.add_edge("social_enrichment","coverage_check")      # Phase 3
 
     # ------------------------------------------------------------------
     # Conditional Edges: Coverage check results determine routing

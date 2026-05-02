@@ -195,6 +195,11 @@ def compute_trust_score(source: dict) -> float:
     authority = _get_domain_authority(domain)
     score += 0.30 * authority
 
+    # Social credibility bonus for MindSpider sources:
+    # Social platforms have low domain authority but provide grassroots sentiment value
+    if source.get("source_api") == "mindspider_db":
+        score += 0.05
+
     # ------------------------------------------------------------------
     # 2. Timeliness (25%): exponential decay, 7-day half-life
     # ------------------------------------------------------------------

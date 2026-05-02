@@ -328,6 +328,7 @@ async def output_assemble_node(state: QueryAgentState) -> dict:
         "knowledge_gaps":      knowledge_gaps,
         "coverage_score":      coverage_score,
         "structured_summary":  "",            # Phase 3 optional
+        "social_sentiment":    state.get("social_sentiment"),
         "trace_log":           state.get("trace_log") or [],
     }
 
@@ -336,7 +337,8 @@ async def output_assemble_node(state: QueryAgentState) -> dict:
         f"Stance distribution={stance_distribution}, "
         f"SCS={coverage_score:.2f}, "
         f"clusters={len(opinion_clusters)}, "
-        f"knowledge gaps={len(knowledge_gaps)}"
+        f"knowledge gaps={len(knowledge_gaps)}, "
+        f"social_mode={state.get('mindspider_mode', 'disabled')}"
     )
     logger.info(trace)
 

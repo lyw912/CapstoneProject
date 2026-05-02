@@ -141,7 +141,10 @@ def display_final_results(output: dict, metrics_placeholder, results_placeholder
     st.divider()
 
     # Tabs display
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 Stance Distribution", "📰 Source List", "💭 Opinion Clusters", "❓ Knowledge Gaps"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📊 Stance Distribution", "📰 Source List", "💭 Opinion Clusters",
+        "❓ Knowledge Gaps", "🌐 Social Sentiment"
+    ])
 
     with tab1:
         display_stance_distribution(output)
@@ -154,6 +157,9 @@ def display_final_results(output: dict, metrics_placeholder, results_placeholder
 
     with tab4:
         display_knowledge_gaps(output)
+
+    with tab5:
+        display_social_sentiment(output)
 
 def display_stance_distribution(output: dict):
     """Display Stance Distribution"""
@@ -258,6 +264,179 @@ def display_knowledge_gaps(output: dict):
 
     for i, gap in enumerate(gaps, 1):
         st.markdown(f"{i}. {gap}")
+
+def display_social_sentiment(output: dict):
+    """Display Social Media Sentiment Analysis from MindSpider"""
+    st.subheader("Social Media Sentiment Analysis (MindSpider)")
+
+    social = output.get("social_sentiment")
+    if not social or social.get("mode") == "disabled":
+        st.info(
+            "Social media data not available for this query. "
+            "MindSpider may not have crawled data for this topic yet."
+        )
+        return
+
+    mode = social.get("mode", "disabled")
+    freshness = social.get("freshness_hours", 0)
+
+    # Top metrics row
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric(
+            "Data Status", mode.upper(),
+            delta="Fresh" if mode == "available" else "Stale",
+            delta_color="normal" if mode == "available" else "inverse",
+        )
+    with col2:
+        st.metric("Total Posts", social.get("total_posts", 0))
+    with col3:
+        st.metric("Total Comments", social.get("total_comments", 0))
+    with col4:
+        st.metric("Data Freshness", f"{freshness:.1f}h ago")
+
+    st.divider()
+
+    # Platforms queried
+    platforms = social.get("platforms_queried", [])
+    if platforms:
+        st.markdown(f"**Platforms Queried**: {', '.join(platforms)}")
+
+    # Cross-source sentiment comparison
+    nsds = social.get("divergence_score", 0)
+    st.metric(
+        "Cross-Source Sentiment Difference Score", f"{nsds:.3f}",
+        help="0 = web search and social media sentiment identical, 1 = very different",
+    )
+    if nsds > 0.5:
+        st.warning("Notable difference detected between web search and social media sentiment distributions.")
+
+    # Comparison summary
+    summary = social.get("divergence_summary", "")
+    if summary:
+        st.markdown(f"**Cross-Source Comparison**: {summary}")
+
+    st.divider()
+
+    # Social sentiment distribution
+    st.markdown("### Social Media Sentiment Distribution (Aggregate)")
+    sent_dist = social.get("sentiment_distribution", {})
+    if sent_dist:
+        cols = st.columns(len(sent_dist))
+        for i, (stance, ratio) in enumerate(sent_dist.items()):
+            with cols[i]:
+                st.metric(stance.capitalize(), f"{ratio*100:.1f}%")
+                st.progress(ratio)
+
+    # Content diversity / bot detection warning
+    diversity = social.get("content_diversity", 1.0)
+    warning = social.get("low_diversity_warning")
+    if warning:
+        st.error(warning)
+    else:
+        st.caption(f"Content diversity: {diversity:.0%} (unique posts / total)")
+
+    # Per-platform breakdown
+    per_platform = social.get("per_platform", {})
+    if per_platform:
+        st.markdown("### Per-Platform Sentiment Breakdown")
+        for plat, info in per_platform.items():
+            with st.expander(f"{plat} ({info['count']} posts)"):
+                pdist = info.get("distribution", {})
+                if pdist:
+                    cols = st.columns(len(pdist))
+                    for j, (stance, ratio) in enumerate(pdist.items()):
+                        with cols[j]:
+                            st.metric(stance.capitalize(), f"{ratio*100:.1f}%")
+
+    st.divider()
+
+    # Top social voices with provenance
+    st.markdown("### Top Social Media Voices")
+    voices = social.get("top_social_voices", [])
+    if not voices:
+        st.info("No social media voices available")
+        return
+
+    for i, voice in enumerate(voices[:10]):
+        platform = voice.get("platform", "unknown")
+        stance = voice.get("stance", "neutral")
+        content_preview = (voice.get("content") or "")[:60]
+        with st.expander(f"#{i+1} [{platform}] {stance.upper()} - {content_preview}..."):
+            st.markdown(f"**Platform**: {platform}")
+            st.markdown(f"**Stance**: {stance}")
+            st.markdown(f"**Content**: {voice.get('content', '')}")
+            url = voice.get("url", "")
+            if url:
+                st.markdown(f"**Source URL**: [{url}]({url})")
+            pub_time = voice.get("publish_time", "")
+            if pub_time:
+                st.markdown(f"**Published**: {pub_time}")
+
+    # -- Ext 1: Comment Sentiment --
+    st.divider()
+    cs = social.get("comment_sentiment")
+    if cs and cs.get("total", 0) > 0:
+        st.markdown("### Comment Sentiment Analysis")
+        st.caption(f"{cs['total']} comments analyzed")
+
+        cdist = cs.get("distribution", {})
+        if cdist:
+            cols = st.columns(len(cdist))
+            for i, (stance, ratio) in enumerate(cdist.items()):
+                with cols[i]:
+                    st.metric(stance.capitalize(), f"{ratio*100:.1f}%")
+                    st.progress(ratio)
+
+        top_comments = cs.get("top_comments", [])
+        if top_comments:
+            st.markdown("**Top Comments (by likes)**")
+            for j, c in enumerate(top_comments[:5]):
+                with st.expander(
+                    f"#{j+1} [{c.get('platform','')}] {c.get('stance','').upper()} "
+                    f"({c.get('like_count',0)} likes)"
+                ):
+                    st.markdown(c.get("content", ""))
+                    if c.get("publish_time"):
+                        st.caption(f"Published: {c['publish_time']}")
+
+    # -- Ext 2: Temporal Sentiment Trend --
+    st.divider()
+    trend = social.get("sentiment_trend")
+    if trend and trend.get("buckets"):
+        st.markdown("### Sentiment Trend Over Time")
+
+        direction = trend.get("trend_direction", "stable")
+        icons = {"rising": "📈", "falling": "📉", "stable": "➡️"}
+        st.metric("Trend Direction", f"{icons.get(direction, '')} {direction.upper()}")
+
+        trend_summary = trend.get("trend_summary", "")
+        if trend_summary:
+            st.markdown(f"**Trend Analysis**: {trend_summary}")
+
+        buckets = trend["buckets"]
+        if len(buckets) > 1:
+            import pandas as pd
+            rows = []
+            for b in buckets:
+                for stance, ratio in b.get("distribution", {}).items():
+                    rows.append({"Date": b["date"], "Stance": stance, "Ratio": ratio})
+            if rows:
+                df = pd.DataFrame(rows)
+                pivot = df.pivot(index="Date", columns="Stance", values="Ratio").fillna(0)
+                st.line_chart(pivot)
+        else:
+            st.info(f"Only 1 day of data ({buckets[0]['date']}). "
+                    "Multi-day data needed for trend visualization.")
+
+    # -- Ext 3: Crawl Trigger Notice --
+    if social.get("crawl_triggered"):
+        st.divider()
+        st.info(
+            "BroadTopicExtraction was triggered in the background to refresh topic data. "
+            "Future queries on this topic will have fresher social media data."
+        )
+
 
 if __name__ == "__main__":
     main()
