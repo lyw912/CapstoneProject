@@ -38,7 +38,7 @@ class ChapterSanitizationTestCase(unittest.TestCase):
                 self.assertEqual(block.get("type"), "paragraph")
 
     def test_table_rows_scalar_values_expanded(self):
-        chapter = {"blocks": [{"type": "table", "rows": ["National Trend"]}]
+        chapter = {"blocks": [{"type": "table", "rows": ["National Trend"]}]}
         self.node._sanitize_chapter_blocks(chapter)
         table_block = chapter["blocks"][0]
         self.assertEqual(len(table_block["rows"]), 1)
@@ -103,8 +103,8 @@ class ChapterSanitizationTestCase(unittest.TestCase):
         }
         valid, errors = validator.validate_chapter(chapter)
         self.assertFalse(valid)
-        self.assertTrue(any("仅允许 paragraph" in err for err in errors))
-        self.assertTrue(any("仅允许 bold/italic" in err for err in errors))
+        self.assertTrue(any("only allows paragraph" in err for err in errors))
+        self.assertTrue(any("only allows bold/italic" in err for err in errors))
 
     def test_engine_quote_sanitization_strips_disallowed(self):
         chapter = {
@@ -154,7 +154,7 @@ class ChapterSanitizationTestCase(unittest.TestCase):
                     "blocks": [
                         {
                             "type": "paragraph",
-                            "inlines": [{"text": "错误标题"}],
+                            "inlines": [{"text": "wrong title"}],
                         }
                     ],
                 }
@@ -162,7 +162,7 @@ class ChapterSanitizationTestCase(unittest.TestCase):
         }
         valid, errors = validator.validate_chapter(chapter)
         self.assertFalse(valid)
-        self.assertTrue(any("title 必须与engine一致" in err for err in errors))
+        self.assertTrue(any("title must match engine" in err for err in errors))
 
 
 if __name__ == "__main__":

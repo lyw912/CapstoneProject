@@ -39,6 +39,7 @@ from .nodes import (
 from .renderers import HTMLRenderer
 from .state import ReportState
 from .utils.config import settings, Settings
+from .prompts.prompts import ENGLISH_REPORT_LANGUAGE_RULE
 
 
 class StageOutputFormatError(ValueError):
@@ -900,7 +901,8 @@ class ReportAgent:
             "style_directives": {
                 "tone": "analytical",
                 "audience": "executive",
-                "language": "zh-CN",
+                "language": "en-US",
+                "language_rule": ENGLISH_REPORT_LANGUAGE_RULE,
             },
             "data_bundles": [],
             "max_tokens": min(self.config.MAX_CONTENT_LENGTH, 6000),

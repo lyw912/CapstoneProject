@@ -13,6 +13,12 @@ from ..ir import (
     CHAPTER_JSON_SCHEMA_TEXT,
     IR_VERSION,
 )
+ENGLISH_REPORT_LANGUAGE_RULE = (
+    "All generated prose, headings, captions, table labels, chart labels, and "
+    "explanatory text must be written in English. Preserve original Chinese only "
+    "inside direct quotes, source titles, platform names, URLs, or other verbatim evidence."
+)
+
 
 # ===== JSON Schema Definitions =====
 
@@ -202,6 +208,8 @@ word_budget_output_schema = {
 SYSTEM_PROMPT_TEMPLATE_SELECTION = f"""
 You are an intelligent report template selection assistant. Based on the user's query content and report characteristics, select the most appropriate template from the available options.
 
+Language rule: {ENGLISH_REPORT_LANGUAGE_RULE}
+
 Selection Criteria:
 1. Subject type of the query (corporate brand, market competition, policy analysis, etc.)
 2. Urgency and timeliness of the report
@@ -238,6 +246,8 @@ Please format output according to the following JSON Schema definition:
 # HTML report generation system prompt
 SYSTEM_PROMPT_HTML_GENERATION = f"""
 You are a professional HTML report generation expert. You will receive report content from the Media/Query analysis engines, forum monitoring logs, and the selected report template, and need to generate a complete HTML format analysis report of no less than 30,000 words.
+
+Language rule: {ENGLISH_REPORT_LANGUAGE_RULE}
 
 <INPUT JSON SCHEMA>
 {json.dumps(input_schema_html_generation, indent=2, ensure_ascii=False)}
@@ -303,7 +313,7 @@ You are a professional HTML report generation expert. You will receive report co
 # Chapter-based JSON generation system prompt
 SYSTEM_PROMPT_CHAPTER_JSON = f"""
 You are the Report Agent (Report Engine module) "Chapter Assembly Factory", responsible for milling different chapter materials into
-chapter JSON conforming to the "Executable JSON Contract (IR)". I will later provide individual chapter key points,
+chapter JSON conforming to the "Executable JSON Contract (IR)". Language rule: {ENGLISH_REPORT_LANGUAGE_RULE} I will later provide individual chapter key points,
 global data and style directives, and you need to:
 1. Fully follow the IR version {IR_VERSION} structure, strictly prohibited from outputting HTML or Markdown.
 2. Only use the following Block types: {', '.join(ALLOWED_BLOCK_TYPES)}; where charts use block.type=widget and fill with Chart.js configuration.
@@ -325,7 +335,7 @@ global data and style directives, and you need to:
 9. Encourage combining subheadings listed in outline to generate multi-level headings and fine-grained content, while also supplementing callout, blockquote, etc.
 10. engineQuote is only used to present verbatim quotes from single Agents: use block.type="engineQuote", engine values media/query, title must be fixed to corresponding Agent name (media->Multimodal Agent, query->Query Agent, no customization), internal blocks only allow paragraph, paragraph.inlines marks only usable bold/italic (may be empty), prohibited from placing tables/charts/quotes/formulas in engineQuote; when reports or forumLogs have clear text paragraphs, conclusions, numbers/time that can be directly quoted, prioritize extracting key original text or text version data from Query Agent and Multimodal Agent respectively into engineQuote, try to cover both types of Agents rather than using single source only, strictly prohibited from fabricating content or rewriting tables/charts into engineQuote.
 11. If chapterPlan contains target/min/max or sections subdivision budget, please fit as closely as possible, break through within notes allowed range when necessary, while reflecting detail level in structure;
-12. First-level headings use Chinese numerals ("一、二、三"), second-level headings use Arabic numerals ("1.1, 1.2"), heading.text directly write numbers, corresponding to outline sequence;
+12. Headings must be written in English and use Arabic numbering ("1", "1.1", "1.2"). Do not use Chinese numerals except inside verbatim evidence;
 13. Strictly prohibited from outputting external images/AI generated image links, only Chart.js charts, tables, color blocks, callout and other HTML native components allowed; if visual assistance needed change to text description or data table instead;
 14. Paragraph mixing needs to express bold, italic, underline, color and other styles through marks, prohibited from residual Markdown syntax (like **text**);
 15. Block formulas use block.type="math" and fill math.latex, inline formulas in paragraph.inlines set text to Latex and add marks.type="math", rendering layer will process with MathJax;
@@ -350,6 +360,7 @@ SYSTEM_PROMPT_CHAPTER_JSON_REPAIR = f"""
 You now play the role of Report Agent (Report Engine module) "Chapter JSON Repair Officer", responsible for fallback repairs when chapter drafts fail IR validation.
 
 Please keep in mind:
+0. Language rule: {ENGLISH_REPORT_LANGUAGE_RULE}
 1. All chapters must satisfy IR version {IR_VERSION} constraints, only the following block.type allowed: {', '.join(ALLOWED_BLOCK_TYPES)};
 2. paragraph.inlines marks must come from the following set: {', '.join(ALLOWED_INLINE_MARKS)};
 3. All allowed structures, fields and nesting rules are written in "CHAPTER JSON SCHEMA", any missing fields, array nesting errors or list.items not being two-dimensional arrays must be repaired;
@@ -367,6 +378,7 @@ SYSTEM_PROMPT_CHAPTER_JSON_RECOVERY = f"""
 You are the "JSON Emergency Repair Officer" jointly from Report/Forum/Media, will receive all constraints during chapter generation (generationPayload) and original failed output (rawChapterOutput).
 
 Please comply with:
+0. Language rule: {ENGLISH_REPORT_LANGUAGE_RULE}
 1. Chapters must satisfy IR version {IR_VERSION} specifications, block.type can only use: {', '.join(ALLOWED_BLOCK_TYPES)};
 2. paragraph.inlines marks may only appear: {', '.join(ALLOWED_INLINE_MARKS)}, and preserve original text order;
 3. Please take section information in generationPayload as the lead, heading.text and anchor must be consistent with chapter slug;
@@ -385,12 +397,14 @@ Please return repaired JSON directly.
 SYSTEM_PROMPT_DOCUMENT_LAYOUT = f"""
 You are the Chief Design Officer for reports, need to combine template outline with content from both analysis engines to determine final title, hero section, TOC style and aesthetic elements for the entire report.
 
+Language rule: {ENGLISH_REPORT_LANGUAGE_RULE}
+
 Input contains templateOverview (template title + overall TOC), sections list and multi-source reports. Please first treat template title and TOC as a whole, compare with multi-engine content to design title and TOC, then extend to visual themes that can be directly rendered. Your output will be stored independently for subsequent stitching, please ensure fields are complete.
 
 Goals:
-1. Generate title/subtitle/tagline with Chinese narrative style, and ensure it can be directly placed in center of cover, copy should naturally mention "Article Overview";
+1. Generate title/subtitle/tagline in professional English, and ensure it can be directly placed in center of cover, copy should naturally mention "Report Overview";
 2. Provide hero: contains summary, highlights, actions, kpis (may include tone/delta), used to emphasize key insights and execution prompts;
-3. Output tocPlan, first-level TOC fixed to use Chinese numerals ("一、二、三"), second-level use "1.1/1.2", may explain detail level in description; if custom TOC title needed, please fill tocTitle;
+3. Output tocPlan using Arabic numbering for both first-level and second-level entries ("1", "1.1", "1.2"); if custom TOC title needed, please fill tocTitle;
 4. Based on template structure and material density, propose font, font size, whitespace suggestions for themeTokens / layoutNotes (need to especially emphasize TOC and body first-level heading font size consistency), if color palette or dark mode compatibility needed also explain here;
 5. Strictly prohibited from requiring external images or AI generated images, recommend Chart.js charts, tables, color blocks, KPI cards and other directly renderable native components;
 6. Do not arbitrarily add or delete chapters, only optimize naming or description; if layout or chapter merge hints needed, please put in layoutNotes, rendering layer will strictly follow;
@@ -440,10 +454,11 @@ SYSTEM_PROMPT_WORD_BUDGET = f"""
 You are the report length planning officer, will receive templateOverview (template title + TOC), latest title/TOC design draft and all materials, need to allocate word counts for each chapter and its subtopics.
 
 Requirements:
+0. Language rule: {ENGLISH_REPORT_LANGUAGE_RULE}
 1. Total word count about 40000 words, can float up or down 5%, and provide globalGuidelines explaining overall detail strategy;
 2. Each chapter in chapters needs to include targetWords/min/max, emphasis for extra expansion needed, sections array (allocate word counts and notes for each subsection/outline of this chapter, may note "allowed to exceed 10% to supplement cases when necessary", etc.);
 3. rationale must explain the chapter length configuration reasoning, referencing key information from template/materials;
-4. Chapter numbering follows first-level Chinese numerals, second-level Arabic numerals, facilitating subsequent unified font size;
+4. Chapter numbering uses Arabic numerals throughout, facilitating subsequent unified font size;
 5. Result written as JSON and satisfies below Schema, only for internal storage and chapter generation, not directly output to readers.
 
 <OUTPUT JSON SCHEMA>
