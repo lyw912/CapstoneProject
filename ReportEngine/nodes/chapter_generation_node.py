@@ -337,7 +337,13 @@ class ChapterGenerationNode(BaseNode):
             "forumLogs": context.get("forum_logs", ""),
             "dataBundles": context.get("data_bundles", []),
             "constraints": {
-                "language": "zh-CN",
+                "language": (
+                    (context.get("style_directives") or {}).get("language")
+                    or "en-US"
+                ),
+                "languageRule": (context.get("style_directives") or {}).get(
+                    "language_rule", ""
+                ),
                 "maxTokens": context.get("max_tokens", 4096),
                 "allowedBlocks": ALLOWED_BLOCK_TYPES,
                 "allowSwot": allow_swot,

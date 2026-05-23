@@ -51,6 +51,10 @@ class Settings(BaseSettings):
         Path("ReportEngine/report_template"),
         description="Report Markdown template directory",
     )
+    REPORT_OUTPUT_LANGUAGE: Literal["en", "zh"] = Field(
+        "en",
+        description="Report output language: en = English-only prose/headings; zh = allow Chinese templates and labels",
+    )
     JSON_ERROR_LOG_DIR: Path = Field(
         Path("output/json_error_logs"),
         description="Diagnostic log directory for chapter JSON parsing failures",

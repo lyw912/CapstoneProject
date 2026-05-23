@@ -1009,7 +1009,10 @@ class HTMLRenderer:
                 display_text = raw_text
 
                 if not chapter_heading_seen:
-                    label = f"{self._to_chinese_numeral(chap_idx)}、"
+                    if self.config.get("chapter_label_style") == "arabic":
+                        label = f"{chap_idx}."
+                    else:
+                        label = f"{self._to_chinese_numeral(chap_idx)}、"
                     display_text = f"{label} {clean_title}".strip()
                     chapter_heading_seen = True
                     section_idx = 0

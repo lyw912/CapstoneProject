@@ -2,10 +2,10 @@
 Report Agent main class.
 
 This module orchestrates template selection, layout design, chapter generation,
-IR stitching and HTML rendering sub-processes, serving as the central dispatcher
+IR stitching and HTML rendering via LangGraph, serving as the central dispatcher
 for the Report Engine. Core responsibilities include:
 1. Managing input data and state, coordinating Media/Query analysis engines, forum logs and templates;
-2. Driving the node sequence: template selection → layout generation → word budgeting → chapter writing → stitching and rendering;
+2. Driving the LangGraph pipeline: template selection → layout → word budget → chapter loop → finalize;
 3. Handling error fallbacks, streaming event distribution, persistence and final deliverable saving.
 """
 
@@ -216,7 +216,16 @@ class ReportAgent:
         self.chapter_storage = ChapterStorage(self.config.CHAPTER_OUTPUT_DIR)
         self.document_composer = DocumentComposer()
         self.validator = IRValidator()
-        self.renderer = HTMLRenderer()
+        self._report_output_language = (
+            str(getattr(self.config, "REPORT_OUTPUT_LANGUAGE", "en") or "en").lower()
+        )
+        self.renderer = HTMLRenderer(
+            {
+                "chapter_label_style": (
+                    "arabic" if self._report_output_language == "en" else "chinese"
+                ),
+            }
+        )
         
         # Initialize nodes
         self._initialize_nodes()
@@ -226,6 +235,10 @@ class ReportAgent:
         
         # State
         self.state = ReportState()
+
+        self._report_graph = None
+        self._stream_handler: Optional[Callable[[str, Dict[str, Any]], None]] = None
+        self._report_start_time: Optional[datetime] = None
         
         # Ensure output directories exist
         os.makedirs(self.config.OUTPUT_DIR, exist_ok=True)
@@ -376,6 +389,15 @@ class ReportAgent:
             clients.append((label, client))
         return clients
     
+    def _resolve_template_dir(self) -> str:
+        """Use English template subdirectory when REPORT_OUTPUT_LANGUAGE=en."""
+        base = Path(self.config.TEMPLATE_DIR)
+        if self._report_output_language == "en":
+            en_dir = base / "en"
+            if en_dir.is_dir() and any(en_dir.glob("*.md")):
+                return str(en_dir)
+        return str(base)
+
     def _initialize_nodes(self):
         """
         Initialize processing nodes.
@@ -385,7 +407,7 @@ class ReportAgent:
         """
         self.template_selection_node = TemplateSelectionNode(
             self.llm_client,
-            self.config.TEMPLATE_DIR
+            self._resolve_template_dir(),
         )
         self.document_layout_node = DocumentLayoutNode(self.llm_client)
         self.word_budget_node = WordBudgetNode(self.llm_client)
@@ -396,19 +418,36 @@ class ReportAgent:
             fallback_llm_clients=self.json_rescue_clients,
             error_log_dir=self.config.JSON_ERROR_LOG_DIR,
         )
+
+    @property
+    def report_graph(self):
+        """Lazy initialization of LangGraph, consistent with QueryEngine/MediaEngine."""
+        if self._report_graph is None:
+            from .graph.builder import build_report_agent_graph
+            self._report_graph = build_report_agent_graph(self)
+            logger.info("[ReportAgent] LangGraph initialized")
+        return self._report_graph
+
+    def emit(self, event_type: str, payload: Dict[str, Any]) -> None:
+        """Dispatch streaming events when a handler is registered for this run."""
+        if not self._stream_handler:
+            return
+        try:
+            self._stream_handler(event_type, payload)
+        except Exception as callback_error:  # pragma: no cover - logging only
+            logger.warning(f"Streaming event callback failed: {callback_error}")
     
     def generate_report(self, query: str, reports: List[Any], forum_logs: str = "",
                         custom_template: str = "", save_report: bool = True,
                         stream_handler: Optional[Callable[[str, Dict[str, Any]], None]] = None) -> str:
         """
-        Generate comprehensive report (Chapter JSON → IR → HTML).
+        Generate comprehensive report (Chapter JSON → IR → HTML) via LangGraph.
 
-        Main stages:
-            1. Normalize dual-engine reports + forum logs, and emit streaming events;
-            2. Template selection → template slicing → document layout → word budget planning;
-            3. Invoke LLM chapter by chapter with word targets, auto-retry on parse errors;
-            4. Stitch chapters into Document IR, then hand to HTML renderer for final product;
-            5. Optionally persist HTML/IR/state to disk and return path info externally.
+        Main stages (LangGraph):
+            1. Normalize dual-engine reports + forum logs;
+            2. template_selection → template_slice → document_layout → word_budget → prepare_storage;
+            3. process_chapter loop with auto-retry on parse errors;
+            4. finalize_report: stitch IR, render HTML, optionally persist.
 
         Args:
             query: The final report topic or query statement to generate.
@@ -424,351 +463,204 @@ class ReportAgent:
         Raises:
             Exception: Thrown when any sub-node or rendering stage fails, outer caller handles fallback.
         """
-        start_time = datetime.now()
         report_id = f"report-{uuid4().hex[:8]}"
         self.state.task_id = report_id
         self.state.query = query
         self.state.metadata.query = query
         self.state.mark_processing()
 
-        normalized_reports = self._normalize_reports(reports)
-
-        def emit(event_type: str, payload: Dict[str, Any]):
-            """Event dispatcher for Report Engine streaming channel, ensuring errors do not leak out."""
-            if not stream_handler:
-                return
-            try:
-                stream_handler(event_type, payload)
-            except Exception as callback_error:  # pragma: no cover - logging only
-                logger.warning(f"Streaming event callback failed: {callback_error}")
-
         logger.info(f"Starting report generation {report_id}: {query}")
         logger.info(f"Input data - report count: {len(reports)}, forum log length: {len(str(forum_logs))}")
-        emit('stage', {'stage': 'agent_start', 'report_id': report_id, 'query': query})
+
+        self._stream_handler = stream_handler
+        self._report_start_time = datetime.now()
+        self.emit("stage", {"stage": "agent_start", "report_id": report_id, "query": query})
 
         try:
-            template_result = self._select_template(query, reports, forum_logs, custom_template)
-            template_result = self._ensure_mapping(
-                template_result,
-                "template selection result",
-                expected_keys=["template_name", "template_content"],
-            )
-            self.state.metadata.template_used = template_result.get('template_name', '')
-            emit('stage', {
-                'stage': 'template_selected',
-                'template': template_result.get('template_name'),
-                'reason': template_result.get('selection_reason')
-            })
-            emit('progress', {'progress': 10, 'message': 'Template selection complete'})
-            sections = self._slice_template(template_result.get('template_content', ''))
-            if not sections:
-                raise ValueError("Template cannot be parsed into chapters, please check template content.")
-            emit('stage', {'stage': 'template_sliced', 'section_count': len(sections)})
-
-            template_text = template_result.get('template_content', '')
-            template_overview = self._build_template_overview(template_text, sections)
-            # Design global title, TOC and visual theme based on template skeleton + dual-engine content
-            layout_design = self._run_stage_with_retry(
-                "document design",
-                lambda: self.document_layout_node.run(
-                    sections,
-                    template_text,
-                    normalized_reports,
-                    forum_logs,
-                    query,
-                    template_overview,
-                ),
-                # toc field replaced by tocPlan, select/validate per latest Schema here
-                expected_keys=["title", "hero", "tocPlan", "tocTitle"],
-            )
-            emit('stage', {
-                'stage': 'layout_designed',
-                'title': layout_design.get('title'),
-                'toc': layout_design.get('tocTitle')
-            })
-            emit('progress', {'progress': 15, 'message': 'Document title/TOC design complete'})
-            # Use newly generated design draft for book-wide word budget planning, constraining each chapter's word count and focus
-            word_plan = self._run_stage_with_retry(
-                "chapter word budget planning",
-                lambda: self.word_budget_node.run(
-                    sections,
-                    layout_design,
-                    normalized_reports,
-                    forum_logs,
-                    query,
-                    template_overview,
-                ),
-                expected_keys=["chapters", "totalWords", "globalGuidelines"],
-                postprocess=self._normalize_word_plan,
-            )
-            emit('stage', {
-                'stage': 'word_plan_ready',
-                'chapter_targets': len(word_plan.get('chapters', []))
-            })
-            emit('progress', {'progress': 20, 'message': 'Chapter word budget generated'})
-            # Record each chapter's target word count/emphasis points, pass to chapter LLM later
-            chapter_targets = {
-                entry.get("chapterId"): entry
-                for entry in word_plan.get("chapters", [])
-                if entry.get("chapterId")
-            }
-
-            generation_context = self._build_generation_context(
-                query,
-                normalized_reports,
-                forum_logs,
-                template_result,
-                layout_design,
-                chapter_targets,
-                word_plan,
-                template_overview,
-            )
-            # Global metadata needed for IR/rendering, carrying title/theme/TOC/word count info from design draft
-            manifest_meta = {
+            initial_state = {
                 "query": query,
-                "title": layout_design.get("title") or (f"{query} - Sentiment Insight Report" if query else template_result.get("template_name")),
-                "subtitle": layout_design.get("subtitle"),
-                "tagline": layout_design.get("tagline"),
-                "templateName": template_result.get("template_name"),
-                "selectionReason": template_result.get("selection_reason"),
-                "themeTokens": generation_context.get("theme_tokens", {}),
-                "toc": {
-                    "depth": 3,
-                    "autoNumbering": True,
-                    "title": layout_design.get("tocTitle") or "Table of Contents",
-                },
-                "hero": layout_design.get("hero"),
-                "layoutNotes": layout_design.get("layoutNotes"),
-                "wordPlan": {
-                    "totalWords": word_plan.get("totalWords"),
-                    "globalGuidelines": word_plan.get("globalGuidelines"),
-                },
-                "templateOverview": template_overview,
+                "reports": reports,
+                "forum_logs": forum_logs,
+                "custom_template": custom_template,
+                "save_report": save_report,
+                "report_id": report_id,
+                "normalized_reports": self._normalize_reports(reports),
+                "trace_log": [],
             }
-            if layout_design.get("themeTokens"):
-                manifest_meta["themeTokens"] = layout_design["themeTokens"]
-            if layout_design.get("tocPlan"):
-                manifest_meta["toc"]["customEntries"] = layout_design["tocPlan"]
-            # Initialize chapter output directory and write manifest for streaming storage
-            run_dir = self.chapter_storage.start_session(report_id, manifest_meta)
-            self._persist_planning_artifacts(run_dir, layout_design, word_plan, template_overview)
-            emit('stage', {'stage': 'storage_ready', 'run_dir': str(run_dir)})
-
-            chapters = []
-            chapter_max_attempts = max(
-                self._CONTENT_SPARSE_MIN_ATTEMPTS, self.config.CHAPTER_JSON_MAX_ATTEMPTS
-            )
-            total_chapters = len(sections)  # Total chapter count
-            completed_chapters = 0  # Completed chapter count
-
-            for section in sections:
-                logger.info(f"Generating chapter: {section.title}")
-                emit('chapter_status', {
-                    'chapterId': section.chapter_id,
-                    'title': section.title,
-                    'status': 'running'
-                })
-                # Chapter streaming callback: pass LLM returned delta to SSE for real-time frontend rendering
-                def chunk_callback(delta: str, meta: Dict[str, Any], section_ref: TemplateSection = section):
-                    """
-                    Chapter content streaming callback.
-
-                    Args:
-                        delta: The latest incremental text output from LLM.
-                        meta: Chapter metadata returned by node, used for fallback.
-                        section_ref: Defaults to current chapter, ensuring positioning when metadata is missing.
-                    """
-                    emit('chapter_chunk', {
-                        'chapterId': meta.get('chapterId') or section_ref.chapter_id,
-                        'title': meta.get('title') or section_ref.title,
-                        'delta': delta
-                    })
-
-                chapter_payload: Dict[str, Any] | None = None
-                attempt = 1
-                best_sparse_candidate: Dict[str, Any] | None = None
-                best_sparse_score = -1
-                fallback_used = False
-                while attempt <= chapter_max_attempts:
-                    try:
-                        chapter_payload = self.chapter_generation_node.run(
-                            section,
-                            generation_context,
-                            run_dir,
-                            stream_callback=chunk_callback
-                        )
-                        break
-                    except (ChapterJsonParseError, ChapterContentError, ChapterValidationError) as structured_error:
-                        if isinstance(structured_error, ChapterContentError):
-                            error_kind = "content_sparse"
-                            readable_label = "content density anomaly"
-                        elif isinstance(structured_error, ChapterValidationError):
-                            error_kind = "validation"
-                            readable_label = "structure validation failed"
-                        else:
-                            error_kind = "json_parse"
-                            readable_label = "JSON parse failed"
-                        if isinstance(structured_error, ChapterContentError):
-                            candidate = getattr(structured_error, "chapter_payload", None)
-                            candidate_score = getattr(structured_error, "body_characters", 0) or 0
-                            if isinstance(candidate, dict) and candidate_score >= 0:
-                                if candidate_score > best_sparse_score:
-                                    best_sparse_candidate = deepcopy(candidate)
-                                    best_sparse_score = candidate_score
-                        will_fallback = (
-                            isinstance(structured_error, ChapterContentError)
-                            and attempt >= chapter_max_attempts
-                            and attempt >= self._CONTENT_SPARSE_MIN_ATTEMPTS
-                            and best_sparse_candidate is not None
-                        )
-                        logger.warning(
-                            "Chapter {title} {label} (attempt {attempt}/{total}): {error}",
-                            title=section.title,
-                            label=readable_label,
-                            attempt=attempt,
-                            total=chapter_max_attempts,
-                            error=structured_error,
-                        )
-                        status_value = 'retrying' if attempt < chapter_max_attempts or will_fallback else 'error'
-                        status_payload = {
-                            'chapterId': section.chapter_id,
-                            'title': section.title,
-                            'status': status_value,
-                            'attempt': attempt,
-                            'error': str(structured_error),
-                            'reason': error_kind,
-                        }
-                        if isinstance(structured_error, ChapterValidationError):
-                            validation_errors = getattr(structured_error, "errors", None)
-                            if validation_errors:
-                                status_payload['errors'] = validation_errors
-                        if will_fallback:
-                            status_payload['warning'] = 'content_sparse_fallback_pending'
-                        emit('chapter_status', status_payload)
-                        if will_fallback:
-                            logger.warning(
-                                "Chapter {title} reached max attempts, keeping version with most characters (~{score} chars) as fallback",
-                                title=section.title,
-                                score=best_sparse_score,
-                            )
-                            chapter_payload = self._finalize_sparse_chapter(best_sparse_candidate)
-                            fallback_used = True
-                            break
-                        if attempt >= chapter_max_attempts:
-                            raise
-                        attempt += 1
-                        continue
-                    except (AttributeError, TypeError, KeyError, IndexError, ValueError, json.JSONDecodeError) as structure_error:
-                        # Catch runtime errors caused by JSON structure anomalies, wrap as retryable exceptions
-                        # Includes:
-                        # - AttributeError: e.g., list.get() call failed
-                        # - TypeError: type mismatch
-                        # - KeyError: missing dict key
-                        # - IndexError: list index out of bounds
-                        # - ValueError: value error (e.g., LLM returned empty content, missing required fields)
-                        # - json.JSONDecodeError: JSON parse failure (cases not caught internally)
-                        error_type = type(structure_error).__name__
-                        logger.warning(
-                            "Chapter {title} encountered {error_type} during generation (attempt {attempt}/{total}), will retry: {error}",
-                            title=section.title,
-                            error_type=error_type,
-                            attempt=attempt,
-                            total=chapter_max_attempts,
-                            error=structure_error,
-                        )
-                        emit('chapter_status', {
-                            'chapterId': section.chapter_id,
-                            'title': section.title,
-                            'status': 'retrying' if attempt < chapter_max_attempts else 'error',
-                            'attempt': attempt,
-                            'error': str(structure_error),
-                            'reason': 'structure_error',
-                            'error_type': error_type
-                        })
-                        if attempt >= chapter_max_attempts:
-                            # Reached max retry attempts, wrap as ChapterJsonParseError and raise
-                            raise ChapterJsonParseError(
-                                f"Chapter {section.title} failed due to {error_type} after {chapter_max_attempts} attempts: {structure_error}"
-                            ) from structure_error
-                        attempt += 1
-                        continue
-                    except Exception as chapter_error:
-                        if not self._should_retry_inappropriate_content_error(chapter_error):
-                            raise
-                        logger.warning(
-                            "Chapter {title} triggered content safety restriction (attempt {attempt}/{total}), preparing to regenerate: {error}",
-                            title=section.title,
-                            attempt=attempt,
-                            total=chapter_max_attempts,
-                            error=chapter_error,
-                        )
-                        emit('chapter_status', {
-                            'chapterId': section.chapter_id,
-                            'title': section.title,
-                            'status': 'retrying' if attempt < chapter_max_attempts else 'error',
-                            'attempt': attempt,
-                            'error': str(chapter_error),
-                            'reason': 'content_filter'
-                        })
-                        if attempt >= chapter_max_attempts:
-                            raise
-                        attempt += 1
-                        continue
-                if chapter_payload is None:
-                    raise ChapterJsonParseError(
-                        f"Chapter {section.title} JSON could not be parsed after {chapter_max_attempts} attempts"
-                    )
-                chapters.append(chapter_payload)
-                completed_chapters += 1  # Update completed chapter count
-                # Calculate current progress: 20% + 80% * (completed / total), rounded
-                chapter_progress = 20 + round(80 * completed_chapters / total_chapters)
-                emit('progress', {
-                    'progress': chapter_progress,
-                    'message': f'Chapter {completed_chapters}/{total_chapters} completed'
-                })
-                completion_status = {
-                    'chapterId': section.chapter_id,
-                    'title': section.title,
-                    'status': 'completed',
-                    'attempt': attempt,
-                }
-                if fallback_used:  # using fallback
-                    completion_status['warning'] = 'content_sparse_fallback'
-                    completion_status['warningMessage'] = self._CONTENT_SPARSE_WARNING_TEXT
-                emit('chapter_status', completion_status)
-
-            document_ir = self.document_composer.build_document(
-                report_id,
-                manifest_meta,
-                chapters
-            )
-            emit('stage', {'stage': 'chapters_compiled', 'chapter_count': len(chapters)})
-            html_report = self.renderer.render(document_ir)
-            emit('stage', {'stage': 'html_rendered', 'html_length': len(html_report)})
-
-            self.state.html_content = html_report
-            self.state.mark_completed()
-
-            saved_files = {}
-            if save_report:
-                saved_files = self._save_report(html_report, document_ir, report_id)
-                emit('stage', {'stage': 'report_saved', 'files': saved_files})
-
-            generation_time = (datetime.now() - start_time).total_seconds()
-            self.state.metadata.generation_time = generation_time
-            logger.info(f"Report generation complete, elapsed: {generation_time:.2f} seconds")
-            emit('metrics', {'generation_seconds': generation_time})
+            final_state = self.report_graph.invoke(initial_state)
+            html_report = final_state.get("html_content") or ""
+            saved_files = final_state.get("saved_files") or {}
             return {
-                'html_content': html_report,
-                'report_id': report_id,
-                **saved_files
+                "html_content": html_report,
+                "report_id": report_id,
+                **saved_files,
             }
-
         except Exception as e:
             self.state.mark_failed(str(e))
             logger.exception(f"Error occurred during report generation: {str(e)}")
-            emit('error', {'stage': 'agent_failed', 'message': str(e)})
+            self.emit("error", {"stage": "agent_failed", "message": str(e)})
             raise
+        finally:
+            self._stream_handler = None
+            self._report_start_time = None
+
+    def _generate_single_chapter(
+        self,
+        section: TemplateSection,
+        generation_context: Dict[str, Any],
+        run_dir: Path,
+    ) -> Tuple[Dict[str, Any], int, bool]:
+        """
+        Generate a single chapter with retry, streaming and sparse-content fallback.
+
+        Returns:
+            (chapter_payload, final_attempt, fallback_used)
+        """
+        logger.info(f"Generating chapter: {section.title}")
+        self.emit("chapter_status", {
+            "chapterId": section.chapter_id,
+            "title": section.title,
+            "status": "running",
+        })
+
+        def chunk_callback(delta: str, meta: Dict[str, Any], section_ref: TemplateSection = section):
+            self.emit("chapter_chunk", {
+                "chapterId": meta.get("chapterId") or section_ref.chapter_id,
+                "title": meta.get("title") or section_ref.title,
+                "delta": delta,
+            })
+
+        chapter_max_attempts = max(
+            self._CONTENT_SPARSE_MIN_ATTEMPTS, self.config.CHAPTER_JSON_MAX_ATTEMPTS
+        )
+        chapter_payload: Dict[str, Any] | None = None
+        attempt = 1
+        best_sparse_candidate: Dict[str, Any] | None = None
+        best_sparse_score = -1
+        fallback_used = False
+
+        while attempt <= chapter_max_attempts:
+            try:
+                chapter_payload = self.chapter_generation_node.run(
+                    section,
+                    generation_context,
+                    run_dir,
+                    stream_callback=chunk_callback,
+                )
+                break
+            except (ChapterJsonParseError, ChapterContentError, ChapterValidationError) as structured_error:
+                if isinstance(structured_error, ChapterContentError):
+                    error_kind = "content_sparse"
+                    readable_label = "content density anomaly"
+                elif isinstance(structured_error, ChapterValidationError):
+                    error_kind = "validation"
+                    readable_label = "structure validation failed"
+                else:
+                    error_kind = "json_parse"
+                    readable_label = "JSON parse failed"
+                if isinstance(structured_error, ChapterContentError):
+                    candidate = getattr(structured_error, "chapter_payload", None)
+                    candidate_score = getattr(structured_error, "body_characters", 0) or 0
+                    if isinstance(candidate, dict) and candidate_score >= 0:
+                        if candidate_score > best_sparse_score:
+                            best_sparse_candidate = deepcopy(candidate)
+                            best_sparse_score = candidate_score
+                will_fallback = (
+                    isinstance(structured_error, ChapterContentError)
+                    and attempt >= chapter_max_attempts
+                    and attempt >= self._CONTENT_SPARSE_MIN_ATTEMPTS
+                    and best_sparse_candidate is not None
+                )
+                logger.warning(
+                    "Chapter {title} {label} (attempt {attempt}/{total}): {error}",
+                    title=section.title,
+                    label=readable_label,
+                    attempt=attempt,
+                    total=chapter_max_attempts,
+                    error=structured_error,
+                )
+                status_value = "retrying" if attempt < chapter_max_attempts or will_fallback else "error"
+                status_payload = {
+                    "chapterId": section.chapter_id,
+                    "title": section.title,
+                    "status": status_value,
+                    "attempt": attempt,
+                    "error": str(structured_error),
+                    "reason": error_kind,
+                }
+                if isinstance(structured_error, ChapterValidationError):
+                    validation_errors = getattr(structured_error, "errors", None)
+                    if validation_errors:
+                        status_payload["errors"] = validation_errors
+                if will_fallback:
+                    status_payload["warning"] = "content_sparse_fallback_pending"
+                self.emit("chapter_status", status_payload)
+                if will_fallback:
+                    logger.warning(
+                        "Chapter {title} reached max attempts, keeping version with most characters (~{score} chars) as fallback",
+                        title=section.title,
+                        score=best_sparse_score,
+                    )
+                    chapter_payload = self._finalize_sparse_chapter(best_sparse_candidate)
+                    fallback_used = True
+                    break
+                if attempt >= chapter_max_attempts:
+                    raise
+                attempt += 1
+                continue
+            except (AttributeError, TypeError, KeyError, IndexError, ValueError, json.JSONDecodeError) as structure_error:
+                error_type = type(structure_error).__name__
+                logger.warning(
+                    "Chapter {title} encountered {error_type} during generation (attempt {attempt}/{total}), will retry: {error}",
+                    title=section.title,
+                    error_type=error_type,
+                    attempt=attempt,
+                    total=chapter_max_attempts,
+                    error=structure_error,
+                )
+                self.emit("chapter_status", {
+                    "chapterId": section.chapter_id,
+                    "title": section.title,
+                    "status": "retrying" if attempt < chapter_max_attempts else "error",
+                    "attempt": attempt,
+                    "error": str(structure_error),
+                    "reason": "structure_error",
+                    "error_type": error_type,
+                })
+                if attempt >= chapter_max_attempts:
+                    raise ChapterJsonParseError(
+                        f"Chapter {section.title} failed due to {error_type} after {chapter_max_attempts} attempts: {structure_error}"
+                    ) from structure_error
+                attempt += 1
+                continue
+            except Exception as chapter_error:
+                if not self._should_retry_inappropriate_content_error(chapter_error):
+                    raise
+                logger.warning(
+                    "Chapter {title} triggered content safety restriction (attempt {attempt}/{total}), preparing to regenerate: {error}",
+                    title=section.title,
+                    attempt=attempt,
+                    total=chapter_max_attempts,
+                    error=chapter_error,
+                )
+                self.emit("chapter_status", {
+                    "chapterId": section.chapter_id,
+                    "title": section.title,
+                    "status": "retrying" if attempt < chapter_max_attempts else "error",
+                    "attempt": attempt,
+                    "error": str(chapter_error),
+                    "reason": "content_filter",
+                })
+                if attempt >= chapter_max_attempts:
+                    raise
+                attempt += 1
+                continue
+
+        if chapter_payload is None:
+            raise ChapterJsonParseError(
+                f"Chapter {section.title} JSON could not be parsed after {chapter_max_attempts} attempts"
+            )
+        return chapter_payload, attempt, fallback_used
     
     def _select_template(self, query: str, reports: List[Any], forum_logs: str, custom_template: str):
         """
@@ -1539,3 +1431,13 @@ def create_agent(config_file: Optional[str] = None) -> ReportAgent:
     
     config = Settings()  # Initialize with empty config, populated from environment variables
     return ReportAgent(config)
+
+
+if __name__ == "__main__":
+    print("ReportEngine — initializing ReportAgent (smoke check)...")
+    print("For full report generation, use from project root:")
+    print("  python report_engine_only.py")
+    print("  python -m ReportEngine")
+    agent = create_agent()
+    print(f"OK — LLM: {agent.llm_client.get_model_info()}")
+    print("LangGraph compiles on first generate_report() call.")

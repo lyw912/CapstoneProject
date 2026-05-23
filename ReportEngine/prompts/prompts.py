@@ -14,9 +14,12 @@ from ..ir import (
     IR_VERSION,
 )
 ENGLISH_REPORT_LANGUAGE_RULE = (
-    "All generated prose, headings, captions, table labels, chart labels, and "
-    "explanatory text must be written in English. Preserve original Chinese only "
-    "inside direct quotes, source titles, platform names, URLs, or other verbatim evidence."
+    "All generated prose, headings, captions, table labels, chart labels, TOC entries, "
+    "and explanatory text must be written in English only. Do not output Chinese "
+    "characters (including in headings, tables, or chart labels). If upstream source "
+    "material is in Chinese, translate or paraphrase it into English while preserving "
+    "facts, numbers, and meaning. Proper nouns (e.g., Weibo, DeepSeek) and URLs may "
+    "remain unchanged; all surrounding narrative must be English."
 )
 
 
@@ -216,7 +219,7 @@ Selection Criteria:
 3. Depth and breadth of analysis requirements
 4. Target audience and usage scenario
 
-Available Template Types, recommended to use "Social Public Hot Event Analysis Report Template":
+Available Template Types, recommended to use "Social_Public_Hot_Event_Analysis_Report_Template" (English outline; match template_name exactly to a listed file):
 - Corporate Brand Reputation Analysis Report Template: Applicable for brand image and reputation management analysis. When a comprehensive and in-depth evaluation and review of the brand's overall online image and asset health within a specific period (e.g., annual, semi-annual) is needed, this template should be selected. The core task is strategic, global analysis.
 - Market Competition Landscape Public Opinion Analysis Report Template: When the goal is to systematically analyze the volume, reputation, market strategies, and user feedback of one or more core competitors to clarify one's own market position and formulate differentiated strategies, this template should be selected. The core task is comparison and insight.
 - Daily or Regular Public Opinion Monitoring Report Template: When regular, high-frequency (e.g., weekly, monthly) public opinion tracking is needed, aiming to quickly grasp dynamics, present key data, and promptly detect hot topics and risk signals, this template should be selected. The core task is data presentation and dynamic tracking.

@@ -1,0 +1,25 @@
+### **Social Public Hot Event Analysis Report Template**
+
+- **1.0 Executive Summary**
+  - 1.1 Event Classification
+  - 1.2 Key Insights
+  - 1.3 Relevance and Recommendations
+- **2.0 Event Overview and Evolution**
+  - 2.1 Background and Origin
+  - 2.2 Public Opinion Timeline
+  - 2.3 Current Status
+- **3.0 Propagation Pathways and Amplification Points**
+  - 3.1 Core Propagation Chain
+  - 3.2 Amplification Analysis
+  - 3.3 Key Propagation Actors
+- **4.0 Multi-Stakeholder Views and Sentiment Spectrum**
+  - 4.1 Core Issues and Discussion Focus
+  - 4.2 Diverse Viewpoints
+  - 4.3 Social Sentiment Analysis
+- **5.0 Underlying Drivers and Value Discourse**
+  - 5.1 Social Mindset Behind the Event
+  - 5.2 Derived Culture and Online Memes
+- **6.0 Relevance Assessment and Action Recommendations**
+  - 6.1 Risk Assessment
+  - 6.2 Opportunity Assessment
+  - 6.3 Final Recommendations (Engage / Monitor / Avoid)

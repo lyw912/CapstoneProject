@@ -17,8 +17,9 @@ from typing import Any, Dict, List, Optional
 
 ENGLISH_OUTPUT_CONSTRAINT = (
     "Write all generated report prose, headings, captions, table labels, and "
-    "explanatory text in English. Preserve original Chinese only inside direct "
-    "quotes, source titles, URLs, platform names, or other verbatim evidence."
+    "explanatory text in English only. Do not output Chinese characters. "
+    "Translate Chinese source material into English while preserving facts. "
+    "Proper nouns and URLs may remain unchanged."
 )
 
 
