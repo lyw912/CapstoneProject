@@ -55,6 +55,10 @@ class Settings(BaseSettings):
         "en",
         description="Report output language: en = English-only prose/headings; zh = allow Chinese templates and labels",
     )
+    REPORT_TRANSLATE_INPUT_TO_EN: bool = Field(
+        True,
+        description="When REPORT_OUTPUT_LANGUAGE=en, translate Chinese upstream inputs to English before generation",
+    )
     JSON_ERROR_LOG_DIR: Path = Field(
         Path("output/json_error_logs"),
         description="Diagnostic log directory for chapter JSON parsing failures",

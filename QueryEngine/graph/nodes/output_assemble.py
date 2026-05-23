@@ -23,6 +23,7 @@ from loguru import logger
 from ...llms import LLMClient
 from ...utils.config import settings
 from ..state import OpinionCluster, QueryAgentOutput, QueryAgentState, SourceItem
+from utils.output_language import with_output_language_rule
 
 # ---------------------------------------------------------------------------
 # Coverage Constants (consistent with coverage_check.py)
@@ -135,7 +136,9 @@ async def _identify_knowledge_gaps(
 
     try:
         response = llm.invoke(
-            system_prompt="You are a public opinion analysis expert. Output only a JSON array, no other text.",
+            system_prompt=with_output_language_rule(
+                "You are a public opinion analysis expert. Output only a JSON array, no other text."
+            ),
             user_prompt=prompt,
         )
         gaps = _parse_json_array(response)
@@ -188,7 +191,9 @@ async def _generate_opinion_cluster(
 
     try:
         response = llm.invoke(
-            system_prompt="You are a public opinion analysis expert. Output only JSON, no other text.",
+            system_prompt=with_output_language_rule(
+                "You are a public opinion analysis expert. Output only JSON, no other text."
+            ),
             user_prompt=prompt,
         )
         parsed = _parse_json_obj(response)

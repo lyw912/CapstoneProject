@@ -39,6 +39,7 @@ from .nodes import (
 from .renderers import HTMLRenderer
 from .state import ReportState
 from .utils.config import settings, Settings
+from .utils.input_translator import contains_cjk, translate_to_english
 from .prompts.prompts import ENGLISH_REPORT_LANGUAGE_RULE
 
 
@@ -218,6 +219,9 @@ class ReportAgent:
         self.validator = IRValidator()
         self._report_output_language = (
             str(getattr(self.config, "REPORT_OUTPUT_LANGUAGE", "en") or "en").lower()
+        )
+        self._translate_input_to_en = bool(
+            getattr(self.config, "REPORT_TRANSLATE_INPUT_TO_EN", True)
         )
         self.renderer = HTMLRenderer(
             {
@@ -477,6 +481,17 @@ class ReportAgent:
         self.emit("stage", {"stage": "agent_start", "report_id": report_id, "query": query})
 
         try:
+            normalized_reports = self._normalize_reports(reports)
+            query, normalized_reports, forum_logs, custom_template = (
+                self._translate_inputs_for_english_output(
+                    query,
+                    normalized_reports,
+                    forum_logs,
+                    custom_template,
+                )
+            )
+            self.state.query = query
+            self.state.metadata.query = query
             initial_state = {
                 "query": query,
                 "reports": reports,
@@ -484,7 +499,7 @@ class ReportAgent:
                 "custom_template": custom_template,
                 "save_report": save_report,
                 "report_id": report_id,
-                "normalized_reports": self._normalize_reports(reports),
+                "normalized_reports": normalized_reports,
                 "trace_log": [],
             }
             final_state = self.report_graph.invoke(initial_state)
@@ -803,6 +818,75 @@ class ReportAgent:
             "chapter_directives": chapter_directives or {},
             "word_plan": word_plan or {},
         }
+
+    def _translate_inputs_for_english_output(
+        self,
+        query: str,
+        normalized_reports: Dict[str, str],
+        forum_logs: str,
+        custom_template: str,
+    ) -> Tuple[str, Dict[str, str], str, str]:
+        """
+        When output language is English, translate CJK upstream inputs before generation.
+
+        Reduces Chinese leakage in chapter LLM outputs when Query/Media reports are Chinese.
+        """
+        if self._report_output_language != "en" or not self._translate_input_to_en:
+            return query, normalized_reports, forum_logs, custom_template
+
+        enabled = True
+        translated_any = False
+        fields: list[tuple[str, str]] = [("query", query)]
+        for key, value in normalized_reports.items():
+            fields.append((f"report:{key}", value))
+        fields.append(("forum_logs", self._stringify(forum_logs)))
+        if custom_template:
+            fields.append(("custom_template", custom_template))
+
+        if not any(contains_cjk(value) for _, value in fields if value):
+            return query, normalized_reports, forum_logs, custom_template
+
+        logger.info("Translating Chinese inputs to English before report generation")
+        self.emit("stage", {"stage": "input_translation", "status": "running"})
+
+        new_query = query
+        new_reports = dict(normalized_reports)
+        new_forum = self._stringify(forum_logs)
+        new_template = custom_template
+
+        for label, text in fields:
+            if not text or not contains_cjk(text):
+                continue
+            translated = translate_to_english(
+                self.llm_client,
+                text,
+                label=label,
+                enabled=enabled,
+            )
+            if translated != text:
+                translated_any = True
+            if label == "query":
+                new_query = translated
+            elif label.startswith("report:"):
+                new_reports[label.split(":", 1)[1]] = translated
+            elif label == "forum_logs":
+                new_forum = translated
+            elif label == "custom_template":
+                new_template = translated
+
+        if translated_any:
+            self.emit(
+                "stage",
+                {"stage": "input_translation", "status": "completed"},
+            )
+            logger.info("Input translation completed")
+        else:
+            self.emit(
+                "stage",
+                {"stage": "input_translation", "status": "skipped"},
+            )
+
+        return new_query, new_reports, new_forum, new_template
 
     def _normalize_reports(self, reports: List[Any]) -> Dict[str, str]:
         """

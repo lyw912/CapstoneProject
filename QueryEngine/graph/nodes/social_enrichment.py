@@ -218,7 +218,9 @@ async def _generate_divergence_summary(
             query=query, web_dist=web_dist, social_dist=social_dist, nsds=nsds,
         )
         return llm.invoke(
-            system_prompt="You are a public opinion analyst. Output only the summary.",
+            system_prompt=(
+                "You are a public opinion analyst. Write in English only. Output only the summary."
+            ),
             user_prompt=prompt,
         )
     except Exception as exc:
@@ -242,7 +244,9 @@ async def _generate_trend_summary(
             query=query, buckets_text=buckets_text, direction=direction,
         )
         return llm.invoke(
-            system_prompt="You are a public opinion analyst. Output only the summary.",
+            system_prompt=(
+                "You are a public opinion analyst. Write in English only. Output only the summary."
+            ),
             user_prompt=prompt,
         )
     except Exception as exc:

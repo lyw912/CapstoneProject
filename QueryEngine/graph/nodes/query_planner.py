@@ -16,6 +16,7 @@ from loguru import logger
 from ...llms import LLMClient
 from ...utils.config import settings
 from ..state import QueryAgentState, SubQueryItem
+from utils.output_language import is_english_output_mode, with_output_language_rule
 
 
 # ---------------------------------------------------------------------------
@@ -204,9 +205,17 @@ async def query_planner_node(state: QueryAgentState) -> dict:
 
     # 2. LLM generates stance matrix sub-queries
     prompt = STANCE_MATRIX_PROMPT.format(query=query, analysis_type=analysis_type)
+    if is_english_output_mode():
+        prompt += (
+            "\n\nOverride: All sub-query strings in the \"query\" field must be in English, "
+            "even for Chinese topics."
+        )
     try:
         response = llm.invoke(
-            system_prompt="You are a public opinion analysis search planning expert. Output only a JSON array, no other text.",
+            system_prompt=with_output_language_rule(
+                "You are a public opinion analysis search planning expert. "
+                "Output only a JSON array, no other text."
+            ),
             user_prompt=prompt,
         )
         raw_queries = _parse_json_array(response)

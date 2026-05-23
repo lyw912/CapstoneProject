@@ -71,8 +71,8 @@ class Research:
             self.add_search(
                 Search(
                     query=query or "",
-                    title="未找到结果",
-                    content="本次搜索未返回结果或调用失败",
+                    title="No results found",
+                    content="This search returned no results or the call failed",
                     url="",
                     score=None,
                     paragraph_title=paragraph_title,

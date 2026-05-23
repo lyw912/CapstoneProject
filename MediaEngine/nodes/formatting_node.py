@@ -9,6 +9,7 @@ from loguru import logger
 
 from .base_node import BaseNode
 from ..prompts import SYSTEM_PROMPT_REPORT_FORMATTING
+from utils.output_language import with_output_language_rule
 from ..utils.text_processing import (
     remove_reasoning_from_output,
     clean_markdown_tags
@@ -70,7 +71,7 @@ class ReportFormattingNode(BaseNode):
             
             # Call LLM to generate Markdown format (streaming, safe UTF-8 concatenation)
             response = self.llm_client.stream_invoke_to_string(
-                SYSTEM_PROMPT_REPORT_FORMATTING,
+                with_output_language_rule(SYSTEM_PROMPT_REPORT_FORMATTING),
                 message,
             )
             

@@ -21,6 +21,7 @@ from loguru import logger
 
 from ...llms import LLMClient
 from ...utils.config import settings
+from utils.output_language import with_output_language_rule
 from ..state import QueryAgentState, SubQueryItem
 
 # ---------------------------------------------------------------------------
@@ -120,7 +121,9 @@ async def gap_filler_node(state: QueryAgentState) -> dict:
     llm = _get_llm_client()
     try:
         response = llm.invoke(
-            system_prompt="You are a search strategy expert. Output only a JSON array, no other text.",
+            system_prompt=with_output_language_rule(
+                "You are a search strategy expert. Output only a JSON array, no other text."
+            ),
             user_prompt=prompt,
         )
         raw_queries = _parse_json_array(response)

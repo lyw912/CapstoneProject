@@ -59,8 +59,8 @@ class LLMClient:
 
     @with_retry(LLM_RETRY_CONFIG)
     def invoke(self, system_prompt: str, user_prompt: str, **kwargs) -> str:
-        current_time = datetime.now().strftime("%Y年%m月%d日%H时%M分")
-        time_prefix = f"今天的实际时间是{current_time}"
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+        time_prefix = f"Today's actual time is {current_time}"
         if user_prompt:
             user_prompt = f"{time_prefix}\n{user_prompt}"
         else:
@@ -98,8 +98,8 @@ class LLMClient:
         Yields:
             Response text chunks (str)
         """
-        current_time = datetime.now().strftime("%Y年%m月%d日%H时%M分")
-        time_prefix = f"今天的实际时间是{current_time}"
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+        time_prefix = f"Today's actual time is {current_time}"
         if user_prompt:
             user_prompt = f"{time_prefix}\n{user_prompt}"
         else:

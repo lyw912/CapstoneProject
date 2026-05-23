@@ -273,19 +273,19 @@ def image_results_to_search_dicts(
         return []
     out: List[Dict[str, Any]] = []
     for img in images[:max_images]:
-        name = getattr(img, "name", None) or "图片"
+        name = getattr(img, "name", None) or "Image"
         content_url = (getattr(img, "content_url", None) or "").strip()
         host = (getattr(img, "host_page_url", None) or "").strip() or None
         thumb = (getattr(img, "thumbnail_url", None) or "").strip() or None
         w, h = getattr(img, "width", None), getattr(img, "height", None)
-        lines = [f"[图片] {name}"]
-        lines.append(f"图片链接: {content_url}" if content_url else "图片链接: （无）")
+        lines = [f"[Image] {name}"]
+        lines.append(f"Image URL: {content_url}" if content_url else "Image URL: (none)")
         if host:
-            lines.append(f"来源页面: {host}")
+            lines.append(f"Source page: {host}")
         if thumb:
-            lines.append(f"缩略图: {thumb}")
+            lines.append(f"Thumbnail: {thumb}")
         if w and h:
-            lines.append(f"尺寸: {w}x{h}")
+            lines.append(f"Dimensions: {w}x{h}")
         text = "\n".join(lines)
         primary_url = content_url or host or ""
         out.append({

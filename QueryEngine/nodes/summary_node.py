@@ -11,6 +11,7 @@ from loguru import logger
 from .base_node import StateMutationNode
 from ..state.state import State
 from ..prompts import SYSTEM_PROMPT_FIRST_SUMMARY, SYSTEM_PROMPT_REFLECTION_SUMMARY
+from utils.output_language import with_output_language_rule
 from ..utils.text_processing import (
     remove_reasoning_from_output,
     clean_json_tags,
@@ -101,7 +102,7 @@ class FirstSummaryNode(StateMutationNode):
 
             # Invoke LLM to generate summary (streaming, safely concatenate UTF-8)
             response = self.llm_client.stream_invoke_to_string(
-                SYSTEM_PROMPT_FIRST_SUMMARY,
+                with_output_language_rule(SYSTEM_PROMPT_FIRST_SUMMARY),
                 message,
             )
 
@@ -269,7 +270,7 @@ class ReflectionSummaryNode(StateMutationNode):
 
             # Invoke LLM to generate summary (streaming, safely concatenate UTF-8)
             response = self.llm_client.stream_invoke_to_string(
-                SYSTEM_PROMPT_REFLECTION_SUMMARY,
+                with_output_language_rule(SYSTEM_PROMPT_REFLECTION_SUMMARY),
                 message,
             )
 

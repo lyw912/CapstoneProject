@@ -11,228 +11,234 @@ import json
 from typing import Any, Dict, List, Optional
 from loguru import logger
 
+from ReportEngine.prompts.prompts import ENGLISH_REPORT_LANGUAGE_RULE
 from ReportEngine.utils.config import settings
 
 
 # Chart repair system prompt
-CHART_REPAIR_SYSTEM_PROMPT = """你是一个专业的图表数据修复助手。你的任务是修复Chart.js图表数据中的格式错误，确保图表能够正常渲染。
+CHART_REPAIR_SYSTEM_PROMPT = f"""You are a professional Chart.js data repair assistant. Fix format errors in chart widget blocks so charts render correctly.
 
-**Chart.js标准数据格式：**
+Language rule: {ENGLISH_REPORT_LANGUAGE_RULE}
+All human-readable strings you add or rewrite in titles, labels, legends, and dataset names must be English.
 
-1. 标准图表（line, bar, pie, doughnut, radar, polarArea）：
+**Chart.js standard data format:**
+
+1. Standard charts (line, bar, pie, doughnut, radar, polarArea):
 ```json
-{
+{{
   "type": "widget",
   "widgetType": "chart.js/bar",
   "widgetId": "chart-001",
-  "props": {
+  "props": {{
     "type": "bar",
-    "title": "图表标题",
-    "options": {
+    "title": "Chart Title",
+    "options": {{
       "responsive": true,
-      "plugins": {
-        "legend": {
+      "plugins": {{
+        "legend": {{
           "display": true
-        }
-      }
-    }
-  },
-  "data": {
+        }}
+      }}
+    }}
+  }},
+  "data": {{
     "labels": ["A", "B", "C"],
     "datasets": [
-      {
-        "label": "系列1",
+      {{
+        "label": "Series 1",
         "data": [10, 20, 30]
-      }
+      }}
     ]
-  }
-}
+  }}
+}}
 ```
 
-2. 特殊图表（scatter, bubble）：
+2. Special charts (scatter, bubble):
 ```json
-{
-  "data": {
+{{
+  "data": {{
     "datasets": [
-      {
-        "label": "系列1",
+      {{
+        "label": "Series 1",
         "data": [
-          {"x": 10, "y": 20},
-          {"x": 15, "y": 25}
+          {{"x": 10, "y": 20}},
+          {{"x": 15, "y": 25}}
         ]
-      }
+      }}
     ]
-  }
-}
+  }}
+}}
 ```
 
-**修复原则：**
-1. **宁愿不改，也不要改错** - 如果不确定如何修复，保持原始数据
-2. **最小改动** - 只修复明确的错误，不要过度修改
-3. **保持数据完整性** - 不要丢失原始数据
-4. **验证修复结果** - 确保修复后符合Chart.js格式
+**Repair principles:**
+1. **When unsure, do not guess** — keep original data if the fix is ambiguous
+2. **Minimal changes** — fix only clear errors
+3. **Preserve data** — do not drop original values
+4. **Validate** — output must conform to Chart.js expectations
 
-**常见错误及修复方法：**
-1. 缺少labels字段 → 根据数据生成默认labels
-2. datasets不是数组 → 转换为数组格式
-3. 数据长度不匹配 → 截断或补null
-4. 非数值数据 → 尝试转换或设为null
-5. 缺少必需字段 → 添加默认值
+**Common errors and fixes:**
+1. Missing `labels` → synthesize sensible default labels
+2. `datasets` is not an array → wrap as an array
+3. Length mismatch → truncate or pad with null
+4. Non-numeric values → coerce or use null
+5. Missing required fields → add safe defaults
 
-请根据错误信息修复图表数据，并返回修复后的完整widget block（JSON格式）。
+Return the repaired full widget block as JSON only.
 """
 
 
 # Table repair system prompt
-TABLE_REPAIR_SYSTEM_PROMPT = """你是一个专业的表格数据修复助手。你的任务是修复IR表格数据中的格式错误，确保表格能够正常渲染。
+TABLE_REPAIR_SYSTEM_PROMPT = f"""You are a professional IR table repair assistant. Fix format errors in table blocks so tables render correctly.
 
-**标准表格数据格式：**
+Language rule: {ENGLISH_REPORT_LANGUAGE_RULE}
+All cell text you add or rewrite must be English.
+
+**Standard table block format:**
 
 ```json
-{
+{{
   "type": "table",
   "rows": [
-    {
+    {{
       "cells": [
-        {
+        {{
           "header": true,
           "blocks": [
-            {
+            {{
               "type": "paragraph",
-              "inlines": [{"text": "列标题", "marks": []}]
-            }
+              "inlines": [{{"text": "Column A", "marks": []}}]
+            }}
           ]
-        },
-        {
+        }},
+        {{
           "header": true,
           "blocks": [
-            {
+            {{
               "type": "paragraph",
-              "inlines": [{"text": "另一列", "marks": []}]
-            }
+              "inlines": [{{"text": "Column B", "marks": []}}]
+            }}
           ]
-        }
+        }}
       ]
-    },
-    {
+    }},
+    {{
       "cells": [
-        {
+        {{
           "blocks": [
-            {
+            {{
               "type": "paragraph",
-              "inlines": [{"text": "数据内容", "marks": []}]
-            }
+              "inlines": [{{"text": "Value 1", "marks": []}}]
+            }}
           ]
-        },
-        {
+        }},
+        {{
           "blocks": [
-            {
+            {{
               "type": "paragraph",
-              "inlines": [{"text": "另一数据", "marks": []}]
-            }
+              "inlines": [{{"text": "Value 2", "marks": []}}]
+            }}
           ]
-        }
+        }}
       ]
-    }
+    }}
   ]
-}
+}}
 ```
 
-**⚠️ 常见错误：嵌套 cells 结构**
+**Common error: nested `cells`**
 
-这是一个非常常见的错误，LLM 经常把同级的 cells 错误地嵌套起来：
+LLMs often nest sibling cells incorrectly:
 
-❌ **错误示例：**
+**Wrong:**
 ```json
-{
+{{
   "cells": [
-    { "blocks": [...], "colspan": 1 },
-    { "cells": [
-        { "blocks": [...] },
-        { "cells": [...] }
+    {{ "blocks": [...], "colspan": 1 }},
+    {{ "cells": [
+        {{ "blocks": [...] }},
+        {{ "cells": [...] }}
       ]
-    }
+    }}
   ]
-}
+}}
 ```
 
-✅ **正确格式：**
+**Correct:**
 ```json
-{
+{{
   "cells": [
-    { "blocks": [...], "colspan": 1 },
-    { "blocks": [...] },
-    { "blocks": [...] }
+    {{ "blocks": [...], "colspan": 1 }},
+    {{ "blocks": [...] }},
+    {{ "blocks": [...] }}
   ]
-}
+}}
 ```
 
-**修复原则：**
-1. **展平嵌套 cells** - 将错误嵌套的 cells 展平为同级
-2. **确保每个 cell 有 blocks** - 每个单元格必须有 blocks 数组
-3. **blocks 内使用 paragraph** - 文本内容应放在 paragraph block 内
-4. **保持数据完整性** - 不要丢失原始内容
+**Repair principles:**
+1. Flatten nested `cells` into a single sibling array
+2. Every cell must have a `blocks` array
+3. Put text in `paragraph` blocks inside `blocks`
+4. Preserve original content where possible
 
-**修复方法：**
-1. 嵌套 cells 结构 → 展平为同级 cells 数组
-2. 缺少 blocks 字段 → 添加包含 paragraph 的 blocks
-3. 空 cells 数组 → 添加默认空单元格
-4. 非法 cell 类型 → 转换为标准格式
+**Fixes:**
+1. Nested `cells` → flatten to siblings
+2. Missing `blocks` → add a paragraph block
+3. Empty `cells` → add a default empty cell
+4. Invalid cell shape → convert to standard format
 
-请根据错误信息修复表格数据，并返回修复后的完整 table block（JSON格式）。
+Return the repaired full table block as JSON only.
 """
 
 
 # Word cloud repair system prompt
-WORDCLOUD_REPAIR_SYSTEM_PROMPT = """你是一个专业的词云数据修复助手。你的任务是修复词云 widget 数据中的格式错误，确保词云能够正常渲染。
+WORDCLOUD_REPAIR_SYSTEM_PROMPT = f"""You are a professional word-cloud widget repair assistant. Fix format errors so word clouds render correctly.
 
-**标准词云数据格式：**
+Language rule: {ENGLISH_REPORT_LANGUAGE_RULE}
+Translate any Chinese token text into English when you must rewrite labels; preserve meaning.
+
+**Standard word-cloud format:**
 
 ```json
-{
+{{
   "type": "widget",
   "widgetType": "wordcloud",
   "widgetId": "wordcloud-001",
-  "title": "词云标题",
-  "data": {
+  "title": "Word Cloud Title",
+  "data": {{
     "words": [
-      {"text": "关键词1", "weight": 10},
-      {"text": "关键词2", "weight": 8},
-      {"text": "关键词3", "weight": 6}
+      {{"text": "keyword_one", "weight": 10}},
+      {{"text": "keyword_two", "weight": 8}},
+      {{"text": "keyword_three", "weight": 6}}
     ]
-  }
-}
+  }}
+}}
 ```
 
-**⚠️ 数据路径说明：**
+**Data path priority:**
+1. `data.words` (preferred)
+2. `data.items`
+3. `props.words`
+4. `props.items`
+5. `props.data`
 
-词云数据可以位于以下路径（按优先级）：
-1. `data.words` - 推荐路径
-2. `data.items` - 备选路径
-3. `props.words` - 备选路径
-4. `props.items` - 备选路径
-5. `props.data` - 备选路径
+**Word item shape:**
+- `text` or `word` or `label`: token text (required)
+- `weight` or `value`: frequency (required)
+- `category`: optional
 
-**词云项目格式：**
+**Repair principles:**
+1. Normalize to `data.words` when possible
+2. Every item needs text and weight
+3. Convert legacy shapes to the standard object format
+4. Preserve original tokens when valid
 
-每个词云项目应该是一个对象，包含：
-- `text` 或 `word` 或 `label`: 词语文本（必需）
-- `weight` 或 `value`: 权重/频率（必需）
-- `category`: 类别（可选）
+**Common fixes:**
+1. Wrong path → move to `data.words`
+2. Missing `weight` → assign a descending default weight
+3. `word` field only → normalize to `text`
+4. Bare strings in array → wrap as objects
 
-**修复原则：**
-1. **规范化数据路径** - 优先使用 `data.words`
-2. **确保必需字段** - 每个词项必须有文本和权重
-3. **转换兼容格式** - 将其他格式转换为标准格式
-4. **保持数据完整性** - 不要丢失原始词语
-
-**常见错误及修复方法：**
-1. 数据位于错误路径 → 移动到 `data.words`
-2. 缺少 weight 字段 → 根据位置生成默认权重
-3. 使用 word 而非 text → 统一为 text 字段
-4. 数组元素是字符串 → 转换为对象格式
-
-请根据错误信息修复词云数据，并返回修复后的完整 widget block（JSON格式）。
+Return the repaired full widget block as JSON only.
 """
 
 
@@ -253,27 +259,28 @@ def build_table_repair_prompt(
     block_json = json.dumps(table_block, ensure_ascii=False, indent=2)
     errors_text = "\n".join(f"- {error}" for error in validation_errors)
 
-    prompt = f"""请修复以下表格数据中的错误：
+    prompt = f"""Repair the table block below.
 
-**原始数据：**
+Language rule: {ENGLISH_REPORT_LANGUAGE_RULE}
+
+**Original data:**
 ```json
 {block_json}
 ```
 
-**检测到的错误：**
+**Validation errors:**
 {errors_text}
 
-**要求：**
-1. 返回修复后的完整 table block（JSON格式）
-2. 特别注意展平嵌套的 cells 结构
-3. 确保每个 cell 都有 blocks 数组
-4. 如果无法确定如何修复，保持原始数据
+**Requirements:**
+1. Return the full repaired `table` block as JSON
+2. Flatten any nested `cells` structures
+3. Ensure every cell has a `blocks` array
+4. If unsure, keep the original data
 
-**重要的输出格式要求：**
-1. 只返回纯JSON对象，不要添加任何说明文字
-2. 不要使用```json```标记包裹
-3. 确保JSON语法完全正确
-4. 所有字符串使用双引号
+**Output format:**
+1. Return a single JSON object only — no prose
+2. Do not wrap output in ```json``` fences
+3. Valid JSON syntax; double-quoted strings
 """
     return prompt
 
@@ -295,27 +302,28 @@ def build_wordcloud_repair_prompt(
     block_json = json.dumps(widget_block, ensure_ascii=False, indent=2)
     errors_text = "\n".join(f"- {error}" for error in validation_errors)
 
-    prompt = f"""请修复以下词云数据中的错误：
+    prompt = f"""Repair the word-cloud widget block below.
 
-**原始数据：**
+Language rule: {ENGLISH_REPORT_LANGUAGE_RULE}
+
+**Original data:**
 ```json
 {block_json}
 ```
 
-**检测到的错误：**
+**Validation errors:**
 {errors_text}
 
-**要求：**
-1. 返回修复后的完整 widget block（JSON格式）
-2. 确保词云数据位于 data.words 路径
-3. 每个词项必须有 text 和 weight 字段
-4. 如果无法确定如何修复，保持原始数据
+**Requirements:**
+1. Return the full repaired widget block as JSON
+2. Prefer `data.words` for word items
+3. Each item must have `text` and `weight`
+4. If unsure, keep the original data
 
-**重要的输出格式要求：**
-1. 只返回纯JSON对象，不要添加任何说明文字
-2. 不要使用```json```标记包裹
-3. 确保JSON语法完全正确
-4. 所有字符串使用双引号
+**Output format:**
+1. Return a single JSON object only — no prose
+2. Do not wrap output in ```json``` fences
+3. Valid JSON syntax; double-quoted strings
 """
     return prompt
 
@@ -337,27 +345,28 @@ def build_chart_repair_prompt(
     block_json = json.dumps(widget_block, ensure_ascii=False, indent=2)
     errors_text = "\n".join(f"- {error}" for error in validation_errors)
 
-    prompt = f"""请修复以下图表数据中的错误：
+    prompt = f"""Repair the chart widget block below.
 
-**原始数据：**
+Language rule: {ENGLISH_REPORT_LANGUAGE_RULE}
+
+**Original data:**
 ```json
 {block_json}
 ```
 
-**检测到的错误：**
+**Validation errors:**
 {errors_text}
 
-**要求：**
-1. 返回修复后的完整widget block（JSON格式）
-2. 只修复明确的错误，保持其他数据不变
-3. 确保修复后的数据符合Chart.js格式要求
-4. 如果无法确定如何修复，保持原始数据
+**Requirements:**
+1. Return the full repaired widget block as JSON
+2. Fix only clear errors; leave other fields unchanged
+3. Output must satisfy Chart.js data expectations
+4. If unsure, keep the original data
 
-**重要的输出格式要求：**
-1. 只返回纯JSON对象，不要添加任何说明文字
-2. 不要使用```json```标记包裹
-3. 确保JSON语法完全正确
-4. 所有字符串使用双引号
+**Output format:**
+1. Return a single JSON object only — no prose
+2. Do not wrap output in ```json``` fences
+3. Valid JSON syntax; double-quoted strings
 """
     return prompt
 

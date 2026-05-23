@@ -5,8 +5,8 @@ The bridge keeps the Coordinator/ReportEngine boundary explicit:
 - Coordinator owns evidence collection, deliberation, and structured synthesis.
 - ReportEngine owns template/layout/chapter rendering.
 
-Raw Chinese source text may appear as quoted evidence. Bridge-generated labels,
-instructions, and report scaffolding are English.
+Bridge-generated labels, instructions, and report scaffolding are English.
+Upstream Chinese source text should be translated when passed to ReportEngine.
 """
 
 from __future__ import annotations
@@ -171,7 +171,7 @@ def build_english_report_template() -> str:
 
 ## 1. Executive Summary
 - Summarize the overall finding, confidence level, and strongest evidence.
-- State the language rule: generated prose must be English; original Chinese may only appear as verbatim evidence.
+- State the language rule: all generated prose must be English only; translate any Chinese source material.
 
 ## 2. Data and Methodology
 - Explain web/news retrieval, social-media evidence, deliberation, CSSD, SCS, and TrustScore.
@@ -310,7 +310,11 @@ def _build_media_engine_report(coordinator_output: Dict[str, Any]) -> str:
 
         voices = social.get("top_social_voices", []) or []
         if voices:
-            lines.extend(["### Representative Social Voices", "Original-language posts are verbatim evidence.", ""])
+            lines.extend([
+                "### Representative Social Voices",
+                "Translate non-English post text into English while preserving facts and links.",
+                "",
+            ])
             for voice in voices[:10]:
                 lines.append(
                     f"- [{voice.get('platform', '')}] stance={voice.get('stance', '')} "

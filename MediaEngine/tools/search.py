@@ -240,9 +240,9 @@ class BochaMultimodalSearch:
 
     def search_for_structured_data(self, query: str) -> BochaResponse:
         """
-        【工具】结构化数据查询: 专门用于可能触发“模态卡”的查询。
-        当Agent意图是查询天气、股票、汇率、百科定义、火车票、汽车参数等结构化信息时，应优先使用此工具。
-        它会返回所有信息，但Agent应重点关注结果中的 `modal_cards` 部分。
+        [TOOL] Structured Data Query: Prefer for queries that may return modal cards.
+        Use when the agent needs weather, stocks, FX rates, encyclopedia facts, tickets, vehicle specs, etc.
+        Returns the full payload; the agent should prioritize the `modal_cards` section.
         """
         logger.info(f"--- TOOL: Structured Data Query (query: {query}) ---")
         # Implementation is same as comprehensive_search, but naming and documentation guide Agent intent

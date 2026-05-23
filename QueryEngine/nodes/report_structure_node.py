@@ -11,6 +11,7 @@ from loguru import logger
 from .base_node import StateMutationNode
 from ..state.state import State
 from ..prompts import SYSTEM_PROMPT_REPORT_STRUCTURE
+from utils.output_language import with_output_language_rule
 from ..utils.text_processing import (
     remove_reasoning_from_output,
     clean_json_tags,
@@ -52,7 +53,10 @@ class ReportStructureNode(StateMutationNode):
             logger.info(f"Generating report structure for query: {self.query}")
 
             # Invoke LLM
-            response = self.llm_client.stream_invoke_to_string(SYSTEM_PROMPT_REPORT_STRUCTURE, self.query)
+            response = self.llm_client.stream_invoke_to_string(
+                with_output_language_rule(SYSTEM_PROMPT_REPORT_STRUCTURE),
+                self.query,
+            )
             
             # Process response
             processed_response = self.process_output(response)
