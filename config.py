@@ -57,7 +57,11 @@ class Settings(BaseSettings):
     )
     REPORT_TRANSLATE_INPUT_TO_EN: bool = Field(
         True,
-        description="When REPORT_OUTPUT_LANGUAGE=en, translate Chinese upstream inputs to English before generation",
+        description="When REPORT_OUTPUT_LANGUAGE=en, pre-translate Chinese upstream inputs to English when detected",
+    )
+    REPORT_INPUT_TRANSLATION_TIMEOUT_SECONDS: int = Field(
+        45,
+        description="Maximum total seconds allowed for pre-translation; on timeout skip remaining fields and continue generation",
     )
     JSON_ERROR_LOG_DIR: Path = Field(
         Path("output/json_error_logs"),

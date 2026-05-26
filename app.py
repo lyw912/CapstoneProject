@@ -60,9 +60,9 @@ def _patch_eventlet_disconnect_logging():
                 environ = getattr(self, 'environ', {}) or {}
                 method = environ.get('REQUEST_METHOD', '')
                 path = environ.get('PATH_INFO', '')
-                logger.warning(f"Client actively disconnected, ignoring exception: {method} {path} ({exc})")
+                logger.info(f"Client actively disconnected, ignoring exception: {method} {path} ({exc})")
             except Exception:
-                logger.warning(f"Client actively disconnected, ignoring exception: {exc}")
+                logger.info(f"Client actively disconnected, ignoring exception: {exc}")
             return
 
     eventlet.wsgi.HttpProtocol.finish = _safe_finish  # type: ignore[attr-defined]

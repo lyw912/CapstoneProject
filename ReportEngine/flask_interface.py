@@ -29,6 +29,7 @@ report_bp = Blueprint('report_engine', __name__)
 # Global variables
 report_agent = None
 current_task = None
+current_task_thread: Optional[threading.Thread] = None
 task_lock = threading.Lock()
 
 # ====== Streaming Push and Task History Management ======
@@ -314,6 +315,17 @@ class ReportTask:
         self._event_lock = threading.Lock()
         self.last_event_id = 0
 
+    def reserve_event_id(self) -> int:
+        """
+        Reserve and return a monotonically increasing event id.
+
+        Used by ephemeral events (such as SSE heartbeat) that should keep stream cursor
+        contiguous, but do not need to be persisted in history replay.
+        """
+        with self._event_lock:
+            self.last_event_id += 1
+            return self.last_event_id
+
     def update_status(self, status: str, progress: int = None, error_message: str = ""):
         """
         Update task status and broadcast events.
@@ -376,15 +388,13 @@ class ReportTask:
         """
         timestamp = datetime.utcnow().isoformat() + 'Z'
         event: Dict[str, Any] = {
-            'id': 0,
+            'id': self.reserve_event_id(),
             'type': event_type,
             'task_id': self.task_id,
             'timestamp': timestamp,
             'payload': payload,
         }
         with self._event_lock:
-            self.last_event_id += 1
-            event['id'] = self.last_event_id
             self.event_history.append(event)
         _broadcast_event(self.task_id, event)
 
@@ -443,7 +453,7 @@ def run_report_generation(task: ReportTask, query: str, custom_template: str = "
         query: The report topic.
         custom_template: Optional custom template string.
     """
-    global current_task
+    global current_task, current_task_thread
 
     try:
         # Encapsulate push logic within local closure for passing to ReportAgent
@@ -570,6 +580,11 @@ def run_report_generation(task: ReportTask, query: str, custom_template: str = "
         with task_lock:
             if current_task and current_task.task_id == task.task_id:
                 current_task = None
+    finally:
+        # Ensure stale thread references are always released so future tasks are not blocked.
+        with task_lock:
+            if current_task_thread is not None and not current_task_thread.is_alive():
+                current_task_thread = None
 
 
 @report_bp.route('/status', methods=['GET'])
@@ -613,17 +628,29 @@ def generate_report():
     Returns:
         Response: JSON containing task_id and SSE stream url.
     """
-    global current_task
+    global current_task, current_task_thread
 
     try:
         # Check if a task is already running
         with task_lock:
             if current_task and current_task.status == "running":
-                return jsonify({
-                    'success': False,
-                    'error': 'A report generation task is already running',
-                    'current_task': current_task.to_dict()
-                }), 400
+                thread_alive = bool(current_task_thread and current_task_thread.is_alive())
+                if thread_alive:
+                    return jsonify({
+                        'success': False,
+                        'error': 'A report generation task is already running',
+                        'current_task': current_task.to_dict()
+                    }), 400
+                logger.warning(
+                    f"Detected stale running task without active thread: {current_task.task_id}, auto cleaning"
+                )
+                current_task.update_status("error", current_task.progress, "Stale task auto cleaned")
+                current_task.publish_event('error', {
+                    'message': 'Task thread ended unexpectedly, task has been reset',
+                    'stage': 'failed',
+                    'task': current_task.to_dict(),
+                })
+                current_task = None
 
             # Clean up completed task if exists
             if current_task and current_task.status in ["completed", "error"]:
@@ -682,6 +709,7 @@ def generate_report():
             args=(task, query, custom_template),
             daemon=True
         )
+        current_task_thread = thread
         thread.start()
 
         return jsonify({
@@ -815,7 +843,7 @@ def stream_task(task_id: str):
                         logger.info(f"Task {task_id} ended with no new events, SSE auto-closing")
                         break
                     heartbeat = {
-                        'id': f"hb-{int(time.time() * 1000)}",
+                        'id': task.reserve_event_id(),
                         'type': 'heartbeat',
                         'task_id': task_id,
                         'timestamp': datetime.utcnow().isoformat() + 'Z',
@@ -834,7 +862,7 @@ def stream_task(task_id: str):
                     logger.info(f"SSE generator closed, stopping push for task {task_id}")
                     break
                 except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError) as exc:
-                    logger.warning(f"SSE connection interrupted by client (task {task_id}): {exc}")
+                    logger.info(f"SSE connection interrupted by client (task {task_id}): {exc}")
                     break
                 except Exception as exc:
                     event_type = event.get('type') if isinstance(event, dict) else 'unknown'
@@ -860,6 +888,7 @@ def stream_task(task_id: str):
         mimetype='text/event-stream'
     )
     response.headers['Cache-Control'] = 'no-cache'
+    response.headers['Connection'] = 'keep-alive'
     response.headers['X-Accel-Buffering'] = 'no'
     return response
 
@@ -997,6 +1026,7 @@ def cancel_task(task_id: str):
 
     try:
         with task_lock:
+            cancelled = False
             if current_task and current_task.task_id == task_id:
                 if current_task.status == "running":
                     current_task.update_status("cancelled", 0, "User cancelled task")
@@ -1004,6 +1034,14 @@ def cancel_task(task_id: str):
                         'message': 'Task terminated by user',
                         'task': current_task.to_dict(),
                     })
+                    cancelled = True
+                elif current_task.status in ("pending",):
+                    current_task.update_status("cancelled", current_task.progress, "User cancelled task")
+                    current_task.publish_event('cancelled', {
+                        'message': 'Task terminated by user',
+                        'task': current_task.to_dict(),
+                    })
+                    cancelled = True
                 current_task = None
             task = tasks_registry.get(task_id)
             if task and task.status == 'running':
@@ -1012,16 +1050,18 @@ def cancel_task(task_id: str):
                     'message': 'Task terminated by user',
                     'task': task.to_dict(),
                 })
+                cancelled = True
 
+            if cancelled:
                 return jsonify({
                     'success': True,
                     'message': 'Task cancelled'
                 })
-            else:
-                return jsonify({
-                    'success': False,
-                    'error': 'Task does not exist or cannot be cancelled'
-                }), 404
+
+            return jsonify({
+                'success': False,
+                'error': 'Task does not exist or cannot be cancelled'
+            }), 404
 
     except Exception as e:
         logger.exception(f"Failed to cancel report generation task: {str(e)}")

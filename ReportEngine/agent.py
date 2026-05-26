@@ -11,6 +11,7 @@ for the Report Engine. Core responsibilities include:
 
 import json
 import os
+import time
 from copy import deepcopy
 from pathlib import Path
 from uuid import uuid4
@@ -222,6 +223,9 @@ class ReportAgent:
         )
         self._translate_input_to_en = bool(
             getattr(self.config, "REPORT_TRANSLATE_INPUT_TO_EN", True)
+        )
+        self._input_translation_timeout_seconds = int(
+            max(1, getattr(self.config, "REPORT_INPUT_TRANSLATION_TIMEOUT_SECONDS", 45))
         )
         self.renderer = HTMLRenderer(
             {
@@ -844,18 +848,62 @@ class ReportAgent:
             fields.append(("custom_template", custom_template))
 
         if not any(contains_cjk(value) for _, value in fields if value):
+            self.emit(
+                "stage",
+                {"stage": "input_translation", "status": "skipped", "reason": "no_cjk_input"},
+            )
             return query, normalized_reports, forum_logs, custom_template
 
         logger.info("Translating Chinese inputs to English before report generation")
-        self.emit("stage", {"stage": "input_translation", "status": "running"})
+        self.emit(
+            "stage",
+            {
+                "stage": "input_translation",
+                "status": "running",
+                "timeout_seconds": self._input_translation_timeout_seconds,
+            },
+        )
+
+        # Guardrails for large payloads:
+        # translating very large forum/report text chunk-by-chunk can take too long and
+        # block the whole pipeline; limit per-field translation size to keep startup responsive.
+        max_chars_by_label = {
+            "query": 4000,
+            "custom_template": 12000,
+            "forum_logs": 16000,
+            "report:query_engine": 30000,
+            "report:media_engine": 30000,
+        }
+        default_max_chars = 20000
 
         new_query = query
         new_reports = dict(normalized_reports)
         new_forum = self._stringify(forum_logs)
         new_template = custom_template
+        skipped_labels: list[str] = []
+        timed_out = False
+        deadline = time.monotonic() + float(self._input_translation_timeout_seconds)
 
         for label, text in fields:
             if not text or not contains_cjk(text):
+                continue
+            if time.monotonic() >= deadline:
+                timed_out = True
+                skipped_labels.append(f"{label}(timeout)")
+                logger.warning(
+                    "Input translation reached timeout budget ({timeout}s), skipping remaining fields",
+                    timeout=self._input_translation_timeout_seconds,
+                )
+                break
+            max_chars = max_chars_by_label.get(label, default_max_chars)
+            if len(text) > max_chars:
+                skipped_labels.append(f"{label}({len(text)}>{max_chars})")
+                logger.warning(
+                    "Skip input translation for oversized field {label}: length {length} exceeds {limit}",
+                    label=label,
+                    length=len(text),
+                    limit=max_chars,
+                )
                 continue
             translated = translate_to_english(
                 self.llm_client,
@@ -877,13 +925,23 @@ class ReportAgent:
         if translated_any:
             self.emit(
                 "stage",
-                {"stage": "input_translation", "status": "completed"},
+                {
+                    "stage": "input_translation",
+                    "status": "completed",
+                    "skipped_fields": skipped_labels,
+                    "timed_out": timed_out,
+                },
             )
             logger.info("Input translation completed")
         else:
             self.emit(
                 "stage",
-                {"stage": "input_translation", "status": "skipped"},
+                {
+                    "stage": "input_translation",
+                    "status": "skipped",
+                    "skipped_fields": skipped_labels,
+                    "timed_out": timed_out,
+                },
             )
 
         return new_query, new_reports, new_forum, new_template
