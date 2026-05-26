@@ -2112,7 +2112,7 @@
             // [New] Expose performance monitoring functions globally for debugging
             window.getGlobalPerformanceStats = getGlobalPerformanceStats;
             window.resetAllPerformanceStats = resetAllPerformanceStats;
-            console.log('[DebugTool] PerformanceMonitorFunctionalready挂载towindowObject：');
+            console.log('[DebugTool] Performance monitor functions are mounted on the window object:');
             console.log('  - window.getGlobalPerformanceStats() : ViewallrenderersPerformanceStatistics');
             console.log('  - window.resetAllPerformanceStats() : ResetallPerformancecounters');
 
@@ -2745,7 +2745,7 @@
             if (!status.started) {
                 openConfigModal({
                     lock: true,
-                    message: 'PleaseFirstConfirmConfiguration，然Afterclick“SaveandStartSystem”'
+                    message: 'Please confirm configuration first, then click "Save & Start System".'
                 });
             } else {
                 applySystemState(status);
@@ -4114,14 +4114,14 @@ function getConsoleContainer() {
             }
 
             // ManualRefresh一次
-            console.log('[Test] Manual触发Refresh...');
+            console.log('[Test] Manually triggering refresh...');
             reportLogManager.refresh();
 
             // Simulate添加Log
-            console.log('[Test] Simulate添加WARNINGLog...');
+            console.log('[Test] Simulating WARNING log...');
             appendConsoleTextLine('report', '[21:02:43.014] [WARNING] TestWarningMessage', 'warning');
 
-            console.log('[Test] Simulate添加ERRORLog...');
+            console.log('[Test] Simulating ERROR log...');
             appendConsoleTextLine('report', '[21:02:43.018] [ERROR] TestErrorMessage', 'error');
 
             console.log('[Test] ===== TestComplete =====');
@@ -4142,7 +4142,7 @@ function getConsoleContainer() {
             .then(data => {
                 console.log('[TestAPI] BackData:', data);
                 if (data.success && data.log_lines) {
-                    console.log('[TestAPI] Loglines数:', data.log_lines.length);
+                    console.log('[TestAPI] Log line count:', data.log_lines.length);
                     console.log('[TestAPI] Before5linesLog:');
                     data.log_lines.slice(0, 5).forEach((line, idx) => {
                         console.log(`  ${idx}: ${line}`);
@@ -4152,8 +4152,8 @@ function getConsoleContainer() {
                     const warnings = data.log_lines.filter(line => line.includes('WARNING'));
                     const errors = data.log_lines.filter(line => line.includes('ERROR'));
 
-                    console.log(`[TestAPI] 找to ${warnings.length} itemsWARNINGLog`);
-                    console.log(`[TestAPI] 找to ${errors.length} itemsERRORLog`);
+                    console.log(`[TestAPI] Found ${warnings.length} WARNING logs`);
+                    console.log(`[TestAPI] Found ${errors.length} ERROR logs`);
 
                     if (warnings.length > 0) {
                         console.log('[TestAPI] WARNINGLogExample:');
@@ -4399,7 +4399,7 @@ function getConsoleContainer() {
                 if (data.success && data.engines_ready) {
                     // FilePreparingReady，Unlock按钮
                     reportButton.classList.remove('locked');
-                    reportButton.title = 'Report Agent - 智能ReportGenerate\n各Analysis Agent 均有NewFile，可以GenerateReport';
+                    reportButton.title = 'Report Agent - Intelligent report generation\nAll analysis agents have new files. Report generation is available.';
                     
                     // CheckYesNoalready经有Report在Display
                     const reportPreview = document.getElementById('reportPreview');
@@ -4423,7 +4423,7 @@ function getConsoleContainer() {
                     if (data.missing_files && data.missing_files.length > 0) {
                         titleInfo += 'WaitNewFile:\n' + data.missing_files.join('\n');
                     } else {
-                        titleInfo += 'Wait Multimodal / Query 两 Analysis Agent Workcomplete';
+                        titleInfo += 'Waiting for Multimodal and Query agents to finish.';
                     }
                     
                     reportButton.title = titleInfo;
@@ -4606,7 +4606,7 @@ function getConsoleContainer() {
         function getMessageHeader(type) {
             switch(type) {
                 case 'user': return 'User';
-                case 'agent': return 'AI助手';
+                case 'agent': return 'AI Assistant';
                 case 'system': return 'System';
                 case 'host': return 'Agent Coordinator';
                 default: return 'Unknown';
@@ -4663,7 +4663,7 @@ function getConsoleContainer() {
                 }
             })
             .catch(error => {
-                console.error('LoadReport界面Failed:', error);
+                console.error('Failed to load report interface:', error);
                 reportContent.innerHTML = `
                     <div class="report-status error">
                         <strong>LoadFailed:</strong> ${error.message}
@@ -5077,7 +5077,7 @@ function getConsoleContainer() {
             if (task.status === 'completed') {
                 statusHTML += `
                     <div class="task-actions">
-                        <button class="report-button primary" onclick="viewReport('${task.task_id}')">重NewLoad</button>
+                        <button class="report-button primary" onclick="viewReport('${task.task_id}')">Reload</button>
                     </div>
                 `;
             }
@@ -5099,7 +5099,7 @@ function getConsoleContainer() {
                 return;
             }
 
-            const query = document.getElementById('searchInput').value.trim() || '智能舆情AnalysisReport';
+            const query = document.getElementById('searchInput').value.trim() || 'Intelligent Public Opinion Analysis Report';
 
             // 【Repair】FirstStop现有 Log轮询，避免与Backend清EmptyLog 竞态Condition
             reportLogManager.stop();
@@ -5109,7 +5109,7 @@ function getConsoleContainer() {
             
             // 清Empty控制台Display
             clearConsoleLayer('report', '[System] StartGenerateReport，LogalreadyReset');
-            resetReportStreamOutput('Report Agent 调度Task...');
+            resetReportStreamOutput('Report agent task is being scheduled...');
             
             setGenerateButtonState(true);
 
@@ -5328,8 +5328,8 @@ function getConsoleContainer() {
                 const textMap = {
                     idle: 'notConnecting',
                     connecting: 'ConnectingCenter',
-                    connected: '实时UpdatingCenter',
-                    reconnecting: 'Wait重连',
+                    connected: 'Streaming',
+                    reconnecting: 'Reconnecting',
                     error: 'alreadyDisconnect'
                 };
                 statusEl.textContent = textMap[state] || state;
@@ -5418,7 +5418,7 @@ function getConsoleContainer() {
 
             updateReportStreamStatus('connecting');
             appendReportStreamLine(
-                isRetry ? '尝试重连 Report Agent 流式通道...' : '建立 Report Agent 流式Connecting...',
+                isRetry ? 'Trying to reconnect the Report Agent streaming channel...' : 'Establishing Report Agent streaming connection...',
                 'info',
                 { badge: 'SSE', force: true }
             );
@@ -5500,7 +5500,7 @@ function getConsoleContainer() {
                 const data = JSON.parse(event.data);
                 handleReportStreamEvent(eventType, data);
             } catch (error) {
-                console.warn('Parse流式EventFailed:', error);
+                console.warn('Failed to parse streaming event:', error);
             }
         }
 
@@ -5512,7 +5512,7 @@ function getConsoleContainer() {
 
             if (eventType === 'status' && task) {
                 if (task.status === 'running') {
-                    resetReportLogsForNewTask(task.task_id, '收to流式StateEvent，alreadyResetLog');
+                    resetReportLogsForNewTask(task.task_id, 'Received streaming status event; log reset completed');
                 }
                 updateTaskProgressStatus(task);
                 reportTaskId = task.status === 'running' ? task.task_id : null;
@@ -5531,7 +5531,7 @@ function getConsoleContainer() {
                         'info',
                         {
                             badge: payload.stage || 'Stage',
-                            genericMessage: 'Report Agent 逐步Generate，Please耐心Wait...'
+                            genericMessage: 'Report Agent is processing step by step, please wait...'
                         }
                     );
                     break;
@@ -5543,7 +5543,7 @@ function getConsoleContainer() {
                             badge: 'chapter',
                             genericMessage: payload.status === 'completed'
                                 ? `${payload.title || payload.chapterId || 'chapter'} alreadyComplete`
-                                : 'chapter流式GenerateCenter，Pleasewait...'
+                                : 'Chapter is being generated via streaming, please wait...'
                         }
                     );
                     break;
@@ -5553,8 +5553,8 @@ function getConsoleContainer() {
                             formatStreamChunk(payload.delta),
                             'chunk',
                             {
-                                badge: payload.title || payload.chapterId || 'chapter流',
-                                genericMessage: 'chapterContent流式WriteCenter...'
+                                badge: payload.title || payload.chapterId || 'chapter-stream',
+                                genericMessage: 'Streaming chapter content...'
                             }
                         );
                     }
@@ -5633,7 +5633,7 @@ function getConsoleContainer() {
                     break;
                 case 'heartbeat':
                     // 只有在非重连State时才Updating为connectedandDisplay心跳Message
-                    // 避免在Error/重连期间Display误导性 "Connecting正常"Message
+                    // Avoid showing misleading "connection normal" messages during error/reconnect periods.
                     const statusEl = document.getElementById('reportStreamStatus');
                     const currentState = statusEl ? statusEl.dataset.state : null;
 
@@ -5797,7 +5797,7 @@ function getConsoleContainer() {
                     if (iframe.style.height === 'auto' || iframe.style.height === '') {
                         iframe.style.height = '1200px';
                         reportPreview.style.minHeight = '1200px';
-                        console.log('Use备用HeightSettings: 1200px');
+                        console.log('Using fallback height setting: 1200px');
                     }
                 }, 3000);
             })

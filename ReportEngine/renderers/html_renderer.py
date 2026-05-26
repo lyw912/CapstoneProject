@@ -323,7 +323,7 @@ class HTMLRenderer:
 
         metadata = self.metadata
         theme_tokens = metadata.get("themeTokens") or self.document.get("themeTokens", {})
-        title = metadata.get("title") or metadata.get("query") or "智能舆情报告"
+        title = metadata.get("title") or metadata.get("query") or "Intelligent Public Opinion Analysis Report"
         hero_kpis = (metadata.get("hero") or {}).get("kpis")
         self.hero_kpi_signature = self._kpi_signature_from_items(hero_kpis)
 
@@ -333,7 +333,7 @@ class HTMLRenderer:
         # Output chart validation statistics
         self._log_chart_validation_stats()
 
-        return f"<!DOCTYPE html>\n<html lang=\"zh-CN\" class=\"no-js\">\n{head}\n{body}\n</html>"
+        return f"<!DOCTYPE html>\n<html lang=\"en\" class=\"no-js\">\n{head}\n{body}\n</html>"
 
     # ====== Head / Body ======
 
@@ -500,8 +500,8 @@ class HTMLRenderer:
 <div id="export-overlay" class="export-overlay no-print" aria-hidden="true">
   <div class="export-dialog" role="status" aria-live="assertive">
     <div class="export-spinner" aria-hidden="true"></div>
-    <p class="export-status">正在导出PDF，请稍候...</p>
-    <div class="export-progress" role="progressbar" aria-valuetext="正在导出">
+    <p class="export-status">Exporting PDF, please wait...</p>
+    <div class="export-progress" role="progressbar" aria-valuetext="Exporting">
       <div class="export-progress-bar"></div>
     </div>
   </div>
@@ -566,7 +566,7 @@ class HTMLRenderer:
       <svg class="btn-icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
       </svg>
-      <span class="theme-label">切换模式</span>
+      <span class="theme-label">Toggle Theme</span>
     </button>
     <button id="print-btn" class="action-btn print-btn" type="button">
       <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -574,9 +574,9 @@ class HTMLRenderer:
         <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
         <rect x="6" y="14" width="12" height="8"></rect>
       </svg>
-      <span>打印页面</span>
+      <span>Print Page</span>
     </button>
-    <button id="export-btn" class="action-btn" type="button" style="display: none;">⬇️ 导出PDF</button>
+    <button id="export-btn" class="action-btn" type="button" style="display: none;">⬇️ Export PDF</button>
   </div>
 </header>
 """.strip()
@@ -600,9 +600,9 @@ class HTMLRenderer:
         返回:
             str: cover section HTML。
         """
-        title = self.metadata.get("title") or "智能舆情报告"
+        title = self.metadata.get("title") or "Intelligent Public Opinion Analysis Report"
         subtitle = self.metadata.get("subtitle") or self.metadata.get("templateName") or ""
-        overview_hint = "文章总览"
+        overview_hint = "Article Overview"
         return f"""
 <section class="cover">
   <p class="cover-hint">{overview_hint}</p>
@@ -624,7 +624,7 @@ class HTMLRenderer:
             return ""
 
         # Get title and subtitle
-        title = self.metadata.get("title") or "智能舆情报告"
+        title = self.metadata.get("title") or "Intelligent Public Opinion Analysis Report"
         subtitle = self.metadata.get("subtitle") or self.metadata.get("templateName") or ""
 
         summary = hero.get("summary")
@@ -655,7 +655,7 @@ class HTMLRenderer:
         return f"""
 <section class="hero-section-combined">
   <div class="hero-header">
-    <p class="hero-hint">文章总览</p>
+    <p class="hero-hint">Article Overview</p>
     <h1 class="hero-title">{self._escape_html(title)}</h1>
     <p class="hero-subtitle">{self._escape_html(subtitle)}</p>
   </div>
@@ -688,7 +688,7 @@ class HTMLRenderer:
         if self.toc_rendered:
             return ""
         toc_config = self.metadata.get("toc") or {}
-        toc_title = toc_config.get("title") or "📚 目录"
+        toc_title = toc_config.get("title") or "📚 Table of Contents"
         toc_items = "".join(
             self._format_toc_entry(entry)
             for entry in self.toc_entries
@@ -1165,7 +1165,7 @@ class HTMLRenderer:
         if not isinstance(log_ref, dict):
             return html_fragment
         raw_preview = (meta.get("rawJsonPreview") or "")[:1200]
-        error_message = meta.get("errorMessage") or "LLM返回块解析错误"
+        error_message = meta.get("errorMessage") or "LLM returned an invalid block payload"
         importance = meta.get("importance") or "standard"
         ref_label = ""
         if log_ref.get("relativeFile") and log_ref.get("entryId"):
@@ -1560,7 +1560,7 @@ class HTMLRenderer:
         - 允许在不同象限之间分页
         - 每个象限内的条目尽量保持在一起
         """
-        title = block.get("title") or "SWOT 分析"
+        title = block.get("title") or "SWOT Analysis"
         summary = block.get("summary")
         
         # ========== Card Layout (for HTML) ==========
@@ -1580,16 +1580,16 @@ class HTMLRenderer:
     def _render_swot_card_layout(self, block: Dict[str, Any], title: str, summary: str | None) -> str:
         """Render SWOT card layout (for HTML web display)"""
         quadrants = [
-            ("strengths", "优势 Strengths", "S", "strength"),
-            ("weaknesses", "劣势 Weaknesses", "W", "weakness"),
-            ("opportunities", "机会 Opportunities", "O", "opportunity"),
-            ("threats", "威胁 Threats", "T", "threat"),
+            ("strengths", "Strengths", "S", "strength"),
+            ("weaknesses", "Weaknesses", "W", "weakness"),
+            ("opportunities", "Opportunities", "O", "opportunity"),
+            ("threats", "Threats", "T", "threat"),
         ]
         cells_html = ""
         for idx, (key, label, code, css) in enumerate(quadrants):
             items = self._normalize_swot_items(block.get(key))
-            caption_text = f"{len(items)} 条要点" if items else "待补充"
-            list_html = "".join(self._render_swot_item(item) for item in items) if items else '<li class="swot-empty">尚未填入要点</li>'
+            caption_text = f"{len(items)} key points" if items else "To be filled"
+            list_html = "".join(self._render_swot_item(item) for item in items) if items else '<li class="swot-empty">No key points yet</li>'
             first_cell_class = " swot-cell--first" if idx == 0 else ""
             cells_html += f"""
         <div class="swot-cell swot-cell--pageable {css}{first_cell_class}" data-swot-key="{key}">
@@ -1606,10 +1606,10 @@ class HTMLRenderer:
         title_html = f'<div class="swot-card__title">{self._escape_html(title)}</div>' if title else ""
         legend = """
             <div class="swot-legend">
-              <span class="swot-legend__item strength">S 优势</span>
-              <span class="swot-legend__item weakness">W 劣势</span>
-              <span class="swot-legend__item opportunity">O 机会</span>
-              <span class="swot-legend__item threat">T 威胁</span>
+              <span class="swot-legend__item strength">S Strengths</span>
+              <span class="swot-legend__item weakness">W Weaknesses</span>
+              <span class="swot-legend__item opportunity">O Opportunities</span>
+              <span class="swot-legend__item threat">T Threats</span>
             </div>
         """
         return f"""
@@ -1633,10 +1633,10 @@ class HTMLRenderer:
         - 通过CSS控制分页行为
         """
         quadrants = [
-            ("strengths", "S", "优势 Strengths", "swot-pdf-strength", "#1c7f6e"),
-            ("weaknesses", "W", "劣势 Weaknesses", "swot-pdf-weakness", "#c0392b"),
-            ("opportunities", "O", "机会 Opportunities", "swot-pdf-opportunity", "#1f5ab3"),
-            ("threats", "T", "威胁 Threats", "swot-pdf-threat", "#b36b16"),
+            ("strengths", "S", "Strengths", "swot-pdf-strength", "#1c7f6e"),
+            ("weaknesses", "W", "Weaknesses", "swot-pdf-weakness", "#c0392b"),
+            ("opportunities", "O", "Opportunities", "swot-pdf-opportunity", "#1f5ab3"),
+            ("threats", "T", "Threats", "swot-pdf-threat", "#b36b16"),
         ]
         
         # Title and summary
@@ -1656,7 +1656,7 @@ class HTMLRenderer:
             items_rows = ""
             if items:
                 for item_idx, item in enumerate(items):
-                    item_title = item.get("title") or item.get("label") or item.get("text") or "未命名要点"
+                    item_title = item.get("title") or item.get("label") or item.get("text") or "Untitled point"
                     item_detail = item.get("detail") or item.get("description") or ""
                     item_evidence = item.get("evidence") or item.get("source") or ""
                     item_impact = item.get("impact") or item.get("priority") or ""
@@ -1667,7 +1667,7 @@ class HTMLRenderer:
                     if item_detail:
                         detail_parts.append(item_detail)
                     if item_evidence:
-                        detail_parts.append(f"佐证：{item_evidence}")
+                        detail_parts.append(f"Evidence: {item_evidence}")
                     detail_text = "<br/>".join(detail_parts) if detail_parts else "-"
                     
                     # Build tags
@@ -1780,7 +1780,7 @@ class HTMLRenderer:
 
     def _render_swot_item(self, item: Dict[str, Any]) -> str:
         """Output HTML fragment for single SWOT item"""
-        title = item.get("title") or item.get("label") or item.get("text") or "未命名要点"
+        title = item.get("title") or item.get("label") or item.get("text") or "Untitled point"
         detail = item.get("detail") or item.get("description")
         evidence = item.get("evidence") or item.get("source")
         impact = item.get("impact") or item.get("priority")
@@ -1792,7 +1792,7 @@ class HTMLRenderer:
         #     tags.append(f'<span class="swot-tag neutral">Score {self._escape_html(score)}</span>')
         tags_html = f'<span class="swot-item-tags">{"".join(tags)}</span>' if tags else ""
         detail_html = f'<div class="swot-item-desc">{self._escape_html(detail)}</div>' if detail else ""
-        evidence_html = f'<div class="swot-item-evidence">佐证：{self._escape_html(evidence)}</div>' if evidence else ""
+        evidence_html = f'<div class="swot-item-evidence">Evidence: {self._escape_html(evidence)}</div>' if evidence else ""
         return f"""
             <li class="swot-item">
               <div class="swot-item-title">{self._escape_html(title)}{tags_html}</div>
@@ -1814,7 +1814,7 @@ class HTMLRenderer:
         - S: Social（社会因素）
         - T: Technological（技术因素）
         """
-        title = block.get("title") or "PEST 分析"
+        title = block.get("title") or "PEST Analysis"
         summary = block.get("summary")
         
         # ========== Card Layout (for HTML) ==========
@@ -1834,16 +1834,16 @@ class HTMLRenderer:
     def _render_pest_card_layout(self, block: Dict[str, Any], title: str, summary: str | None) -> str:
         """渲染PEST卡片布局（用于HTML网页显示）- 横向条状堆叠设计"""
         dimensions = [
-            ("political", "政治因素 Political", "P", "political"),
-            ("economic", "经济因素 Economic", "E", "economic"),
-            ("social", "社会因素 Social", "S", "social"),
-            ("technological", "技术因素 Technological", "T", "technological"),
+            ("political", "Political", "P", "political"),
+            ("economic", "Economic", "E", "economic"),
+            ("social", "Social", "S", "social"),
+            ("technological", "Technological", "T", "technological"),
         ]
         strips_html = ""
         for idx, (key, label, code, css) in enumerate(dimensions):
             items = self._normalize_pest_items(block.get(key))
-            caption_text = f"{len(items)} 条要点" if items else "待补充"
-            list_html = "".join(self._render_pest_item(item) for item in items) if items else '<li class="pest-empty">尚未填入要点</li>'
+            caption_text = f"{len(items)} key points" if items else "To be filled"
+            list_html = "".join(self._render_pest_item(item) for item in items) if items else '<li class="pest-empty">No key points yet</li>'
             first_strip_class = " pest-strip--first" if idx == 0 else ""
             strips_html += f"""
         <div class="pest-strip pest-strip--pageable {css}{first_strip_class}" data-pest-key="{key}">
@@ -1862,10 +1862,10 @@ class HTMLRenderer:
         title_html = f'<div class="pest-card__title">{self._escape_html(title)}</div>' if title else ""
         legend = """
             <div class="pest-legend">
-              <span class="pest-legend__item political">P 政治</span>
-              <span class="pest-legend__item economic">E 经济</span>
-              <span class="pest-legend__item social">S 社会</span>
-              <span class="pest-legend__item technological">T 技术</span>
+              <span class="pest-legend__item political">P Political</span>
+              <span class="pest-legend__item economic">E Economic</span>
+              <span class="pest-legend__item social">S Social</span>
+              <span class="pest-legend__item technological">T Technological</span>
             </div>
         """
         return f"""
@@ -1889,10 +1889,10 @@ class HTMLRenderer:
         - 通过CSS控制分页行为
         """
         dimensions = [
-            ("political", "P", "政治因素 Political", "pest-pdf-political", "#8e44ad"),
-            ("economic", "E", "经济因素 Economic", "pest-pdf-economic", "#16a085"),
-            ("social", "S", "社会因素 Social", "pest-pdf-social", "#e84393"),
-            ("technological", "T", "技术因素 Technological", "pest-pdf-technological", "#2980b9"),
+            ("political", "P", "Political", "pest-pdf-political", "#8e44ad"),
+            ("economic", "E", "Economic", "pest-pdf-economic", "#16a085"),
+            ("social", "S", "Social", "pest-pdf-social", "#e84393"),
+            ("technological", "T", "Technological", "pest-pdf-technological", "#2980b9"),
         ]
         
         # Title and summary
@@ -1912,7 +1912,7 @@ class HTMLRenderer:
             items_rows = ""
             if items:
                 for item_idx, item in enumerate(items):
-                    item_title = item.get("title") or item.get("label") or item.get("text") or "未命名要点"
+                    item_title = item.get("title") or item.get("label") or item.get("text") or "Untitled point"
                     item_detail = item.get("detail") or item.get("description") or ""
                     item_source = item.get("source") or item.get("evidence") or ""
                     item_trend = item.get("trend") or item.get("impact") or ""
@@ -1922,7 +1922,7 @@ class HTMLRenderer:
                     if item_detail:
                         detail_parts.append(item_detail)
                     if item_source:
-                        detail_parts.append(f"来源：{item_source}")
+                        detail_parts.append(f"Source: {item_source}")
                     detail_text = "<br/>".join(detail_parts) if detail_parts else "-"
                     
                     # Build tags
@@ -1962,7 +1962,7 @@ class HTMLRenderer:
                 <span class="pest-pdf-label-text">{self._escape_html(label.split()[0])}</span>
               </td>
               <td class="pest-pdf-item-num">-</td>
-              <td colspan="3" class="pest-pdf-empty">暂无要点</td>
+              <td colspan="3" class="pest-pdf-empty">No key points</td>
             </tr>"""
             
             # 每个维度作为一个独立的tbody，便于分页控制
@@ -1977,11 +1977,11 @@ class HTMLRenderer:
             <caption class="pest-pdf-caption">{self._escape_html(title)}</caption>
             <thead class="pest-pdf-thead">
               <tr>
-                <th class="pest-pdf-th-dimension">维度</th>
-                <th class="pest-pdf-th-num">序号</th>
-                <th class="pest-pdf-th-title">要点</th>
-                <th class="pest-pdf-th-detail">详细说明</th>
-                <th class="pest-pdf-th-tags">趋势/影响</th>
+                <th class="pest-pdf-th-dimension">Dimension</th>
+                <th class="pest-pdf-th-num">No.</th>
+                <th class="pest-pdf-th-title">Key Point</th>
+                <th class="pest-pdf-th-detail">Details</th>
+                <th class="pest-pdf-th-tags">Trend/Impact</th>
               </tr>
               {summary_row}
             </thead>
@@ -2031,7 +2031,7 @@ class HTMLRenderer:
 
     def _render_pest_item(self, item: Dict[str, Any]) -> str:
         """输出单个PEST条目的HTML片段"""
-        title = item.get("title") or item.get("label") or item.get("text") or "未命名要点"
+        title = item.get("title") or item.get("label") or item.get("text") or "Untitled point"
         detail = item.get("detail") or item.get("description")
         source = item.get("source") or item.get("evidence")
         trend = item.get("trend") or item.get("impact")
@@ -2040,7 +2040,7 @@ class HTMLRenderer:
             tags.append(f'<span class="pest-tag">{self._escape_html(trend)}</span>')
         tags_html = f'<span class="pest-item-tags">{"".join(tags)}</span>' if tags else ""
         detail_html = f'<div class="pest-item-desc">{self._escape_html(detail)}</div>' if detail else ""
-        source_html = f'<div class="pest-item-source">来源：{self._escape_html(source)}</div>' if source else ""
+        source_html = f'<div class="pest-item-source">Source: {self._escape_html(source)}</div>' if source else ""
         return f"""
             <li class="pest-item">
               <div class="pest-item-title">{self._escape_html(title)}{tags_html}</div>
@@ -2194,7 +2194,7 @@ class HTMLRenderer:
 
     def _render_figure(self, block: Dict[str, Any]) -> str:
         """根据新规范默认不渲染外部图片，改为友好提示"""
-        caption = block.get("caption") or "图像内容已省略（仅允许HTML原生图表与表格）"
+        caption = block.get("caption") or "Image content omitted (only native HTML charts and tables are allowed)"
         return f'<div class="figure-placeholder">{self._escape_html(caption)}</div>'
 
     def _render_callout(self, block: Dict[str, Any]) -> str:
@@ -2389,7 +2389,7 @@ class HTMLRenderer:
         if not cache_key:
             return
         if not reason:
-            reason = "LLM返回的图表信息格式有误，无法正常显示"
+            reason = "The chart payload returned by the LLM is invalid and cannot be rendered."
         self._chart_failure_notes[cache_key] = reason
 
     def _record_chart_failure_stat(self, cache_key: str | None = None) -> None:
@@ -2431,7 +2431,7 @@ class HTMLRenderer:
         fallback_reason: str | None = None
     ) -> str:
         """拼接友好的失败提示"""
-        base = "LLM返回的图表信息格式有误，已尝试本地与多模型修复但仍无法正常显示。"
+        base = "The chart payload returned by the LLM is invalid. Local and multi-model repair attempts were made but rendering still failed."
         detail = None
         if validation_result:
             if validation_result.errors:
@@ -2441,7 +2441,7 @@ class HTMLRenderer:
         if not detail and fallback_reason:
             detail = fallback_reason
         if detail:
-            text = f"{base} 提示：{detail}"
+            text = f"{base} Hint: {detail}"
             return text[:180] + ("..." if len(text) > 180 else "")
         return base
 
@@ -2452,7 +2452,7 @@ class HTMLRenderer:
         widget_id: str | None = None
     ) -> str:
         """输出图表失败时的简洁占位提示，避免破坏HTML/PDF布局"""
-        safe_title = self._escape_html(title or "图表未能展示")
+        safe_title = self._escape_html(title or "Chart unavailable")
         safe_reason = self._escape_html(reason)
         widget_attr = f' data-widget-id="{self._escape_attr(widget_id)}"' if widget_id else ""
         return f"""
@@ -2541,9 +2541,9 @@ class HTMLRenderer:
                     labels_from_data = []
                     for idx, point in enumerate(ds_data):
                         if isinstance(point, dict):
-                            label_text = point.get("x") or point.get("label") or f"点{idx + 1}"
+                            label_text = point.get("x") or point.get("label") or f"Point {idx + 1}"
                         else:
-                            label_text = f"点{idx + 1}"
+                            label_text = f"Point {idx + 1}"
                         labels_from_data.append(str(label_text))
 
                     if labels_from_data:
@@ -2756,10 +2756,10 @@ class HTMLRenderer:
 
         widget_id = block.get('widgetId')
         props_snapshot = block.get("props") if isinstance(block.get("props"), dict) else {}
-        display_title = props_snapshot.get("title") or block.get("title") or widget_id or "图表"
+        display_title = props_snapshot.get("title") or block.get("title") or widget_id or "Chart"
 
         if is_chart and not renderable:
-            reason = fail_reason or "LLM返回的图表信息格式有误，无法正常显示"
+            reason = fail_reason or "The chart payload returned by the LLM is invalid and cannot be rendered."
             return self._render_chart_error_placeholder(display_title, reason, widget_id)
 
         # 渲染图表HTML
@@ -2808,7 +2808,7 @@ class HTMLRenderer:
 
         widget_attr = f' data-widget-id="{self._escape_attr(widget_id)}"' if widget_id else ""
         header_cells = "".join(
-            f"<th>{self._escape_html(ds.get('label') or f'系列{idx + 1}')}</th>"
+            f"<th>{self._escape_html(ds.get('label') or f'Series {idx + 1}')}</th>"
             for idx, ds in enumerate(datasets)
         )
         body_rows = ""
@@ -6335,19 +6335,19 @@ function hideExportOverlay(delay) {
   }
 }
 
-// exportPdf已移除
+// exportPdf implementation
 function exportPdf() {
-  // 导出按钮交互：禁用按钮+打开遮罩，使用 html2canvas + jsPDF 渲染 main，再恢复按钮与遮罩
+  // Export flow: disable button + show overlay, render <main> with html2canvas + jsPDF, then restore.
   const target = document.querySelector('main');
   if (!target || typeof jspdf === 'undefined' || typeof jspdf.jsPDF !== 'function') {
-    alert('PDF导出依赖未就绪');
+    alert('PDF export dependencies are not ready.');
     return;
   }
   const exportBtn = document.getElementById('export-btn');
   if (exportBtn) {
     exportBtn.disabled = true;
   }
-  showExportOverlay('正在导出PDF，请稍候...');
+  showExportOverlay('Exporting PDF, please wait...');
   document.body.classList.add('exporting');
   const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
   try {
@@ -6355,9 +6355,9 @@ function exportPdf() {
       pdf.addFileToVFS('SourceHanSerifSC-Medium.ttf', window.pdfFontData);
       pdf.addFont('SourceHanSerifSC-Medium.ttf', 'SourceHanSerif', 'normal');
       pdf.setFont('SourceHanSerif');
-      console.log('PDF字体已成功加载');
+      console.log('PDF font loaded successfully');
     } else {
-      console.warn('PDF字体数据未找到，将使用默认字体');
+      console.warn('PDF font data not found, using default font');
     }
   } catch (err) {
     console.warn('Custom PDF font setup failed, fallback to default', err);
@@ -6387,7 +6387,7 @@ function exportPdf() {
         try {
           fn();
         } catch (err) {
-          console.error('词云重新渲染失败', err);
+          console.error('Word cloud re-render failed', err);
         }
       }
     });
@@ -6422,24 +6422,24 @@ function exportPdf() {
       callback: (doc) => doc.save('report.pdf')
     });
   } catch (err) {
-    console.error('PDF 导出失败', err);
-    updateExportOverlay('导出失败，请稍后重试');
+    console.error('PDF export failed', err);
+    updateExportOverlay('Export failed. Please try again.');
     hideExportOverlay(1200);
     restoreButton();
-    alert('PDF导出失败，请稍后重试');
+    alert('PDF export failed. Please try again.');
     return;
   }
   if (renderTask && typeof renderTask.then === 'function') {
     renderTask.then(() => {
-      updateExportOverlay('导出完成，正在保存...');
+      updateExportOverlay('Export complete. Saving file...');
       hideExportOverlay(800);
       restoreButton();
     }).catch(err => {
-      console.error('PDF 导出失败', err);
-      updateExportOverlay('导出失败，请稍后重试');
+      console.error('PDF export failed', err);
+      updateExportOverlay('Export failed. Please try again.');
       hideExportOverlay(1200);
       restoreButton();
-      alert('PDF导出失败，请稍后重试');
+      alert('PDF export failed. Please try again.');
     });
   } else {
     hideExportOverlay();
