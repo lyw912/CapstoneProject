@@ -22,16 +22,16 @@ The current frontend is a **temporary but fully functional integration layer** b
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  Browser (http://localhost:5000)                         │
+│  Browser (http://localhost:5000)                        │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │  index.html  (Flask-rendered control panel)        │  │
-│  │  ┌─────────┐ ┌─────────┐ ┌──────┐ ┌──────────┐   │  │
-│  │  │ Search  │ │ Config  │ │ App  │ │ Console  │   │  │
-│  │  │ Bar +   │ │ Modal   │ │ Tabs │ │ Output   │   │  │
-│  │  │ Upload  │ │ (.env)  │ │      │ │ (live)   │   │  │
-│  │  └─────────┘ └─────────┘ └──────┘ └──────────┘   │  │
+│  │  index.html  (Flask-rendered control panel)       │  │
+│  │  ┌─────────┐ ┌─────────┐ ┌──────┐ ┌──────────┐    │  │
+│  │  │ Search  │ │ Config  │ │ App  │ │ Console  │    │  │
+│  │  │ Bar +   │ │ Modal   │ │ Tabs │ │ Output   │    │  │
+│  │  │ Upload  │ │ (.env)  │ │      │ │ (live)   │    │  │
+│  │  └─────────┘ └─────────┘ └──────┘ └──────────┘    │  │
 │  │  ┌────────────────────────────────────────────┐   │  │
-│  │  │  Embedded Content Area (iframes)            │   │  │
+│  │  │  Embedded Content Area (iframes)           │   │  │
 │  │  │  ┌──────────┐ ┌──────────┐ ┌────────────┐  │   │  │
 │  │  │  │ Media    │ │ Query    │ │ Forum /    │  │   │  │
 │  │  │  │ Agent    │ │ Agent    │ │ Report     │  │   │  │
@@ -39,7 +39,7 @@ The current frontend is a **temporary but fully functional integration layer** b
 │  │  │  └──────────┘ └──────────┘ └────────────┘  │   │  │
 │  │  └────────────────────────────────────────────┘   │  │
 │  └───────────────────────────────────────────────────┘  │
-│  Socket.IO ── real-time log streaming                    │
+│  Socket.IO ── real-time log streaming                   │
 └─────────────────────────────────────────────────────────┘
                           │
            Flask app.py (port 5000)
