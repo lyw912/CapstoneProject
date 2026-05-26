@@ -16,7 +16,7 @@
 | MIAO Mengyu | mmy0302 | Query Agent development support; English interface/documentation; deduplication improvement | authority-priority deduplication logic, English Query Agent UI, `QUERY_AGENT_SUMMARY_EN.md` | UI, documentation, retrieval quality improvement |
 | Crazyheartedddd | Crazyheartedddd | Media Agent LangGraph implementation; UI internationalisation work across Media/Forum/app components | `MediaEngine/graph/`, Media Agent graph nodes, broader UI English interface work | Media Agent architecture, UI integration |
 | kzy1234 | kzy1234 | Application integration and Media Agent interface adaptation; text processing utility extraction | `app.py` integration, `SingleEngineApp/media_engine_streamlit_app.py` adaptation, `MediaEngine/utils/text_processing.py`, configuration fixes | Full-stack integration, maintainability improvement |
-| Roselia-penguin | Roselia-penguin | README and project progress maintenance | README progress link and project tracking updates | Documentation and project management support |
+| Roselia-penguin | Roselia-penguin | README and project progress maintenance; system debugging and testing support | README progress link and project tracking updates; debugging support and issue follow-up; test execution support and result summaries | Documentation, quality assurance support |
 
 **Contribution interpretation.** Milestone 1 delivered two reusable agent components from the project design: a structured Query Agent for stance-aware web/social retrieval, and a LangGraph-based Media Agent for Chinese media/multimodal-oriented analysis. This milestone established the data foundation required by later coordination and reporting stages.
 
