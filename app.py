@@ -4,6 +4,8 @@ Flask Main Application - Unified management of three Streamlit applications
 
 import os
 import sys
+import json
+import uuid
 
 # [FIX] Set environment variables early to ensure all modules use unbuffered mode
 os.environ['PYTHONIOENCODING'] = 'utf-8'
@@ -14,7 +16,7 @@ import subprocess
 import socket
 import time
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 from queue import Queue
 from flask import Flask, render_template, request, jsonify, Response
 from flask_socketio import SocketIO, emit
@@ -101,6 +103,12 @@ CONFIG_KEYS = [
     'KEYWORD_OPTIMIZER_API_KEY',
     'KEYWORD_OPTIMIZER_BASE_URL',
     'KEYWORD_OPTIMIZER_MODEL_NAME',
+    'LANGSMITH_TRACING',
+    'LANGSMITH_API_KEY',
+    'LANGSMITH_ENDPOINT',
+    'LANGSMITH_PROJECT',
+    'LANGCHAIN_TRACING_V2',
+    'LANGCHAIN_PROJECT',
     'TAVILY_API_KEY',
     'SEARCH_TOOL_TYPE',
     'BOCHA_WEB_SEARCH_API_KEY',
@@ -221,6 +229,12 @@ system_state = {
     'shutdown_in_progress': False
 }
 
+COORDINATOR_CACHE_DIR = Path('AgentCoordinator/cache')
+COORDINATOR_LATEST_OUTPUT = COORDINATOR_CACHE_DIR / 'coordinator_output_latest.json'
+COORDINATOR_FEEDBACK_LOG = COORDINATOR_CACHE_DIR / 'frontend_feedback.jsonl'
+coordinator_task_lock = threading.Lock()
+coordinator_tasks = {}
+
 
 def _set_system_state(*, started=None, starting=None):
     """Safely update the cached system state flags."""
@@ -257,47 +271,32 @@ def _mark_shutdown_requested():
 
 
 def initialize_system_components():
-    """Start all dependent components (Streamlit sub-apps, ForumEngine, ReportEngine)."""
+    """Start the final demo runtime: Flask APIs, React static UI, Coordinator, and ReportEngine.
+
+    Streamlit Media/Query apps are legacy operator surfaces. The final React
+    frontend calls QueryEngine/MediaEngine through AgentCoordinator and passes
+    the Coordinator artifact to ReportEngine, so the Streamlit processes are
+    deliberately kept stopped for the final demo.
+    """
     logs = []
     errors = []
-    
+
+    for app_name in STREAMLIT_SCRIPTS:
+        try:
+            success, message = stop_streamlit_app(app_name)
+            processes[app_name]['status'] = 'stopped'
+            logs.append(f"{app_name} Streamlit disabled for final demo: {message if success else 'not running'}")
+        except Exception as exc:  # pragma: no cover - safe catch
+            logs.append(f"{app_name} Streamlit stop skipped: {exc}")
+            logger.exception(f"Failed to stop legacy Streamlit app: {app_name}")
+
     try:
         stop_forum_engine()
-        logs.append("Stopped ForumEngine monitor to avoid file conflicts")
+        processes['forum']['status'] = 'stopped'
+        logs.append("ForumEngine monitor disabled for final demo")
     except Exception as exc:  # pragma: no cover - safe catch
-        message = f"Exception occurred while stopping ForumEngine: {exc}"
-        logs.append(message)
-        logger.exception(message)
-
-    processes['forum']['status'] = 'stopped'
-
-    for app_name, script_path in STREAMLIT_SCRIPTS.items():
-        logs.append(f"Checking file: {script_path}")
-        if os.path.exists(script_path):
-            success, message = start_streamlit_app(app_name, script_path, processes[app_name]['port'])
-            logs.append(f"{app_name}: {message}")
-            if success:
-                startup_success, startup_message = wait_for_app_startup(app_name, 30)
-                logs.append(f"{app_name} startup check: {startup_message}")
-                if not startup_success:
-                    errors.append(f"{app_name} startup failed: {startup_message}")
-            else:
-                errors.append(f"{app_name} startup failed: {message}")
-        else:
-            msg = f"File does not exist: {script_path}"
-            logs.append(f"Error: {msg}")
-            errors.append(f"{app_name}: {msg}")
-
-    forum_started = False
-    try:
-        start_forum_engine()
-        processes['forum']['status'] = 'running'
-        logs.append("ForumEngine startup completed")
-        forum_started = True
-    except Exception as exc:  # pragma: no cover - fallback catch
-        error_msg = f"ForumEngine startup failed: {exc}"
-        logs.append(error_msg)
-        errors.append(error_msg)
+        logs.append(f"ForumEngine stop skipped: {exc}")
+        logger.exception("Failed to stop ForumEngine monitor")
 
     if REPORT_ENGINE_AVAILABLE:
         try:
@@ -311,15 +310,10 @@ def initialize_system_components():
             msg = f"ReportEngine initialization exception: {exc}"
             logs.append(msg)
             errors.append(msg)
+    else:
+        errors.append("ReportEngine is not available")
 
     if errors:
-        cleanup_processes()
-        processes['forum']['status'] = 'stopped'
-        if forum_started:
-            try:
-                stop_forum_engine()
-            except Exception:  # pragma: no cover
-                logger.exception("Failed to stop ForumEngine")
         return False, logs, errors
 
     return True, logs, []
@@ -1010,6 +1004,633 @@ def _start_async_shutdown(cleanup_timeout: float = 3.0):
 # Register cleanup function
 atexit.register(cleanup_processes)
 
+
+def _latest_coordinator_archive():
+    """Return the newest timestamped coordinator output when the fixed latest file is absent."""
+    try:
+        archives = sorted(
+            COORDINATOR_CACHE_DIR.glob('coordinator_output_*.json'),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )
+        return archives[0] if archives else None
+    except Exception:
+        logger.exception("Failed to scan coordinator cache")
+        return None
+
+
+def _load_latest_coordinator_output():
+    path = COORDINATOR_LATEST_OUTPUT if COORDINATOR_LATEST_OUTPUT.exists() else _latest_coordinator_archive()
+    if not path or not path.exists():
+        return None, None
+    with open(path, 'r', encoding='utf-8') as handle:
+        return json.load(handle), path
+
+
+def _load_feedback_records(limit=20):
+    if not COORDINATOR_FEEDBACK_LOG.exists():
+        return []
+    records = []
+    try:
+        with open(COORDINATOR_FEEDBACK_LOG, 'r', encoding='utf-8') as handle:
+            for line in handle:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    records.append(json.loads(line))
+                except json.JSONDecodeError:
+                    logger.warning("Skipping malformed coordinator feedback record")
+        return records[-limit:]
+    except Exception:
+        logger.exception("Failed to read coordinator feedback log")
+        return []
+
+
+def _feedback_summary(records):
+    by_target = {}
+    for record in records:
+        target = str(record.get('target') or 'overall')
+        by_target[target] = by_target.get(target, 0) + 1
+    return {
+        'count': len(records),
+        'by_target': by_target,
+        'latest': records[-1] if records else None,
+    }
+
+
+def _apply_observability_env():
+    """Expose LangSmith/LangChain tracing settings to libraries that read os.environ."""
+    try:
+        from config import reload_settings, settings
+        reload_settings()
+        tracing_enabled = bool(getattr(settings, 'LANGSMITH_TRACING', False))
+        endpoint = getattr(settings, 'LANGSMITH_ENDPOINT', None) or 'https://api.smith.langchain.com'
+        project = getattr(settings, 'LANGSMITH_PROJECT', None) or 'public-opinion-analysis'
+        legacy_tracing = getattr(settings, 'LANGCHAIN_TRACING_V2', None)
+        legacy_project = getattr(settings, 'LANGCHAIN_PROJECT', None) or project
+        api_key = getattr(settings, 'LANGSMITH_API_KEY', None)
+
+        os.environ['LANGSMITH_TRACING'] = 'true' if tracing_enabled else 'false'
+        os.environ['LANGCHAIN_TRACING_V2'] = 'true' if (legacy_tracing if legacy_tracing is not None else tracing_enabled) else 'false'
+        os.environ['LANGSMITH_ENDPOINT'] = str(endpoint)
+        os.environ['LANGSMITH_PROJECT'] = str(project)
+        os.environ['LANGCHAIN_PROJECT'] = str(legacy_project)
+        if api_key:
+            os.environ['LANGSMITH_API_KEY'] = str(api_key)
+        elif 'LANGSMITH_API_KEY' in os.environ and not tracing_enabled:
+            os.environ.pop('LANGSMITH_API_KEY', None)
+
+        return {
+            'enabled': tracing_enabled,
+            'project': project,
+            'endpoint': endpoint,
+            'api_key_configured': bool(api_key),
+        }
+    except Exception as exc:
+        logger.exception("Failed to apply observability environment")
+        return {
+            'enabled': False,
+            'project': '',
+            'endpoint': '',
+            'api_key_configured': False,
+            'error': str(exc),
+        }
+
+
+
+def _iso_datetime(value):
+    if not value:
+        return None
+    try:
+        return value.isoformat()
+    except Exception:
+        return str(value)
+
+
+def _safe_decimal_float(value):
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except Exception:
+        return None
+
+
+def _duration_ms(start_time, end_time):
+    if not start_time or not end_time:
+        return None
+    try:
+        return max(0, round((end_time - start_time).total_seconds() * 1000))
+    except Exception:
+        return None
+
+
+def _public_run_url(client, run, project):
+    try:
+        return client.get_run_url(run=run, project_name=project)
+    except Exception:
+        app_path = getattr(run, 'app_path', None)
+        if app_path:
+            return app_path
+    return None
+
+
+def _summarize_langsmith_run(run, client=None, project=''):
+    duration = _duration_ms(getattr(run, 'start_time', None), getattr(run, 'end_time', None))
+    error = getattr(run, 'error', None)
+    run_id = str(getattr(run, 'id', '') or '')
+    trace_id = str(getattr(run, 'trace_id', '') or '')
+    return {
+        'id': run_id,
+        'trace_id': trace_id,
+        'name': str(getattr(run, 'name', '') or 'Run'),
+        'type': str(getattr(run, 'run_type', '') or 'unknown'),
+        'status': 'error' if error else str(getattr(run, 'status', '') or 'success'),
+        'error': str(error)[:500] if error else '',
+        'start_time': _iso_datetime(getattr(run, 'start_time', None)),
+        'end_time': _iso_datetime(getattr(run, 'end_time', None)),
+        'duration_ms': duration,
+        'total_tokens': int(getattr(run, 'total_tokens', 0) or 0),
+        'prompt_tokens': int(getattr(run, 'prompt_tokens', 0) or 0),
+        'completion_tokens': int(getattr(run, 'completion_tokens', 0) or 0),
+        'total_cost': _safe_decimal_float(getattr(run, 'total_cost', None)),
+        'child_count': len(getattr(run, 'child_run_ids', None) or []),
+        'feedback_stats': getattr(run, 'feedback_stats', None) or {},
+        'url': _public_run_url(client, run, project) if client is not None else (getattr(run, 'app_path', None) or None),
+    }
+
+
+def _langsmith_fallback_from_artifact(observability):
+    output, path = _load_latest_coordinator_output()
+    trace = list((output or {}).get('coordinator_trace') or []) if output else []
+    duration = float((output or {}).get('pipeline_duration_seconds') or 0) if output else 0
+    return {
+        'success': True,
+        'enabled': bool(observability.get('enabled')),
+        'configured': bool(observability.get('api_key_configured')),
+        'project': observability.get('project') or '',
+        'endpoint': observability.get('endpoint') or '',
+        'source': 'local_artifact',
+        'message': 'LangSmith traces were unavailable; showing the latest local run artifact.',
+        'summary': {
+            'trace_count': 1 if output else 0,
+            'run_count': len(trace),
+            'error_count': len((output or {}).get('agent_errors') or []) if output else 0,
+            'avg_duration_ms': round(duration * 1000) if duration else None,
+            'total_tokens': 0,
+            'total_cost': None,
+            'slowest_ms': round(duration * 1000) if duration else None,
+        },
+        'type_breakdown': [{'name': 'local step', 'value': len(trace)}] if trace else [],
+        'timeline': [
+            {
+                'id': f'local-{index}',
+                'trace_id': f'local-{index}',
+                'name': entry.split(']')[0].strip('[') if isinstance(entry, str) and ']' in entry else f'Step {index + 1}',
+                'type': 'local step',
+                'status': 'success',
+                'error': '',
+                'start_time': None,
+                'end_time': None,
+                'duration_ms': None,
+                'total_tokens': 0,
+                'prompt_tokens': 0,
+                'completion_tokens': 0,
+                'total_cost': None,
+                'child_count': 0,
+                'feedback_stats': {},
+                'url': None,
+                'summary': str(entry),
+                'children': [],
+            }
+            for index, entry in enumerate(trace[:20])
+        ],
+        'project_url': langsmith_project_web_url(observability),
+    }
+
+
+def langsmith_project_web_url(observability):
+    endpoint = str(observability.get('endpoint') or 'https://smith.langchain.com').rstrip('/')
+    project = observability.get('project') or ''
+    base = endpoint.replace('api.smith.langchain.com', 'smith.langchain.com')
+    if not project:
+        return 'https://smith.langchain.com/'
+    return f"{base}/o/default/projects/p/{project}"
+
+
+def _set_coordinator_task(task_id, **updates):
+    with coordinator_task_lock:
+        task = coordinator_tasks.setdefault(task_id, {})
+        task.update(updates)
+        task['updated_at'] = datetime.utcnow().isoformat() + 'Z'
+        return task.copy()
+
+COORDINATOR_NODE_PROGRESS = {
+    'query_agent': (32, 'collect', 'Search'),
+    'media_agent': (36, 'collect', 'Search'),
+    'data_bridge': (46, 'collect', 'Trust'),
+    'divergence_compute': (54, 'map', 'Divergence'),
+    'perspective_gen': (60, 'reason', 'Debate'),
+    'deliberation': (68, 'reason', 'Consensus'),
+    'targeted_search': (72, 'collect', 'Search'),
+    'echo_chamber': (76, 'verify', 'Bias'),
+    'fact_opinion': (82, 'verify', 'Facts'),
+    'platform_interpret': (88, 'map', 'Sentiment'),
+    'synthesis': (94, 'write', 'Outline'),
+    'report_agent': (98, 'write', 'Draft'),
+}
+
+
+def _pct_dict_text(values):
+    if not isinstance(values, dict) or not values:
+        return ''
+    parts = []
+    for key, value in sorted(values.items(), key=lambda item: -float(item[1] or 0))[:4]:
+        try:
+            parts.append(f"{key}: {float(value):.0%}")
+        except Exception:
+            parts.append(f"{key}: {value}")
+    return ', '.join(parts)
+
+
+def _coordinator_progress_detail(node_name, update, state):
+    if node_name == 'query_agent':
+        run = update.get('query_run') or {}
+        output = run.get('output') or {}
+        total = output.get('total_sources_kept') or output.get('total_sources') or len(output.get('sources') or [])
+        stance = _pct_dict_text(output.get('stance_distribution') or {})
+        top_sources = sorted(output.get('sources') or [], key=lambda item: item.get('trust_score', 0), reverse=True)[:3]
+        titles = [str(item.get('title') or item.get('url') or 'source')[:90] for item in top_sources]
+        message = f"Collected {total} sources" + (f"; stance mix {stance}" if stance else '')
+        return {'message': message, 'evidence': titles}
+    if node_name == 'media_agent':
+        run = update.get('media_run') or {}
+        text = run.get('text_output') or ''
+        if text:
+            return {'message': f"Media evidence package captured ({len(text)} chars)", 'evidence': [text[:140]]}
+        return {'message': 'Media engine skipped or unavailable', 'evidence': []}
+    if node_name == 'data_bridge':
+        props = update.get('bridged_propositions') or []
+        sample = [str(item.get('content') or '')[:120] for item in props[:3]]
+        return {'message': f"Bridged {len(props)} evidence propositions", 'evidence': sample}
+    if node_name == 'divergence_compute':
+        matrix = update.get('divergence_matrix') or {}
+        hotspots = update.get('divergence_hotspots') or []
+        if matrix:
+            max_pair, max_value = max(matrix.items(), key=lambda item: item[1])
+            return {'message': f"Computed {len(matrix)} divergence pairs; max {max_pair} = {float(max_value):.2f}", 'evidence': hotspots[:3]}
+        return {'message': 'No cross-source divergence pairs available', 'evidence': []}
+    if node_name == 'perspective_gen':
+        perspectives = update.get('perspectives') or []
+        return {'message': f"Selected {len(perspectives)} review perspectives", 'evidence': perspectives[:4]}
+    if node_name == 'deliberation':
+        consensus = update.get('deliberation_consensus') or []
+        dissents = update.get('deliberation_dissents') or []
+        return {'message': f"Deliberation produced {len(consensus)} consensus points and {len(dissents)} open dissents", 'evidence': (consensus[:2] + dissents[:2])}
+    if node_name == 'echo_chamber':
+        warnings = update.get('echo_warnings') or []
+        return {'message': f"Bias scan found {len(warnings)} watch item(s)", 'evidence': warnings[:3]}
+    if node_name == 'fact_opinion':
+        facts = update.get('verified_facts') or []
+        opinions = update.get('opinions_sentiments') or []
+        frameworks = update.get('analytical_frameworks') or []
+        evidence = [str(item.get('fact') or '')[:140] for item in facts[:3] if isinstance(item, dict)]
+        return {'message': f"Separated {len(facts)} facts, {len(opinions)} opinions, {len(frameworks)} frameworks", 'evidence': evidence}
+    if node_name == 'platform_interpret':
+        interps = update.get('platform_interpretations') or {}
+        return {'message': f"Generated {len(interps)} platform reading(s)", 'evidence': [f"{k}: {str(v)[:120]}" for k, v in list(interps.items())[:3]]}
+    if node_name == 'synthesis':
+        context = update.get('synthesis_context') or {}
+        insights = context.get('top_insights') or []
+        confidence = update.get('synthesis_confidence', 0)
+        evidence = [str(item.get('insight') or '')[:140] for item in insights[:3] if isinstance(item, dict)]
+        return {'message': f"Synthesized {len(insights)} insights at {float(confidence or 0):.0%} confidence", 'evidence': evidence}
+    if node_name == 'report_agent':
+        report = update.get('report_output') or ''
+        return {'message': f"Coordinator report draft prepared ({len(report)} chars)", 'evidence': []}
+    return {'message': f"{node_name.replace('_', ' ').title()} completed", 'evidence': []}
+
+
+def _update_coordinator_progress_from_node(task_id, node_name, update, state, elapsed):
+    progress, stage, micro_stage = COORDINATOR_NODE_PROGRESS.get(node_name, (50, 'collect', 'Rank'))
+    detail = _coordinator_progress_detail(node_name, update, state)
+    entry = {
+        'node': node_name,
+        'stage': stage,
+        'micro_stage': micro_stage,
+        'message': detail.get('message', ''),
+        'evidence': detail.get('evidence', []),
+        'elapsed_seconds': round(elapsed, 2),
+        'created_at': datetime.utcnow().isoformat() + 'Z',
+    }
+    with coordinator_task_lock:
+        task = coordinator_tasks.setdefault(task_id, {})
+        timeline = list(task.get('timeline') or [])
+        timeline.append(entry)
+        task.update({
+            'status': 'running',
+            'progress': max(progress, int(task.get('progress') or 0)),
+            'stage': stage,
+            'micro_stage': micro_stage,
+            'message': detail.get('message', ''),
+            'details': detail,
+            'timeline': timeline[-30:],
+            'updated_at': datetime.utcnow().isoformat() + 'Z',
+        })
+        return task.copy()
+
+
+def _run_coordinator_task(task_id, query, feedback=''):
+    _set_coordinator_task(
+        task_id,
+        status='running',
+        progress=6,
+        stage='brief',
+        micro_stage='Intent',
+        message='Brief received',
+        details={'message': 'Brief received', 'evidence': []},
+        timeline=[]
+    )
+    started = time.time()
+    try:
+        _apply_observability_env()
+        _set_coordinator_task(task_id, progress=12, stage='brief', micro_stage='Context', message='Tracing and runtime configured')
+        run_query = query
+        if feedback:
+            run_query = f"{query}\n\nOperator refinement request:\n{feedback}"
+            _set_coordinator_task(task_id, progress=16, stage='brief', micro_stage='Scope', message='Revision request attached')
+        _set_coordinator_task(task_id, progress=22, stage='brief', micro_stage='Scope', message='Compiling analysis graph')
+        from AgentCoordinator.coordinator import AgentCoordinator
+        coordinator = AgentCoordinator(use_checkpointing=True)
+        _set_coordinator_task(task_id, progress=28, stage='collect', micro_stage='Search', message='Starting evidence collection')
+
+        def progress_callback(node_name, update, state, elapsed):
+            _update_coordinator_progress_from_node(task_id, node_name, update, state, elapsed)
+
+        result = coordinator.run_sync(run_query, progress_callback=progress_callback)
+        _set_coordinator_task(task_id, progress=99, stage='write', micro_stage='Export', message='Coordinator artifact written')
+        _set_coordinator_task(
+            task_id,
+            status='completed',
+            progress=100,
+            stage='write',
+            micro_stage='Export',
+            message='Coordinator pipeline completed',
+            duration_seconds=round(time.time() - started, 2),
+            coordinator_output_path=result.get('coordinator_output_path'),
+            thread_id=result.get('thread_id'),
+            synthesis_confidence=result.get('synthesis_confidence'),
+        )
+    except Exception as exc:
+        logger.exception(f"Coordinator task failed: {task_id}")
+        _set_coordinator_task(
+            task_id,
+            status='error',
+            progress=100,
+            message='Coordinator pipeline failed',
+            error=str(exc),
+            duration_seconds=round(time.time() - started, 2),
+        )
+
+
+
+@app.route('/api/observability/langsmith', methods=['GET'])
+def get_langsmith_observability():
+    """Return a browser-safe summary of recent LangSmith traces for Monitor."""
+    observability = _apply_observability_env()
+    if not observability.get('api_key_configured'):
+        return jsonify({
+            'success': True,
+            'enabled': bool(observability.get('enabled')),
+            'configured': False,
+            'project': observability.get('project') or '',
+            'endpoint': observability.get('endpoint') or '',
+            'source': 'not_configured',
+            'message': 'Add a LangSmith API key to see remote traces here.',
+            'summary': {
+                'trace_count': 0,
+                'run_count': 0,
+                'error_count': 0,
+                'avg_duration_ms': None,
+                'total_tokens': 0,
+                'total_cost': None,
+                'slowest_ms': None,
+            },
+            'type_breakdown': [],
+            'timeline': [],
+            'project_url': langsmith_project_web_url(observability),
+        })
+
+    try:
+        from langsmith import Client
+        project = observability.get('project') or 'public-opinion-analysis'
+        endpoint = observability.get('endpoint') or 'https://api.smith.langchain.com'
+        client = Client(
+            api_url=endpoint,
+            api_key=os.environ.get('LANGSMITH_API_KEY'),
+            timeout_ms=7000,
+        )
+        since = datetime.utcnow() - timedelta(days=14)
+        root_runs = list(client.list_runs(
+            project_name=project,
+            is_root=True,
+            start_time=since,
+            limit=8,
+            select=[
+                'id', 'name', 'run_type', 'start_time', 'end_time', 'error', 'status',
+                'trace_id', 'child_run_ids', 'total_tokens', 'prompt_tokens',
+                'completion_tokens', 'total_cost', 'feedback_stats', 'app_path'
+            ],
+        ))
+
+        timeline = []
+        all_durations = []
+        type_counts = {}
+        error_count = 0
+        total_tokens = 0
+        total_cost = 0.0
+        cost_available = False
+        run_count = 0
+
+        for run in root_runs:
+            try:
+                full_run = client.read_run(getattr(run, 'id'), load_child_runs=True)
+            except Exception:
+                full_run = run
+            root_summary = _summarize_langsmith_run(full_run, client, project)
+            children = getattr(full_run, 'child_runs', None) or []
+            child_summaries = [_summarize_langsmith_run(child, client, project) for child in children[:40]]
+            child_summaries.sort(key=lambda item: item.get('start_time') or '')
+            root_summary['children'] = child_summaries
+            root_summary['summary'] = f"{len(child_summaries)} child step(s), {root_summary.get('duration_ms') or 0} ms"
+            timeline.append(root_summary)
+
+            for item in [root_summary] + child_summaries:
+                run_count += 1
+                type_counts[item['type']] = type_counts.get(item['type'], 0) + 1
+                if item.get('error'):
+                    error_count += 1
+                if item.get('duration_ms') is not None:
+                    all_durations.append(item['duration_ms'])
+                total_tokens += int(item.get('total_tokens') or 0)
+                if item.get('total_cost') is not None:
+                    cost_available = True
+                    total_cost += float(item.get('total_cost') or 0)
+
+        avg_duration = round(sum(all_durations) / len(all_durations)) if all_durations else None
+        return jsonify({
+            'success': True,
+            'enabled': bool(observability.get('enabled')),
+            'configured': True,
+            'project': project,
+            'endpoint': endpoint,
+            'source': 'langsmith',
+            'message': 'Recent LangSmith traces loaded.',
+            'summary': {
+                'trace_count': len(root_runs),
+                'run_count': run_count,
+                'error_count': error_count,
+                'avg_duration_ms': avg_duration,
+                'total_tokens': total_tokens,
+                'total_cost': round(total_cost, 6) if cost_available else None,
+                'slowest_ms': max(all_durations) if all_durations else None,
+            },
+            'type_breakdown': [{'name': name, 'value': value} for name, value in sorted(type_counts.items(), key=lambda item: -item[1])],
+            'timeline': timeline,
+            'project_url': langsmith_project_web_url(observability),
+        })
+    except Exception as exc:
+        logger.exception('Failed to load LangSmith traces')
+        fallback = _langsmith_fallback_from_artifact(observability)
+        fallback['error'] = str(exc)
+        return jsonify(fallback)
+
+@app.route('/api/coordinator/latest', methods=['GET'])
+def get_latest_coordinator_output():
+    """Return the newest structured AgentCoordinator artifact for the final frontend."""
+    try:
+        output, path = _load_latest_coordinator_output()
+        feedback_records = _load_feedback_records(limit=20)
+        observability = _apply_observability_env()
+        archive_count = len(list(COORDINATOR_CACHE_DIR.glob('coordinator_output_*.json'))) if COORDINATOR_CACHE_DIR.exists() else 0
+        if not output or not path:
+            return jsonify({
+                'success': False,
+                'message': 'No coordinator output has been generated yet',
+                'metadata': {
+                    'cache_dir': str(COORDINATOR_CACHE_DIR),
+                    'archive_count': archive_count,
+                },
+                'feedback': {
+                    'records': feedback_records,
+                    'summary': _feedback_summary(feedback_records),
+                },
+                'observability': observability,
+            }), 404
+
+        modified_at = datetime.fromtimestamp(path.stat().st_mtime).isoformat()
+        return jsonify({
+            'success': True,
+            'output': output,
+            'metadata': {
+                'path': str(path),
+                'modified_at': modified_at,
+                'archive_count': archive_count,
+                'schema_version': output.get('schema_version'),
+            },
+            'feedback': {
+                'records': feedback_records,
+                'summary': _feedback_summary(feedback_records),
+            },
+            'observability': observability,
+        })
+    except Exception as exc:
+        logger.exception("Failed to load latest coordinator output")
+        return jsonify({'success': False, 'message': f'Failed to load coordinator output: {exc}'}), 500
+
+
+@app.route('/api/coordinator/run', methods=['POST'])
+def run_coordinator_api():
+    """Start a background AgentCoordinator run from the final frontend."""
+    payload = request.get_json(silent=True) or {}
+    if not isinstance(payload, dict):
+        return jsonify({'success': False, 'message': 'Request body must be a JSON object'}), 400
+
+    query = str(payload.get('query') or '').strip()
+    feedback = str(payload.get('feedback') or '').strip()
+    if not query:
+        try:
+            latest, _ = _load_latest_coordinator_output()
+            query = str((latest or {}).get('query') or '').strip()
+        except Exception:
+            query = ''
+    if not query:
+        return jsonify({'success': False, 'message': 'Analysis query is required'}), 400
+
+    task_id = f"coord_{int(time.time())}_{uuid.uuid4().hex[:6]}"
+    now = datetime.utcnow().isoformat() + 'Z'
+    with coordinator_task_lock:
+        coordinator_tasks[task_id] = {
+            'task_id': task_id,
+            'query': query,
+            'has_feedback': bool(feedback),
+            'status': 'queued',
+            'progress': 0,
+            'message': 'Coordinator task queued',
+            'created_at': now,
+            'updated_at': now,
+        }
+
+    thread = threading.Thread(target=_run_coordinator_task, args=(task_id, query, feedback), daemon=True)
+    thread.start()
+    return jsonify({'success': True, 'task': coordinator_tasks[task_id]})
+
+
+@app.route('/api/coordinator/task/<task_id>', methods=['GET'])
+def get_coordinator_task(task_id):
+    with coordinator_task_lock:
+        task = coordinator_tasks.get(task_id)
+        if not task:
+            return jsonify({'success': False, 'message': 'Coordinator task does not exist'}), 404
+        return jsonify({'success': True, 'task': task})
+
+
+@app.route('/api/coordinator/feedback', methods=['GET', 'POST'])
+def coordinator_feedback_api():
+    """Record operator feedback for traceability and optional follow-up refinement."""
+    if request.method == 'GET':
+        records = _load_feedback_records(limit=100)
+        return jsonify({'success': True, 'records': records, 'summary': _feedback_summary(records)})
+
+    payload = request.get_json(silent=True) or {}
+    if not isinstance(payload, dict):
+        return jsonify({'success': False, 'message': 'Request body must be a JSON object'}), 400
+
+    feedback_text = str(payload.get('feedback') or '').strip()
+    if not feedback_text:
+        return jsonify({'success': False, 'message': 'Feedback text is required'}), 400
+
+    record = {
+        'id': f"fb_{int(time.time())}_{uuid.uuid4().hex[:6]}",
+        'created_at': datetime.utcnow().isoformat() + 'Z',
+        'query': str(payload.get('query') or '').strip(),
+        'target': str(payload.get('target') or 'overall').strip() or 'overall',
+        'action': str(payload.get('action') or 'review').strip() or 'review',
+        'priority': str(payload.get('priority') or 'normal').strip() or 'normal',
+        'feedback': feedback_text,
+        'thread_id': str(payload.get('thread_id') or '').strip(),
+        'source': 'final_frontend',
+    }
+    try:
+        COORDINATOR_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        with open(COORDINATOR_FEEDBACK_LOG, 'a', encoding='utf-8') as handle:
+            handle.write(json.dumps(record, ensure_ascii=False) + '\n')
+        return jsonify({'success': True, 'record': record})
+    except Exception as exc:
+        logger.exception("Failed to record coordinator feedback")
+        return jsonify({'success': False, 'message': f'Failed to record feedback: {exc}'}), 500
+
 @app.route('/')
 def index():
     """Home page"""
@@ -1319,12 +1940,14 @@ def update_config():
 
 @app.route('/api/system/status')
 def get_system_status():
-    """返回系统启动状态。"""
+    """Return final demo runtime status."""
     state = _get_system_state()
     return jsonify({
         'success': True,
         'started': state['started'],
-        'starting': state['starting']
+        'starting': state['starting'],
+        'mode': 'final_react_demo',
+        'streamlit_required': False
     })
 
 

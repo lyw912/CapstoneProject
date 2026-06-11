@@ -441,6 +441,111 @@ def check_engines_ready() -> Dict[str, Any]:
     )
 
 
+
+
+def _load_latest_coordinator_output_for_report() -> tuple[Optional[Dict[str, Any]], Optional[Path]]:
+    """Load the latest AgentCoordinator artifact for direct ReportEngine generation."""
+    latest_path = Path("AgentCoordinator/cache/coordinator_output_latest.json")
+    if latest_path.exists():
+        with open(latest_path, "r", encoding="utf-8") as f:
+            return json.load(f), latest_path
+
+    cache_dir = Path("AgentCoordinator/cache")
+    if not cache_dir.exists():
+        return None, None
+
+    archives = sorted(
+        cache_dir.glob("coordinator_output_*.json"),
+        key=lambda item: item.stat().st_mtime,
+        reverse=True,
+    )
+    if not archives:
+        return None, None
+    with open(archives[0], "r", encoding="utf-8") as f:
+        return json.load(f), archives[0]
+
+
+def run_report_generation_from_coordinator(
+    task: ReportTask,
+    coordinator_output: Dict[str, Any],
+    custom_template: str = "",
+):
+    """Run ReportEngine directly from the latest AgentCoordinator artifact."""
+    global current_task, current_task_thread
+
+    try:
+        def stream_handler(event_type: str, payload: Dict[str, Any]):
+            task.publish_event(event_type, payload)
+            if event_type == 'progress' and 'progress' in payload:
+                task.update_status("running", payload['progress'])
+
+        task.update_status("running", 5)
+        task.publish_event('stage', {
+            'message': 'Coordinator artifact loaded',
+            'stage': 'coordinator_ready',
+        })
+
+        from AgentCoordinator.utils.report_bridge import coordinator_output_to_report_engine_inputs
+
+        inputs = coordinator_output_to_report_engine_inputs(coordinator_output)
+        selected_template = custom_template or inputs.get('custom_template', '')
+        task.publish_event('stage', {
+            'message': 'Generating report from coordinator evidence',
+            'stage': 'agent_running',
+        })
+
+        generation_result = report_agent.generate_report(
+            query=inputs.get('query') or task.query,
+            reports=inputs.get('reports') or [],
+            forum_logs=inputs.get('forum_logs') or '',
+            custom_template=selected_template,
+            save_report=True,
+            stream_handler=stream_handler,
+        )
+
+        html_report = generation_result.get('html_content', '') if isinstance(generation_result, dict) else generation_result
+        task.publish_event('stage', {
+            'message': 'Report generation complete, preparing persistence',
+            'stage': 'persist',
+        })
+        task.html_content = html_report
+        if isinstance(generation_result, dict):
+            task.report_file_path = generation_result.get('report_filepath', '')
+            task.report_file_relative_path = generation_result.get('report_relative_path', '')
+            task.report_file_name = generation_result.get('report_filename', '')
+            task.state_file_path = generation_result.get('state_filepath', '')
+            task.state_file_relative_path = generation_result.get('state_relative_path', '')
+            task.ir_file_path = generation_result.get('ir_filepath', '')
+            task.ir_file_relative_path = generation_result.get('ir_relative_path', '')
+        task.publish_event('html_ready', {
+            'message': 'HTML rendering complete, refresh to preview',
+            'report_file': task.report_file_relative_path or task.report_file_path,
+            'state_file': task.state_file_relative_path or task.state_file_path,
+            'task': task.to_dict(),
+        })
+        task.update_status("completed", 100)
+        task.publish_event('completed', {
+            'message': 'Task completed',
+            'duration_seconds': (task.updated_at - task.created_at).total_seconds(),
+            'report_file': task.report_file_relative_path or task.report_file_path,
+            'task': task.to_dict(),
+        })
+    except Exception as e:
+        logger.exception(f"Coordinator-based report generation failed: {str(e)}")
+        task.update_status("error", 0, str(e))
+        task.publish_event('error', {
+            'message': str(e),
+            'stage': 'failed',
+            'task': task.to_dict(),
+        })
+        with task_lock:
+            if current_task and current_task.task_id == task.task_id:
+                current_task = None
+    finally:
+        with task_lock:
+            if current_task_thread is not None and not current_task_thread.is_alive():
+                current_task_thread = None
+
 def run_report_generation(task: ReportTask, query: str, custom_template: str = ""):
     """
     Run report generation in a background thread.
@@ -597,11 +702,17 @@ def get_status():
     """
     try:
         engines_status = check_engines_ready()
+        coordinator_output, coordinator_path = _load_latest_coordinator_output_for_report()
+        coordinator_ready = bool(coordinator_output)
 
         return jsonify({
             'success': True,
             'initialized': report_agent is not None,
-            'engines_ready': engines_status['ready'],
+            'engines_ready': bool(engines_status.get('ready')) or coordinator_ready,
+            'input_mode': 'coordinator_latest' if coordinator_ready else 'engine_files',
+            'coordinator_ready': coordinator_ready,
+            'coordinator_output_path': str(coordinator_path) if coordinator_path else '',
+            'legacy_engine_files_ready': bool(engines_status.get('ready')),
             'files_found': engines_status.get('files_found', []),
             'missing_files': engines_status.get('missing_files', []),
             'current_task': current_task.to_dict() if current_task else None
@@ -667,21 +778,31 @@ def generate_report():
         # Clear log file
         clear_report_log()
 
-        # Check if Report Engine is initialized
+        # Check if Report Engine is initialized; initialize lazily for the final frontend.
         if not report_agent:
-            return jsonify({
-                'success': False,
-                'error': 'Report Engine not initialized'
-            }), 500
+            if not initialize_report_engine():
+                return jsonify({
+                    'success': False,
+                    'error': 'Report Engine not initialized'
+                }), 500
 
-        # Check if input files are ready
+        # Prefer the legacy Streamlit file path when files are ready. If not,
+        # fall back to the AgentCoordinator artifact bridge, which is the final
+        # integrated pipeline output used by the React frontend.
         engines_status = check_engines_ready()
+        coordinator_output = None
+        coordinator_path = None
+        generation_source = 'engine_files'
         if not engines_status['ready']:
-            return jsonify({
-                'success': False,
-                'error': 'Input files not ready',
-                'missing_files': engines_status.get('missing_files', [])
-            }), 400
+            coordinator_output, coordinator_path = _load_latest_coordinator_output_for_report()
+            if not coordinator_output:
+                return jsonify({
+                    'success': False,
+                    'error': 'Input files not ready and no coordinator artifact is available',
+                    'missing_files': engines_status.get('missing_files', [])
+                }), 400
+            generation_source = 'coordinator_latest'
+            query = query or coordinator_output.get('query') or 'Intelligent Sentiment Analysis Report'
 
         # Create new task
         task_id = f"report_{int(time.time())}"
@@ -704,11 +825,23 @@ def generate_report():
         )
 
         # Run report generation in background thread
-        thread = threading.Thread(
-            target=run_report_generation,
-            args=(task, query, custom_template),
-            daemon=True
-        )
+        if generation_source == 'coordinator_latest':
+            task.publish_event('stage', {
+                'message': 'Using latest coordinator artifact',
+                'stage': 'coordinator_fallback',
+                'coordinator_output_path': str(coordinator_path) if coordinator_path else '',
+            })
+            thread = threading.Thread(
+                target=run_report_generation_from_coordinator,
+                args=(task, coordinator_output, custom_template),
+                daemon=True
+            )
+        else:
+            thread = threading.Thread(
+                target=run_report_generation,
+                args=(task, query, custom_template),
+                daemon=True
+            )
         current_task_thread = thread
         thread.start()
 
@@ -717,6 +850,7 @@ def generate_report():
             'task_id': task_id,
             'message': 'Report generation started',
             'task': task.to_dict(),
+            'source': generation_source,
             'stream_url': f"/api/report/stream/{task_id}"
         })
 

@@ -20,7 +20,7 @@ import json
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from loguru import logger
 
@@ -77,7 +77,7 @@ class AgentCoordinator:
             "coordinator_trace": [],
         }
 
-    async def run(self, query: str, thread_id: Optional[str] = None) -> Dict[str, Any]:
+    async def run(self, query: str, thread_id: Optional[str] = None, progress_callback: Optional[Callable[[str, Dict[str, Any], Dict[str, Any], float], None]] = None) -> Dict[str, Any]:
         """
         Execute the full coordinator pipeline asynchronously.
 
@@ -109,7 +109,25 @@ class AgentCoordinator:
             invoke_config = {"configurable": {"thread_id": thread_id}}
 
         try:
-            final_state = await self.graph.ainvoke(initial_state, config=invoke_config if invoke_config else None)
+            if progress_callback is None:
+                final_state = await self.graph.ainvoke(initial_state, config=invoke_config if invoke_config else None)
+            else:
+                final_state = dict(initial_state)
+                async for chunk in self.graph.astream(
+                    initial_state,
+                    config=invoke_config if invoke_config else None,
+                    stream_mode="updates",
+                ):
+                    if not isinstance(chunk, dict):
+                        continue
+                    for node_name, update in chunk.items():
+                        if not isinstance(update, dict):
+                            continue
+                        self._merge_state_update(final_state, update)
+                        try:
+                            progress_callback(node_name, update, dict(final_state), time.time() - t0)
+                        except Exception as callback_exc:  # pragma: no cover - progress reporting only
+                            logger.warning(f"[AgentCoordinator] Progress callback failed: {callback_exc}")
         except Exception as exc:
             logger.error(f"[AgentCoordinator] Pipeline failed: {exc}")
             raise
@@ -140,6 +158,19 @@ class AgentCoordinator:
         result["coordinator_output_path"] = coordinator_output_path
 
         return result
+
+    @staticmethod
+    def _merge_state_update(state: Dict[str, Any], update: Dict[str, Any]) -> None:
+        """Merge LangGraph streamed node updates into an approximate final state."""
+        for key, value in update.items():
+            if key in {"coordinator_trace", "agent_errors"}:
+                existing = state.get(key) or []
+                if isinstance(value, list):
+                    state[key] = list(existing) + value
+                elif value:
+                    state[key] = list(existing) + [value]
+            else:
+                state[key] = value
 
     def _export_coordinator_output(self, result: Dict[str, Any], query: str) -> str:
         """
@@ -178,19 +209,19 @@ class AgentCoordinator:
 
         return str(timestamped_path)
 
-    def run_sync(self, query: str, thread_id: Optional[str] = None) -> Dict[str, Any]:
+    def run_sync(self, query: str, thread_id: Optional[str] = None, progress_callback: Optional[Callable[[str, Dict[str, Any], Dict[str, Any], float], None]] = None) -> Dict[str, Any]:
         """Synchronous wrapper for run()."""
         try:
             loop = asyncio.get_event_loop()
             if loop.is_running():
                 import concurrent.futures
                 with concurrent.futures.ThreadPoolExecutor() as pool:
-                    future = pool.submit(asyncio.run, self.run(query, thread_id=thread_id))
+                    future = pool.submit(asyncio.run, self.run(query, thread_id=thread_id, progress_callback=progress_callback))
                     return future.result()
             else:
-                return loop.run_until_complete(self.run(query, thread_id=thread_id))
+                return loop.run_until_complete(self.run(query, thread_id=thread_id, progress_callback=progress_callback))
         except RuntimeError:
-            return asyncio.run(self.run(query, thread_id=thread_id))
+            return asyncio.run(self.run(query, thread_id=thread_id, progress_callback=progress_callback))
 
     def save_result(self, result: Dict, output_path: Optional[str] = None) -> str:
         """Save coordinator result to a JSON log file and report file."""

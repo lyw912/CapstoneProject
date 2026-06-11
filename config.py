@@ -104,6 +104,14 @@ class Settings(BaseSettings):
     REPORT_ENGINE_BASE_URL: Optional[str] = Field("https://aihubmix.com/v1", description="Report Agent LLM BaseUrl, adjustable by proxy service")
     REPORT_ENGINE_MODEL_NAME: str = Field("gemini-2.5-pro", description="Report Agent LLM model name, e.g., gemini-2.5-pro")
 
+    # ================== Agent Observability ==================
+    LANGSMITH_TRACING: bool = Field(False, description="Enable LangSmith/LangChain tracing for agent runs")
+    LANGSMITH_API_KEY: Optional[str] = Field(None, description="LangSmith API key")
+    LANGSMITH_ENDPOINT: Optional[str] = Field("https://api.smith.langchain.com", description="LangSmith API endpoint")
+    LANGSMITH_PROJECT: str = Field("public-opinion-analysis", description="LangSmith project name")
+    LANGCHAIN_TRACING_V2: Optional[bool] = Field(None, description="Backward-compatible LangChain tracing flag")
+    LANGCHAIN_PROJECT: Optional[str] = Field(None, description="Backward-compatible LangChain project name")
+
     # MindSpider Agent (recommended DeepSeek, official apply: https://platform.deepseek.com/)
     MINDSPIDER_API_KEY: Optional[str] = Field(None, description="MindSpider Agent (recommended deepseek, official apply: https://platform.deepseek.com/) API key")
     MINDSPIDER_BASE_URL: Optional[str] = Field(None, description="MindSpider Agent BaseUrl, configurable by selected service")

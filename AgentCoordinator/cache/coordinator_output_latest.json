@@ -1,56 +1,62 @@
 {
   "schema_version": "1.0",
-  "query": "DeepSeek发布新模型 各方舆论",
-  "analysis_type": "general",
-  "generated_at": "2026-05-02T15:02:49.890605+00:00",
-  "pipeline_duration_seconds": 129.51,
+  "query": "DeepSeek brand trust after low-cost model claims",
+  "analysis_type": "brand",
+  "generated_at": "2026-06-11T15:31:55.473629+00:00",
+  "pipeline_duration_seconds": 195.91,
   "divergence_matrix": {
     "pairs": {
-      "query_agent|bilibili": 0.691,
-      "query_agent|weibo": 0.6736,
-      "query_agent|zhihu": 0.7431,
-      "query_agent|social_media_overall": 0.6674,
-      "query_agent|media_agent": 0.0877,
-      "bilibili|weibo": 0.5195,
-      "bilibili|zhihu": 0.1565,
-      "bilibili|social_media_overall": 0.0027,
-      "bilibili|media_agent": 0.6667,
-      "weibo|zhihu": 1.0,
-      "weibo|social_media_overall": 0.464,
-      "weibo|media_agent": 0.8346,
-      "zhihu|social_media_overall": 0.1793,
-      "zhihu|media_agent": 0.7226,
-      "social_media_overall|media_agent": 0.6674
+      "query_agent|douyin": 0.754,
+      "query_agent|bilibili": 0.3335,
+      "query_agent|weibo": 0.3742,
+      "query_agent|tieba": 0.348,
+      "query_agent|zhihu": 0.4246,
+      "query_agent|social_media_overall": 0.3546,
+      "douyin|bilibili": 0.5577,
+      "douyin|weibo": 0.6061,
+      "douyin|tieba": 0.9417,
+      "douyin|zhihu": 1.0,
+      "douyin|social_media_overall": 0.7538,
+      "bilibili|weibo": 0.0126,
+      "bilibili|tieba": 0.0971,
+      "bilibili|zhihu": 0.1153,
+      "bilibili|social_media_overall": 0.03,
+      "weibo|tieba": 0.0657,
+      "weibo|zhihu": 0.0809,
+      "weibo|social_media_overall": 0.0131,
+      "tieba|zhihu": 0.0085,
+      "tieba|social_media_overall": 0.0221,
+      "zhihu|social_media_overall": 0.0318
     },
     "hotspots": [
-      "weibo vs zhihu: CSSD=1.000 — notable divergence detected",
-      "weibo vs media_agent: CSSD=0.835 — notable divergence detected",
-      "query_agent vs zhihu: CSSD=0.743 — notable divergence detected",
-      "zhihu vs media_agent: CSSD=0.723 — notable divergence detected",
-      "query_agent vs bilibili: CSSD=0.691 — notable divergence detected",
-      "query_agent vs weibo: CSSD=0.674 — notable divergence detected",
-      "query_agent vs social_media_overall: CSSD=0.667 — notable divergence detected",
-      "social_media_overall vs media_agent: CSSD=0.667 — notable divergence detected",
-      "bilibili vs media_agent: CSSD=0.667 — notable divergence detected",
-      "bilibili vs weibo: CSSD=0.519 — notable divergence detected",
-      "weibo vs social_media_overall: CSSD=0.464 — notable divergence detected"
+      "douyin vs zhihu: CSSD=1.000 — notable divergence detected",
+      "douyin vs tieba: CSSD=0.942 — notable divergence detected",
+      "query_agent vs douyin: CSSD=0.754 — notable divergence detected",
+      "douyin vs social_media_overall: CSSD=0.754 — notable divergence detected",
+      "douyin vs weibo: CSSD=0.606 — notable divergence detected",
+      "douyin vs bilibili: CSSD=0.558 — notable divergence detected",
+      "query_agent vs zhihu: CSSD=0.425 — notable divergence detected",
+      "query_agent vs weibo: CSSD=0.374 — notable divergence detected",
+      "query_agent vs social_media_overall: CSSD=0.355 — notable divergence detected",
+      "query_agent vs tieba: CSSD=0.348 — notable divergence detected",
+      "query_agent vs bilibili: CSSD=0.334 — notable divergence detected"
     ],
     "max_divergence": {
-      "pair": "weibo|zhihu",
+      "pair": "douyin|zhihu",
       "value": 1.0
     },
     "min_divergence": {
-      "pair": "bilibili|social_media_overall",
-      "value": 0.0027
+      "pair": "tieba|zhihu",
+      "value": 0.0085
     }
   },
   "deliberation": {
-    "analysis_type": "general",
+    "analysis_type": "brand",
     "perspectives_used": [
-      "Facts & Data",
-      "Public Emotion & Social Psychology",
-      "Stakeholder Analysis",
-      "Historical & Cross-Domain Reflection"
+      "Consumer Experience",
+      "Business Strategy & Competition",
+      "Media Narrative & Framing",
+      "Investor & Market Reaction"
     ],
     "phases": [
       {
@@ -63,64 +69,64 @@
         "phase": "cross_examination",
         "summary": "",
         "consensus_points": [
-          "The official Chinese media stance (42.2% of web sources) frames the model as a success, while international/opposition sources (15.6%) criticize it for failing to close the U.S.-China AI gap and allege IP theft—reflecting a deep polarization between national pride and skeptical global competition.",
-          "Social media platforms show varied responses: Zhihu is 100% neutral/analytical (technical community), Bilibili is mixed support/neutral (38.9%/61.1%) with national pride themes, while Weibo shows high support (66.7%) but data reliability is questionable (unrelated sample).",
-          "Key data gaps hamper full understanding: specific performance benchmarks are missing, as is user sentiment from non-English-speaking regions (e.g., Latin America, Africa) and platforms like GitHub China.",
-          "All perspectives agree that the discourse resembles historical patterns of Chinese technological nationalism (e.g., semiconductors, high-speed rail, 5G) with recurring themes of self-reliance, IP disputes, and balancing pride with scrutiny."
+          "Social media sentiment is overwhelmingly neutral (75.9%), indicating that DeepSeek's low-cost model claims have not yet generated strong public opinion, but this ambivalence leaves room for either positive or negative shifts.",
+          "Web sources are evenly split between neutral (14 sources) and oppose (14 sources), highlighting a genuine tension between low-cost performance claims and serious reliability concerns.",
+          "Official documents frame DeepSeek as a temporary market disruption, which may reassure investors and reduce regulatory risk in the short term.",
+          "There is consistent agreement that reliability issues (particularly hallucination rates) are a key risk to long-term brand trust, especially for enterprise customers.",
+          "Douyin shows 100% support among sampled posts, suggesting positive consumer sentiment in at least one creative application segment."
         ],
         "dissent_points": [
-          "Whether the social media distribution (56.5% neutral, 39.1% support) fully represents genuine public emotion or is inflated by platform biases (e.g., Weibo sample issue) and cultural norms (Zhihu neutrality). type: different_data (sample quality) and genuine_uncertainty",
-          "The role of Zhihu's 100% neutral stance: Is it a sign of critical scrutiny, analytical detachment, or a community withholding judgment pending performance benchmarks? All perspectives acknowledge it but interpret it differently. type: different_frameworks (psychological vs. stakeholder vs. historical) and genuine_uncertainty",
-          "Whether the national pride emotion (e.g., 'breaking Nvidia moat') is a genuine driver for most users or primarily reflects state-aligned framing on specific platforms (Bilibili). type: different_frameworks (sociological vs. stakeholder) and genuine_uncertainty",
-          "The absence of performance benchmarks makes it impossible to resolve whether the model is a true 'leapfrog' (historical narrative) or still significantly behind (opposition claim). This disagreement is rooted in genuine_uncertainty due to data gaps."
+          "The extent to which web source opposition (26.9%) actually undermines investor confidence vs. being offset by official framing and financial backing. (type: different_data - Consumer Experience and Investor vs. Business Strategy differ on interpreting the weight of web opposition vs. official documents)",
+          "Whether the neutral social sentiment (75.9%) indicates 'ambivalence' that is a risk for negative shift, or 'lack of concern' that allows DeepSeek to operate without reputational damage. (type: different_values - different interpretations of what neutrality implies for future trust dynamics)",
+          "How much weight to give to Douyin's 100% support in assessing overall trust, given it represents a niche creative segment vs. broader enterprise concerns. (type: genuine_uncertainty - the representativeness of Douyin data for overall brand trust is unknown)"
         ]
       },
       {
         "phase": "synthesis_arbitration",
-        "summary": "All four perspectives agree that the discourse around DeepSeek's new model is deeply polarized between official Chinese narratives of national technological achievement and skeptical international criticisms, with social media showing platform-specific patterns (Zhihu neutral, Bilibili mixed supportive/neutral, Weibo high support but potentially unreliable). Persistent disagreements exist over data reliability (e.g., Weibo sample issue) and the interpretation of Zhihu's neutrality (critical scru",
+        "summary": "All four perspectives agree that DeepSeek's low-cost model claims generate a polarized landscape: web sources are evenly split between praising performance and flagging reliability issues, while social media remains overwhelmingly neutral (75.9%). Official documents framing the emergence as a temporary disruption, combined with strong financial backing, may provide a buffer against immediate reputational damage, but the unresolved reliability concerns—especially for enterprise customers—pose a l",
         "consensus_points": [
-          "Official Chinese media (42.2% of web sources) frames the model as a success symbolizing AI self-sufficiency, while international/opposition sources (15.6%) criticize it for failing to close the U.S.-China AI gap and allege IP theft.",
-          "Social media sentiment varies by platform: Zhihu is 100% neutral/analytical, Bilibili shows 38.9% support and 61.1% neutral, and Weibo shows 66.7% support but includes an unrelated laptop review, casting doubt on its reliability.",
-          "The discourse resembles historical patterns of Chinese technological nationalism (e.g., semiconductors, high-speed rail, 5G) with recurring themes of self-reliance, IP disputes, and a balance between national pride and technical scrutiny.",
-          "Key data gaps remain on specific performance benchmarks (accuracy, speed) and user sentiment from non-English-speaking regions (e.g., Latin America, Africa) and platforms like GitHub China.",
-          "The official Chinese media stance (42.2% of web sources) frames the model as a success, while international/opposition sources (15.6%) criticize it for failing to close the U.S.-China AI gap and allege IP theft—reflecting a deep polarization between national pride and skeptical global competition.",
-          "Social media platforms show varied responses: Zhihu is 100% neutral/analytical (technical community), Bilibili is mixed support/neutral (38.9%/61.1%) with national pride themes, while Weibo shows high support (66.7%) but data reliability is questionable (unrelated sample).",
-          "Key data gaps hamper full understanding: specific performance benchmarks are missing, as is user sentiment from non-English-speaking regions (e.g., Latin America, Africa) and platforms like GitHub China.",
-          "All perspectives agree that the discourse resembles historical patterns of Chinese technological nationalism (e.g., semiconductors, high-speed rail, 5G) with recurring themes of self-reliance, IP disputes, and balancing pride with scrutiny."
+          "Social media sentiment is overwhelmingly neutral (75.9%), indicating that the public has not yet formed strong opinions about DeepSeek's low-cost claims, creating a window for future positive or negative shifts.",
+          "Web sources are evenly split between neutral (14 sources) and oppose (14 sources), revealing a genuine tension between low-cost performance claims and serious reliability concerns such as higher hallucination rates.",
+          "Official documents frame DeepSeek's emergence as a temporary market disruption, which may reassure investors and reduce regulatory risk in the short term.",
+          "Reliability issues (particularly hallucination rates) are consistently identified as a key risk to long-term brand trust, especially for enterprise customers.",
+          "Douyin shows 100% support among sampled posts, suggesting strong positive consumer sentiment in at least one creative application segment.",
+          "Social media sentiment is overwhelmingly neutral (75.9%), indicating that DeepSeek's low-cost model claims have not yet generated strong public opinion, but this ambivalence leaves room for either positive or negative shifts.",
+          "Web sources are evenly split between neutral (14 sources) and oppose (14 sources), highlighting a genuine tension between low-cost performance claims and serious reliability concerns.",
+          "Official documents frame DeepSeek as a temporary market disruption, which may reassure investors and reduce regulatory risk in the short term.",
+          "There is consistent agreement that reliability issues (particularly hallucination rates) are a key risk to long-term brand trust, especially for enterprise customers.",
+          "Douyin shows 100% support among sampled posts, suggesting positive consumer sentiment in at least one creative application segment."
         ],
         "dissent_points": [
-          "Whether the social media distribution (56.5% neutral, 39.1% support) genuinely represents public emotion or is inflated by platform biases (Weibo sample issue) and cultural norms (Zhihu neutrality).",
-          "Interpretation of Zhihu's 100% neutral stance: Is it critical scrutiny, analytical detachment, or a community withholding judgment pending performance benchmarks?",
-          "Whether the national pride emotion (e.g., 'breaking Nvidia moat') is a genuine driver for most users or primarily reflects state-aligned framing on specific platforms (Bilibili).",
-          "Whether the model is a true 'leapfrog' (historical narrative) or still significantly behind (opposition claim) cannot be resolved due to absence of performance benchmarks.",
-          "Whether the social media distribution (56.5% neutral, 39.1% support) fully represents genuine public emotion or is inflated by platform biases (e.g., Weibo sample issue) and cultural norms (Zhihu neutrality). type: different_data (sample quality) and genuine_uncertainty",
-          "The role of Zhihu's 100% neutral stance: Is it a sign of critical scrutiny, analytical detachment, or a community withholding judgment pending performance benchmarks? All perspectives acknowledge it but interpret it differently. type: different_frameworks (psychological vs. stakeholder vs. historical) and genuine_uncertainty",
-          "Whether the national pride emotion (e.g., 'breaking Nvidia moat') is a genuine driver for most users or primarily reflects state-aligned framing on specific platforms (Bilibili). type: different_frameworks (sociological vs. stakeholder) and genuine_uncertainty",
-          "The absence of performance benchmarks makes it impossible to resolve whether the model is a true 'leapfrog' (historical narrative) or still significantly behind (opposition claim). This disagreement is rooted in genuine_uncertainty due to data gaps."
+          "Whether the 26.9% opposition in web sources genuinely undermines investor confidence or is counterbalanced by official framing and financial backing.",
+          "Whether neutral social sentiment (75.9%) signals ambivalence that could turn negative, or a lack of concern that gives DeepSeek operational freedom.",
+          "How much weight to give Douyin's 100% support in assessing overall trust, given it represents a niche creative segment vs. broader enterprise concerns.",
+          "The extent to which web source opposition (26.9%) actually undermines investor confidence vs. being offset by official framing and financial backing. (type: different_data - Consumer Experience and Investor vs. Business Strategy differ on interpreting the weight of web opposition vs. official documents)",
+          "Whether the neutral social sentiment (75.9%) indicates 'ambivalence' that is a risk for negative shift, or 'lack of concern' that allows DeepSeek to operate without reputational damage. (type: different_values - different interpretations of what neutrality implies for future trust dynamics)",
+          "How much weight to give to Douyin's 100% support in assessing overall trust, given it represents a niche creative segment vs. broader enterprise concerns. (type: genuine_uncertainty - the representativeness of Douyin data for overall brand trust is unknown)"
         ]
       }
     ],
     "final_consensus": [
-      "Official Chinese media (42.2% of web sources) frames the model as a success symbolizing AI self-sufficiency, while international/opposition sources (15.6%) criticize it for failing to close the U.S.-China AI gap and allege IP theft.",
-      "Social media sentiment varies by platform: Zhihu is 100% neutral/analytical, Bilibili shows 38.9% support and 61.1% neutral, and Weibo shows 66.7% support but includes an unrelated laptop review, casting doubt on its reliability.",
-      "The discourse resembles historical patterns of Chinese technological nationalism (e.g., semiconductors, high-speed rail, 5G) with recurring themes of self-reliance, IP disputes, and a balance between national pride and technical scrutiny.",
-      "Key data gaps remain on specific performance benchmarks (accuracy, speed) and user sentiment from non-English-speaking regions (e.g., Latin America, Africa) and platforms like GitHub China.",
-      "The official Chinese media stance (42.2% of web sources) frames the model as a success, while international/opposition sources (15.6%) criticize it for failing to close the U.S.-China AI gap and allege IP theft—reflecting a deep polarization between national pride and skeptical global competition.",
-      "Social media platforms show varied responses: Zhihu is 100% neutral/analytical (technical community), Bilibili is mixed support/neutral (38.9%/61.1%) with national pride themes, while Weibo shows high support (66.7%) but data reliability is questionable (unrelated sample).",
-      "Key data gaps hamper full understanding: specific performance benchmarks are missing, as is user sentiment from non-English-speaking regions (e.g., Latin America, Africa) and platforms like GitHub China.",
-      "All perspectives agree that the discourse resembles historical patterns of Chinese technological nationalism (e.g., semiconductors, high-speed rail, 5G) with recurring themes of self-reliance, IP disputes, and balancing pride with scrutiny."
+      "Social media sentiment is overwhelmingly neutral (75.9%), indicating that the public has not yet formed strong opinions about DeepSeek's low-cost claims, creating a window for future positive or negative shifts.",
+      "Web sources are evenly split between neutral (14 sources) and oppose (14 sources), revealing a genuine tension between low-cost performance claims and serious reliability concerns such as higher hallucination rates.",
+      "Official documents frame DeepSeek's emergence as a temporary market disruption, which may reassure investors and reduce regulatory risk in the short term.",
+      "Reliability issues (particularly hallucination rates) are consistently identified as a key risk to long-term brand trust, especially for enterprise customers.",
+      "Douyin shows 100% support among sampled posts, suggesting strong positive consumer sentiment in at least one creative application segment.",
+      "Social media sentiment is overwhelmingly neutral (75.9%), indicating that DeepSeek's low-cost model claims have not yet generated strong public opinion, but this ambivalence leaves room for either positive or negative shifts.",
+      "Web sources are evenly split between neutral (14 sources) and oppose (14 sources), highlighting a genuine tension between low-cost performance claims and serious reliability concerns.",
+      "Official documents frame DeepSeek as a temporary market disruption, which may reassure investors and reduce regulatory risk in the short term.",
+      "There is consistent agreement that reliability issues (particularly hallucination rates) are a key risk to long-term brand trust, especially for enterprise customers.",
+      "Douyin shows 100% support among sampled posts, suggesting positive consumer sentiment in at least one creative application segment."
     ],
     "final_dissents": [
-      "Whether the social media distribution (56.5% neutral, 39.1% support) genuinely represents public emotion or is inflated by platform biases (Weibo sample issue) and cultural norms (Zhihu neutrality).",
-      "Interpretation of Zhihu's 100% neutral stance: Is it critical scrutiny, analytical detachment, or a community withholding judgment pending performance benchmarks?",
-      "Whether the national pride emotion (e.g., 'breaking Nvidia moat') is a genuine driver for most users or primarily reflects state-aligned framing on specific platforms (Bilibili).",
-      "Whether the model is a true 'leapfrog' (historical narrative) or still significantly behind (opposition claim) cannot be resolved due to absence of performance benchmarks.",
-      "Whether the social media distribution (56.5% neutral, 39.1% support) fully represents genuine public emotion or is inflated by platform biases (e.g., Weibo sample issue) and cultural norms (Zhihu neutrality). type: different_data (sample quality) and genuine_uncertainty",
-      "The role of Zhihu's 100% neutral stance: Is it a sign of critical scrutiny, analytical detachment, or a community withholding judgment pending performance benchmarks? All perspectives acknowledge it but interpret it differently. type: different_frameworks (psychological vs. stakeholder vs. historical) and genuine_uncertainty",
-      "Whether the national pride emotion (e.g., 'breaking Nvidia moat') is a genuine driver for most users or primarily reflects state-aligned framing on specific platforms (Bilibili). type: different_frameworks (sociological vs. stakeholder) and genuine_uncertainty",
-      "The absence of performance benchmarks makes it impossible to resolve whether the model is a true 'leapfrog' (historical narrative) or still significantly behind (opposition claim). This disagreement is rooted in genuine_uncertainty due to data gaps."
+      "Whether the 26.9% opposition in web sources genuinely undermines investor confidence or is counterbalanced by official framing and financial backing.",
+      "Whether neutral social sentiment (75.9%) signals ambivalence that could turn negative, or a lack of concern that gives DeepSeek operational freedom.",
+      "How much weight to give Douyin's 100% support in assessing overall trust, given it represents a niche creative segment vs. broader enterprise concerns.",
+      "The extent to which web source opposition (26.9%) actually undermines investor confidence vs. being offset by official framing and financial backing. (type: different_data - Consumer Experience and Investor vs. Business Strategy differ on interpreting the weight of web opposition vs. official documents)",
+      "Whether the neutral social sentiment (75.9%) indicates 'ambivalence' that is a risk for negative shift, or 'lack of concern' that allows DeepSeek to operate without reputational damage. (type: different_values - different interpretations of what neutrality implies for future trust dynamics)",
+      "How much weight to give to Douyin's 100% support in assessing overall trust, given it represents a niche creative segment vs. broader enterprise concerns. (type: genuine_uncertainty - the representativeness of Douyin data for overall brand trust is unknown)"
     ],
-    "confidence": 0.65
+    "confidence": 0.7
   },
   "gap_filling": {
     "rounds_performed": 0,
@@ -128,98 +134,113 @@
     "results_found": 0
   },
   "platform_interpretations": {
-    "bilibili": "**Bilibili (B站)** (18 posts)\nStance distribution: support: 39%, neutral: 61%\nDominant: neutral (61%)\nDemographic context: Represents Gen-Z attitudes; may signal future trends but skews very young\nInterpretation: Bilibili's neutral stance reflects Gen-Z attitudes and may signal future trends. Consider: (1) extreme age skew toward under-30; (2) subculture echo chambers within interest communities; (3) danmaku format encourages bandwagon/meme behavior.",
-    "weibo": "**Weibo (微博)** (3 posts)\nStance distribution: background: 33%, support: 67%\nDominant: support (67%)\nDemographic context: Represents immediate emotional reactions of the urban mass public\nInterpretation: Weibo's support stance likely reflects mass public's immediate emotional reaction. Consider: (1) potential astroturfing or viral marketing campaigns; (2) trending-topic algorithm amplification effects; (3) short-form format favors emotional expression over deliberation.",
-    "zhihu": "**Zhihu (知乎)** (2 posts)\nStance distribution: neutral: 100%\nDominant: neutral (100%)\nDemographic context: Represents rational analysis of the educated elite; may miss grassroots sentiment\nInterpretation: Zhihu's neutral stance represents the educated elite's rational analysis. Consider: (1) knowledge-mass cognitive gap; (2) long-form discussions may over-theorize; (3) platform skews toward professionals and academics."
+    "douyin": "**Douyin (抖音)** (3 posts)\nStance distribution: support: 100%\nDominant: support (100%)\nDemographic context: Represents mass intuitive reactions but severely distorted by algorithm\nInterpretation: Douyin's support stance reflects mass intuitive reactions but is highly distorted by its recommendation algorithm. Consider: (1) individual feeds create extreme filter bubbles; (2) short video format strongly favors emotional/sensational content; (3) comment sections often unrepresentative of viewer distribution.",
+    "bilibili": "**Bilibili (B站)** (20 posts)\nStance distribution: neutral: 60%, background: 10%, support: 30%\nDominant: neutral (60%)\nDemographic context: Represents Gen-Z attitudes; may signal future trends but skews very young\nInterpretation: Bilibili's neutral stance reflects Gen-Z attitudes and may signal future trends. Consider: (1) extreme age skew toward under-30; (2) subculture echo chambers within interest communities; (3) danmaku format encourages bandwagon/meme behavior.",
+    "weibo": "**Weibo (微博)** (20 posts)\nStance distribution: neutral: 70%, support: 30%\nDominant: neutral (70%)\nDemographic context: Represents immediate emotional reactions of the urban mass public\nInterpretation: Weibo's neutral stance likely reflects mass public's immediate emotional reaction. Consider: (1) potential astroturfing or viral marketing campaigns; (2) trending-topic algorithm amplification effects; (3) short-form format favors emotional expression over deliberation.",
+    "tieba": "**Baidu Tieba (贴吧)** (20 posts)\nStance distribution: oppose: 10%, neutral: 85%\nDominant: neutral (85%)\nDemographic context: Represents niche interest group deep attitudes; limited general representativeness\nInterpretation: Tieba's neutral stance reflects niche interest communities' deep attitudes. Consider: (1) semi-anonymity encourages more extreme expression; (2) forum communities are self-selected echo chambers; (3) interest-specific threads may have very limited general representativeness.",
+    "zhihu": "**Zhihu (知乎)** (20 posts)\nStance distribution: neutral: 100%\nDominant: neutral (100%)\nDemographic context: Represents rational analysis of the educated elite; may miss grassroots sentiment\nInterpretation: Zhihu's neutral stance represents the educated elite's rational analysis. Consider: (1) knowledge-mass cognitive gap; (2) long-form discussions may over-theorize; (3) platform skews toward professionals and academics."
   },
   "bias_analysis": {
-    "echo_warnings": [],
-    "silent_majority_hypothesis": null
+    "echo_warnings": [
+      "[SILENT MAJORITY] Silent Majority Hypothesis: Web search shows 27% opposition-leaning sources, but social media shows only 2% opposition. This divergence may indicate: (1) opposition voices are present but not socially amplified; (2) platform algorithmic suppression; (3) social desirability bias in social media posting."
+    ],
+    "silent_majority_hypothesis": "Silent Majority Hypothesis: Web search shows 27% opposition-leaning sources, but social media shows only 2% opposition. This divergence may indicate: (1) opposition voices are present but not socially amplified; (2) platform algorithmic suppression; (3) social desirability bias in social media posting."
   },
   "fact_opinion_separation": {
     "verified_facts": [
       {
-        "fact": "DeepSeek-V4 was released in April 2026, employing a large-scale MoE architecture with multimodal and ultra-long context capabilities, achieving domestic leading performance comparable to top closed-source models.",
+        "fact": "Web sources show 26.9% opposition stance and 26.9% neutral stance regarding DeepSeek's low-cost model claims.",
         "sources": [
-          "Web Search (background)"
+          "Web Search (QueryAgent): 52 sources"
         ],
         "verification_status": "cross_verified",
         "confidence": 0.9
       },
       {
-        "fact": "Official sources account for 42.2% of web search results, emphasizing China's AI self-innovation and technological confidence using DeepSeek as an example.",
-        "sources": [
-          "Web Search (official)"
-        ],
-        "verification_status": "cross_verified",
-        "confidence": 0.8
-      },
-      {
-        "fact": "Opposition sources account for 15.6% of web results, arguing the new model fails to narrow the U.S.-China AI gap, and raising allegations of IP theft and mediocre performance.",
-        "sources": [
-          "Web Search (oppose)"
-        ],
-        "verification_status": "cross_verified",
-        "confidence": 0.8
-      },
-      {
-        "fact": "Zhihu shows 100% neutral/analytical stance based on available data.",
+        "fact": "Social media sentiment is overwhelmingly neutral at 75.9%.",
         "sources": [
           "Deliberation Synthesis"
         ],
-        "verification_status": "single_source",
-        "confidence": 0.7
+        "verification_status": "cross_verified",
+        "confidence": 0.9
       },
       {
-        "fact": "Bilibili sentiment: 38.9% support, 61.1% neutral.",
+        "fact": "Official documents frame DeepSeek's emergence as a temporary market disruption rather than a lasting trust issue.",
         "sources": [
-          "Deliberation Synthesis"
-        ],
-        "verification_status": "single_source",
-        "confidence": 0.7
-      },
-      {
-        "fact": "Weibo shows 66.7% support but includes an unrelated laptop review, casting doubt on data reliability.",
-        "sources": [
+          "Web Search: official stance 0.192",
           "Deliberation Synthesis"
         ],
         "verification_status": "disputed",
+        "confidence": 0.7
+      },
+      {
+        "fact": "DeepSeek models exhibit significantly higher hallucination rates and reliability issues compared to competitors.",
+        "sources": [
+          "Web Search: oppose stance"
+        ],
+        "verification_status": "single_source",
+        "confidence": 0.6
+      },
+      {
+        "fact": "DeepSeek achieves competitive or superior benchmark performance at drastically lower cost.",
+        "sources": [
+          "Web Search: neutral stance"
+        ],
+        "verification_status": "single_source",
+        "confidence": 0.6
+      },
+      {
+        "fact": "Douyin shows 100% support in assessing overall trust.",
+        "sources": [
+          "Deliberation Synthesis: Dissent"
+        ],
+        "verification_status": "single_source",
         "confidence": 0.5
       }
     ],
     "opinions_sentiments": [
       {
-        "perspective": "Official Chinese media frame the model as a symbol of AI self-sufficiency and national technological achievement.",
-        "holders": "State media (Xinhua, People's Daily, CCTV) and official sources (42.2% of web)",
-        "sentiment_intensity": "strong",
+        "perspective": "DeepSeek's low-cost models achieve strong performance and cost efficiency.",
+        "holders": "Supporters on web sources (11.5%) and Douyin (100% support in that niche segment)",
+        "sentiment_intensity": "moderate",
         "platform_distribution": {
-          "weibo": 0.667,
-          "zhihu": 0.0
+          "web": 0.115,
+          "douyin": 1.0
         },
         "potential_biases": [
-          "echo_chamber",
-          "astroturfing"
-        ]
-      },
-      {
-        "perspective": "International and opposition sources criticize the model for not closing the U.S.-China AI gap, alleging IP theft and mediocre performance.",
-        "holders": "Opposition sources (15.6% of web), likely international tech critics",
-        "sentiment_intensity": "strong",
-        "platform_distribution": {
-          "weibo": 0.0,
-          "zhihu": 0.0
-        },
-        "potential_biases": [
+          "algorithm_filter",
           "elite_bias"
         ]
       },
       {
-        "perspective": "Zhihu community maintains a neutral, analytical stance, possibly withholding judgment pending performance benchmarks.",
-        "holders": "Zhihu users (technical audience)",
+        "perspective": "DeepSeek's models have serious reliability concerns such as high hallucination rates.",
+        "holders": "Opponents on web sources (26.9%)",
+        "sentiment_intensity": "strong",
+        "platform_distribution": {
+          "web": 0.269
+        },
+        "potential_biases": [
+          "echo_chamber"
+        ]
+      },
+      {
+        "perspective": "Neutral stance on DeepSeek's low-cost claims, neither praising nor criticizing.",
+        "holders": "Majority of social media users (75.9%) and web sources (26.9%)",
         "sentiment_intensity": "mild",
         "platform_distribution": {
-          "weibo": 0.0,
-          "zhihu": 1.0
+          "social_media": 0.759,
+          "web": 0.269
+        },
+        "potential_biases": [
+          "algorithm_filter"
+        ]
+      },
+      {
+        "perspective": "DeepSeek's emergence is a temporary market disruption, not a lasting trust issue.",
+        "holders": "Official documents (19.2% of web sources)",
+        "sentiment_intensity": "moderate",
+        "platform_distribution": {
+          "web": 0.192
         },
         "potential_biases": [
           "elite_bias"
@@ -228,182 +249,203 @@
     ],
     "analytical_frameworks": [
       {
-        "framework": "historical",
-        "analysis": "The discourse mirrors previous Chinese technological nationalism cycles (semiconductors, high-speed rail, 5G) with recurring themes of self-reliance, IP disputes, and balance between national pride and technical scrutiny.",
-        "basis": "Consensus in deliberation synthesis that this pattern is historical.",
-        "certainty": "high"
+        "framework": "economic",
+        "analysis": "DeepSeek's financial backing and official framing of temporary disruption may insulate it from immediate reputational damage, but unresolved reliability concerns could erode long-term trust among enterprise customers, creating latent risk.",
+        "basis": "Official documents framing as temporary disruption; strong financial backing; reliability concerns for enterprise.",
+        "certainty": "medium"
       },
       {
         "framework": "sociological",
-        "analysis": "Social media platform-specific patterns (Zhihu neutral, Bilibili mixed, Weibo high support) suggest that cultural norms and platform algorithms shape expressed sentiment, not just genuine public opinion.",
-        "basis": "Observed distribution differences across Zhihu, Bilibili, and Weibo from the synthesis.",
+        "analysis": "Overwhelmingly neutral social sentiment (75.9%) indicates the public has not formed strong attitudes, giving DeepSeek a window to shape perceptions, but the divide between web supporters and opponents suggests polarization could intensify.",
+        "basis": "Social media 75.9% neutral; web sources split between support (11.5%) and oppose (26.9%).",
         "certainty": "medium"
       },
       {
         "framework": "technical",
-        "analysis": "Key data gaps on performance benchmarks and non-English regional sentiment prevent full resolution of whether the model truly narrows the AI gap.",
-        "basis": "Deliberation synthesis cites missing performance benchmarks and non-English sentiment data.",
-        "certainty": "medium"
+        "analysis": "The tension between low-cost performance claims and reliability issues (higher hallucination rates) indicates that cost efficiency may come at the expense of robustness, which is critical for enterprise adoption.",
+        "basis": "DeepSeek achieves competitive benchmark performance but has higher hallucination rates.",
+        "certainty": "high"
       }
     ]
   },
   "synthesis": {
-    "summary": "The discourse around DeepSeek's new model is deeply polarized between official Chinese media framing it as a symbol of national AI self-sufficiency (42.2% of web sources) and international/opposition sources (15.6%) criticizing it for failing to close the U.S.-China AI gap and alleging IP theft. Social media sentiment varies by platform, with Zhihu 100% neutral (reflecting educated elite analysis), Bilibili 61% neutral and 39% supportive (Gen-Z attitudes), and Weibo 67% supportive but data reliability questioned due to an unrelated laptop review. Persistent disagreements remain over whether the neutral-to-supportive social media distribution genuinely represents public emotion or is inflated by platform biases and cultural norms, and whether the model is a true 'leapfrog' or still significantly behind due to absence of performance benchmarks. Overall confidence is moderate due to strong verified facts about source distribution and platform stances, but significant data gaps on performance benchmarks and non-English-speaking regions weaken the synthesis.",
+    "summary": "DeepSeek’s low-cost model claims have generated a polarized opinion landscape: web sources are evenly split between performance praise and reliability concerns (26.9% oppose, 26.9% neutral), while social media shows overwhelming neutrality (75.9%) and Douyin indicates niche creative support (100%). Official framing as a temporary disruption and financial backing provide short-term reputational cover, but persistent reliability issues—especially higher hallucination rates—pose a significant long-term risk for enterprise trust. The divergence between web opposition and social neutrality suggests potential silent majority effects, with negative views present but not socially amplified. Overall, DeepSeek faces a precarious window to address technical credibility before neutral sentiment shifts negatively.",
     "top_insights": [
       {
-        "insight": "Official narratives of technological self-sufficiency dominate web sources but face deep skepticism from international and opposition outlets, creating a binary discourse that echoes historical patterns of Chinese technological nationalism.",
-        "basis": "Cross-verified consensus from deliberation and verified facts: official sources 42.2%, opposition 15.6%, and historical patterns (semiconductors, 5G) support this persistent polarization.",
-        "confidence": 0.85
+        "insight": "Web opposition (26.9%) concentrated on reliability issues (hallucination rates) presents a critical risk to enterprise adoption, despite being offset by official market-disruption framing and financial backing.",
+        "basis": "Web sources showing 26.9% opposition; cross-verified fact on hallucination rates (single_source, 0.60); official documents framing as temporary disruption (disputed, 0.70)",
+        "confidence": 0.75
       },
       {
-        "insight": "Social media sentiment is predominantly neutral (56.5%), not supportive, challenging the narrative of strong public endorsement; the neutral stance is likely a mix of genuine caution, platform-specific norms (Zhihu's analytical elite, Bilibili's Gen-Z) and data quality issues (Weibo's unreliable sample).",
-        "basis": "Deliberation consensus and platform-specific interpretations: Zhihu 100% neutral, Bilibili 61% neutral, Weibo 67% support but disputed data. Social media distribution shows 56.5% neutral overall.",
-        "confidence": 0.7
+        "insight": "75.9% neutral social sentiment indicates a 'wait-and-see' public posture that could shift either positively (if reliability improves) or negatively (if incidents occur), making it a pivotal trust battleground.",
+        "basis": "Social media sentiment cross-verified at 75.9% neutral (0.90); deliberation disagreements on interpretation of neutrality; platform data (Weibo 70% neutral, Bilibili 60% neutral, Tieba 85% neutral, Zhihu 100% neutral)",
+        "confidence": 0.8
       },
       {
-        "insight": "The absence of specific performance benchmarks (accuracy, speed) prevents resolving the core dispute over whether DeepSeek's model represents a true 'leapfrog' or remains significantly behind U.S. counterparts, making the discourse largely ideological rather than evidence-based.",
-        "basis": "Persistent disagreements and data gaps identified in deliberation and verified facts: no benchmarks available, and both official celebrations and opposition criticisms lack quantitative performance details.",
+        "insight": "Douyin's 100% support is an outlier driven by algorithmic amplification and niche creative usage, not a reliable indicator of broad consumer trust.",
+        "basis": "Douyin sample small (3 posts); platform-specific interpretation notes strong filter bubble effect; divergence matrix shows Douyin vs. Zhihu CSSD=1.000 and vs. social_media_overall CSSD=0.754",
         "confidence": 0.9
       }
     ],
     "key_tensions": [
       {
-        "tension": "Official Chinese media (42.2%) frame the model as a success symbolizing AI self-sufficiency, while international/opposition sources (15.6%) criticize it for failing to close the U.S.-China AI gap and allege IP theft.",
+        "tension": "Whether web opposition (26.9%) or official framing as temporary disruption carries more weight for investor confidence and brand trust.",
         "between": [
-          "web media (official Chinese sources)",
-          "web media (international/opposition sources)"
+          "web sources",
+          "official documents"
         ],
-        "significance": "This binary opposition drives the entire discourse and hinders objective evaluation of the model's true capabilities."
+        "significance": "Determines near-term risk assessment for enterprise and investor audiences; unresolved in deliberation."
       },
       {
-        "tension": "Social media sentiment appears neutral-to-supportive (56.5% neutral, 39.1% support), but data reliability is questioned due to platform biases (Weibo sample issue) and cultural norms (Zhihu's analytical neutrality), creating uncertainty about genuine public emotion.",
+        "tension": "Whether neutral social sentiment (75.9%) signals ambivalence that could turn negative or a lack of concern that grants operational freedom.",
         "between": [
-          "social media overall (aggregate data)",
-          "individual platform data (Zhihu, Weibo, Bilibili)"
+          "social media overall",
+          "consumer experience perspective",
+          "investor perspective"
         ],
-        "significance": "Policymakers and analysts cannot confidently assess whether the public truly supports or critically scrutinizes the model, affecting strategic communication and response."
+        "significance": "Shapes strategic communication approach—whether to proactively build trust or leverage the neutral window."
       },
       {
-        "tension": "Zhihu's 100% neutral stance is interpreted as either critical scrutiny, analytical detachment, or strategic withholding of judgment pending benchmarks, but the deliberators disagree on its meaning.",
+        "tension": "Douyin's 100% support vs. all other platforms (neutral/oppose) indicates a severe platform-specific divergence, raising questions about which data represents genuine grassroots sentiment.",
         "between": [
-          "Zhihu platform data",
-          "interpretation of Zhihu's neutrality (deliberation perspectives)"
+          "Douyin",
+          "Zhihu",
+          "Bilibili",
+          "Weibo",
+          "Tieba"
         ],
-        "significance": "Without benchmarks, Zhihu's neutrality cannot be resolved, undercutting the ability to gauge informed elite opinion."
+        "significance": "Highlights risk of over-relying on single-platform data; algorithm-distorted enthusiasm versus rational skepticism."
       }
     ],
-    "overall_confidence": 0.65,
+    "overall_confidence": 0.7,
     "recommended_investigation": [
-      "Obtain specific performance benchmarks (accuracy, speed, cost) of DeepSeek-V4 to resolve the core dispute over model capability and provide an evidence basis for evaluating official vs. opposition claims.",
-      "Expand sentiment analysis to non-English-speaking platforms (e.g., Reddit, Twitter, YouTube) and regions (Latin America, Africa) to capture a more global perspective and reduce sample bias.",
-      "Investigate the Weibo data sample to determine whether it is contaminated by unrelated content (laptop review) and assess its reliability for public opinion analysis.",
-      "Conduct in-depth qualitative analysis of Zhihu discussions to distinguish between critical scrutiny, analytical detachment, and strategic withholding, clarifying the meaning of its 100% neutral stance."
+      "Conduct large-scale user experience surveys or A/B tests to measure actual enterprise trust and willingness to adopt DeepSeek despite hallucination concerns.",
+      "Analyze temporal sentiment trends on social media to detect early shifts away from neutrality following any new reliability incidents or product improvements.",
+      "Expand Douyin analysis to larger sample and include demographic breakdowns to assess whether support is generalizable or confined to creative/educational use cases."
     ]
   },
   "source_data": {
     "query_agent": {
       "total_sources": 15,
       "stance_distribution": {
-        "official": 0.422,
-        "neutral": 0.133,
-        "support": 0.089,
-        "background": 0.2,
-        "oppose": 0.156
+        "official": 0.192,
+        "support": 0.115,
+        "background": 0.154,
+        "oppose": 0.269,
+        "neutral": 0.269
       },
       "coverage_score": 1.0,
       "top_sources": [
         {
-          "title": "DeepSeek's new AI model does not wow markets in fast-changing ...",
-          "url": "https://www.reuters.com/world/china/deepseeks-new-ai-model-does-not-wow-markets-fast-changing-industry-2026-04-27/",
-          "trust_score": 0.784,
+          "title": "Unveiling the Mathematical Reasoning in DeepSeek Models - arXiv",
+          "url": "https://arxiv.org/html/2503.10573v1",
+          "trust_score": 0.697,
+          "stance": "neutral"
+        },
+        {
+          "title": "Reasoning Large Language Model Errors Arise from Hallucinating Critical Problem Features",
+          "url": "https://arxiv.org/html/2505.12151v1",
+          "trust_score": 0.693,
           "stance": "oppose"
         },
         {
-          "title": "自主创新需“率道而行”",
-          "url": "https://www.ncsti.gov.cn/kjdt/kjrd/qtrd_kjrd/202604/t20260427_245018.html",
-          "trust_score": 0.77,
+          "title": "[PDF] Brunel Pension - Gloucestershire County Council",
+          "url": "https://gloucestershire.gov.uk/media/lvyj05hg/bpp-2025-q1-gloucestershire-quarterly-performance-report.pdf",
+          "trust_score": 0.609,
           "stance": "official"
         },
         {
-          "title": "DeepSeek's Long-Awaited New Model Fails to Narrow US Lead in AI",
-          "url": "https://www.bloomberg.com/news/articles/2026-04-24/deepseek-s-long-awaited-new-model-fails-to-narrow-us-lead-in-ai",
-          "trust_score": 0.764,
-          "stance": "oppose"
-        },
-        {
-          "title": "无锡市科技创新服务中心 苏南国家自主创新示范区",
-          "url": "https://wxkjj.wuxi.gov.cn/doc/2026/01/26/4723467.shtml",
-          "trust_score": 0.756,
+          "title": "[PDF] Artificial Intelligence and the Great Divergence | The White House",
+          "url": "https://www.whitehouse.gov/wp-content/uploads/2026/01/Artificial-Intelligence-and-the-Great-Divergence-5.pdf",
+          "trust_score": 0.607,
           "stance": "official"
         },
         {
-          "title": "自主创新需“率道而行”--经济·科技--人民网",
-          "url": "http://finance.people.com.cn/n1/2026/0427/c1004-40709239.html",
-          "trust_score": 0.754,
+          "title": "[PDF] AI Privacy Risks & Mitigations – Large Language Models (LLMs)",
+          "url": "https://www.edpb.europa.eu/system/files/2025-04/ai-privacy-risks-and-mitigations-in-llms.pdf",
+          "trust_score": 0.603,
           "stance": "official"
         },
         {
-          "title": "自主創新需“率道而行”--經濟·科技--人民網",
-          "url": "http://finance.people.com.cn/BIG5/n1/2026/0427/c1004-40709239.html",
-          "trust_score": 0.754,
+          "title": "[PDF] Economic Report of the President | The White House",
+          "url": "https://www.whitehouse.gov/wp-content/uploads/2026/04/2026-Economic-Report-of-the-President.pdf",
+          "trust_score": 0.601,
           "stance": "official"
         },
         {
-          "title": "摩尔线程与智源众智FlagOS社区完成DeepSeek-V4适配_园区和企业_北京市科学技术委员会、中关村科技园区管理委员会",
-          "url": "https://kw.beijing.gov.cn/xwdt/kcyx/xwdtyqqy/202604/t20260427_4616006.html",
-          "trust_score": 0.736,
+          "title": "[PDF] M-25-21 Accelerating Federal Use of AI through Innovation ...",
+          "url": "https://www.whitehouse.gov/wp-content/uploads/2025/02/M-25-21-Accelerating-Federal-Use-of-AI-through-Innovation-Governance-and-Public-Trust.pdf",
+          "trust_score": 0.598,
           "stance": "official"
         },
         {
-          "title": "中国AI的当下与未来--理论-中国共产党新闻网",
-          "url": "http://theory.people.com.cn/n1/2026/0311/c40531-40679459.html",
-          "trust_score": 0.734,
+          "title": "[PDF] Global Financial Stability Report, April 2025; Chapter 1",
+          "url": "https://www.imf.org/-/media/files/publications/gfsr/2025/april/english/ch1.pdf",
+          "trust_score": 0.591,
           "stance": "official"
         },
         {
-          "title": "联通云x联通元景上线DeepSeek-V4--经济·科技--人民网",
-          "url": "http://finance.people.com.cn/n1/2026/0429/c1004-40711178.html",
-          "trust_score": 0.733,
+          "title": "How Effectively Can Current LLMs Analyze Macrofinancial Issues?, WP/26/35, February 2026",
+          "url": "https://www.imf.org/-/media/files/publications/wp/2026/english/wpiea2026035-source-pdf.pdf",
+          "trust_score": 0.591,
           "stance": "official"
         },
         {
-          "title": "人民锐评：这次DeepSeek中断既是警示也是历练",
-          "url": "http://opinion.people.com.cn/n1/2026/0401/c436867-40693502.html",
-          "trust_score": 0.73,
+          "title": "Our evaluation of Claude Mythos Preview's cyber capabilities",
+          "url": "https://www.aisi.gov.uk/blog/our-evaluation-of-claude-mythos-previews-cyber-capabilities",
+          "trust_score": 0.589,
           "stance": "official"
         }
       ],
       "social_sentiment": {
         "mode": "available",
         "platforms_queried": [
+          "douyin",
           "bilibili",
           "weibo",
+          "tieba",
           "zhihu"
         ],
-        "total_posts": 23,
+        "total_posts": 1607,
         "total_comments": 10,
         "sentiment_distribution": {
-          "support": 0.391,
-          "neutral": 0.565,
-          "background": 0.043
+          "support": 0.193,
+          "neutral": 0.759,
+          "background": 0.024,
+          "oppose": 0.024
         },
         "per_platform": {
-          "bilibili": {
-            "count": 18,
+          "douyin": {
+            "count": 3,
             "distribution": {
-              "support": 0.389,
-              "neutral": 0.611
+              "support": 1.0
+            }
+          },
+          "bilibili": {
+            "count": 20,
+            "distribution": {
+              "neutral": 0.6,
+              "background": 0.1,
+              "support": 0.3
             }
           },
           "weibo": {
-            "count": 3,
+            "count": 20,
             "distribution": {
-              "background": 0.333,
-              "support": 0.667
+              "neutral": 0.7,
+              "support": 0.3
+            }
+          },
+          "tieba": {
+            "count": 20,
+            "distribution": {
+              "oppose": 0.1,
+              "neutral": 0.85,
+              "support": 0.05
             }
           },
           "zhihu": {
-            "count": 2,
+            "count": 20,
             "distribution": {
               "neutral": 1.0
             }
@@ -411,157 +453,157 @@
         },
         "content_diversity": 1.0,
         "low_diversity_warning": null,
-        "divergence_score": 0.667,
-        "divergence_summary": "Web search results show a significant plurality of official stance (42.2%) and notable opposition (15.6%), whereas social media discussions are predominantly neutral (56.5%) with higher support (39.1%) and negligible opposition or official framing.",
-        "freshness_hours": 12.6,
+        "divergence_score": 0.355,
+        "divergence_summary": "The web search results show a more polarized stance distribution, with a significant 26.9% oppose and 19.2% official stance, while social media discussions are overwhelmingly neutral at 75.9% with negligible opposition (2.4%). This indicates that web content exhibits greater contention and official presence, whereas social media conversations are largely indifferent or non-committal on the topic.",
+        "freshness_hours": 3.2,
         "top_social_voices": [
           {
-            "platform": "weibo",
-            "content": "【荣耀笔记本X16 Plus评测：性能续航超强，但YOYO才是亮点】最近几年，轻薄笔记本的发展势头很迅猛。国产厂商们的持续内卷，让轻薄本来到了主流价位，消费者不用花太多钱，就能买到一台外观颜值高、续航和便携性表现好、配置均衡的产品。最近的荣耀新品发布会上，有一款笔记本现身，它就是荣耀笔记本X16 Plus 2026（FHD版），起售价6199元，国补价5269.15元。拿到这款产品，雷科技（ID：leitech）第一时间上手实测，现在来一起看看它的表现吧。（图源：雷科技摄制）全金属机身带来不俗颜值，大尺寸带来出色键盘手感荣耀笔记本X16 Plus 2026基本延续了上代产品的设计风格，走的是简",
-            "url": "https://m.weibo.cn/detail/5293467765838691",
-            "publish_time": "2026-05-01T02:22:06",
+            "platform": "bilibili",
+            "content": "26年06月05日晚报：Anthropic警示AI自主进化风险、美国5月非农数据今晚发布、DeepSeek完成500亿融资、比亚迪发布尧舜禹机器人、韩国股市又又",
+            "url": "https://www.bilibili.com/video/BV1mq7C6mEmN",
+            "publish_time": "2026-06-05T16:34:51",
             "stance": "background"
           },
           {
             "platform": "bilibili",
-            "content": "(全球大视野）26.5.1 DeepSeek V4适配八家国产晶片，打破Nvidia护城河！美国战争成本高达500亿美元，油价飙升民众叫苦，粮食危机接踵而至！",
-            "url": "https://www.bilibili.com/video/BV1KYRGBDErC",
-            "publish_time": "2026-05-02T07:46:23",
-            "stance": "support"
+            "content": "06/04中国秀，博通致科技股大跌，DeepSeek获巨额融资，SpaceX拟最大IPO，黎以停火，个人境外投资新规 | 彭博社 | 中英字幕",
+            "url": "https://www.bilibili.com/video/BV1wqEF6XEdu",
+            "publish_time": "2026-06-04T14:34:51",
+            "stance": "background"
           },
           {
-            "platform": "bilibili",
-            "content": "深夜引爆！DeepSeek联手清北抛出多模态重磅炸弹，传统视觉模型已被判死刑！| AI日报0430",
-            "url": "https://www.bilibili.com/video/BV11t9eB6EEy",
-            "publish_time": "2026-04-30T20:58:04",
-            "stance": "support"
-          },
-          {
-            "platform": "bilibili",
-            "content": "彻底疯狂！DeepSeek 再次大降价，缓存输入已打骨折！AI圈已沸腾，开发者已疯狂！",
-            "url": "https://www.bilibili.com/video/BV1nsovBGEJu",
-            "publish_time": "2026-04-26T21:41:02",
+            "platform": "douyin",
+            "content": "deepseek这样才能作出高质量歌词🔥做成歌好听哭了😭 #AI #炙热计划 #抖音精选计划 #前奏一响拾起多少人的回忆 #deepseek",
+            "url": "https://www.douyin.com/video/7477515618254638396",
+            "publish_time": "2025-03-03T17:39:40",
             "stance": "support"
           },
           {
             "platform": "weibo",
-            "content": "裂痕与曙光：当黄仁勋的“噩梦”照进现实2026年4月15日，英伟达CEO黄仁勋在播客中发出了近乎悲鸣的警告：“如果DeepSeek的新模型优先在华为平台上发布，对美国来说将是一个可怕的结果。”仅仅九天后的4月24日，随着DeepSeek V4预览版的上线，这句预言精准地击中了硅谷的痛点。这不仅仅是一次产品的迭代，更是一场酝酿已久的“算力突围”，标志着中国AI产业正式撕开了英伟达垄断多年的护城河。长期以来，全球AI开发者都被“锁”在英伟达的CUDA生态中。这种路径依赖如同当年的Wintel联盟，让更换芯片的成本高到令人望而却步。然而，DeepSeek这次选择了最艰难的一条路——“换心手术”。他们",
-            "url": "https://m.weibo.cn/detail/5293376412844566",
-            "publish_time": "2026-04-30T20:19:06",
+            "content": "太炸了！中国AI大模型周调用量14.19万亿Token，是美国的4.4倍！全球前五占四席，DeepSeek连续三周霸榜，腾讯、MiniMax、小米紧随其后。曾经不可一世的美国Claude，直接跌出前五。更狠的是，这还只是开始——- 小米刚发布万亿参数模型，推理速度1000tps- DeepSeek性价比是GPT的34倍- 开源社区中国模型下载量全球第一以前我们说&quot;中国AI追赶美国&quot;，现在得说&quot;美国AI加油追中国&quot;了。属于中国大模型的时代，真的来了！#AI #人工智能 #大模型 #DeepSeek #中国AI",
+            "url": "https://m.weibo.cn/detail/5307943656099651",
+            "publish_time": "2026-06-10T01:04:07",
+            "stance": "support"
+          },
+          {
+            "platform": "douyin",
+            "content": "deepseek作词作曲演唱保姆级教程 作词、作曲、演唱全程AI，圆了你的歌手梦。 情人节给爱人写首歌吧！#deepseek #deepseek写歌 #七天爱人 #成为歌手保姆级教程 #Yapie程序员哥",
+            "url": "https://www.douyin.com/video/7470484220444560640",
+            "publish_time": "2025-02-12T18:54:27",
+            "stance": "support"
+          },
+          {
+            "platform": "douyin",
+            "content": "deepseek写歌！教程来了 全程AI。歌名《七天爱人》\n#deepseek #七天爱人 #deepseek写歌 #如何用deepseek写歌 #Yapie程序员哥",
+            "url": "https://www.douyin.com/video/7469757759429381391",
+            "publish_time": "2025-02-10T19:55:22",
             "stance": "support"
           },
           {
             "platform": "bilibili",
-            "content": "解析Deepseek发布的DeepSeek-V4多模态版本的大模型",
-            "url": "https://www.bilibili.com/video/BV1RSRKByEYk",
-            "publish_time": "2026-05-01T11:16:57",
-            "stance": "neutral"
-          },
-          {
-            "platform": "bilibili",
-            "content": "DeepSeek公开多模态技术文档，揭秘AI读图原理",
-            "url": "https://www.bilibili.com/video/BV1GXRKBCEwd",
-            "publish_time": "2026-05-01T09:39:25",
-            "stance": "neutral"
-          },
-          {
-            "platform": "bilibili",
-            "content": "日网网民：DeepSeek V4发布，是第一个完全用华为昇腾950PR芯片来训练和推理的设计，想彻底摆脱对CUDA的依赖",
-            "url": "https://www.bilibili.com/video/BV1yF9bBWE7N",
-            "publish_time": "2026-04-30T10:33:46",
+            "content": "【老司机福利】DeepSeek V4解除限制！直接爽翻天！",
+            "url": "https://www.bilibili.com/video/BV1zWV16hEGp",
+            "publish_time": "2026-06-03T13:28:09",
             "stance": "support"
           },
           {
             "platform": "bilibili",
-            "content": "硅谷看DeepSeek V4：模型效率、算力突围与AGI必经之路【硅谷101视频播客】",
-            "url": "https://www.bilibili.com/video/BV1Kq9SBSE7N",
-            "publish_time": "2026-04-29T11:54:36",
-            "stance": "neutral"
+            "content": "Deepseek v4“无视限制”模式上线，AI恋人和角色扮演，故事由你主宰！",
+            "url": "https://www.bilibili.com/video/BV1EWV16hEC6",
+            "publish_time": "2026-06-03T13:27:54",
+            "stance": "support"
           },
           {
-            "platform": "bilibili",
-            "content": "彭博社评论DeepSeek V4：符合预期，就是便宜——尽管缺乏“惊艳”元素，DeepSeek V4 为何依然令人印象深刻",
-            "url": "https://www.bilibili.com/video/BV11DokBqEbr",
-            "publish_time": "2026-04-27T22:46:00",
-            "stance": "neutral"
+            "platform": "weibo",
+            "content": "✅deepseek 的回答我很满意哈哈哈哈哈哈明天就这么干！然后梳理成文章，以后发给他们争取44个娃儿，每个孩子都有自己的成长档案记录。在这些藏着犯错的事情上，其实才是孩子的直接成长。接下来，我可以开始着手，写娃儿们的期末评语了苹果手机的备忘录功能可以说是相当强大了谢谢AI，帮忙润色，做得更好",
+            "url": "https://m.weibo.cn/detail/5308444069855394",
+            "publish_time": "2026-06-11T10:12:35",
+            "stance": "support"
+          },
+          {
+            "platform": "weibo",
+            "content": "🚀【200 亿！创始人自掏腰包领投，刷新 AI 融资纪录！】DeepSeek 即将完成 500 亿元融资，腾讯、宁德时代两大巨头联手押注。最炸裂的是，创始人梁文锋个人承诺出资 200 亿，占融资总额的 40%！这意味着什么？创始人对自己项目的信心，已经到&quot;All in&quot;级别。国内 AI 企业单笔融资纪录即将被刷新，74 亿美元砸向大模型赛道。反常识洞察：别人融资靠投资人，他融资靠自己。200 亿真金白银，比任何 PPT 都有说服力。这才是真正的创业者精神！你觉得创始人该不该自掏 200 亿领投？这是信心还是赌命？#AI 创业 #融资 #DeepSeek #梁文锋 #大模型",
+            "url": "https://m.weibo.cn/detail/5308069039048588",
+            "publish_time": "2026-06-10T09:22:21",
+            "stance": "support"
           }
         ],
         "comment_sentiment": {
-          "total": 14,
+          "total": 47,
           "distribution": {
-            "neutral": 0.357,
-            "support": 0.214,
-            "oppose": 0.357,
-            "background": 0.071
+            "support": 0.319,
+            "oppose": 0.213,
+            "neutral": 0.404,
+            "background": 0.064
           },
           "top_comments": [
             {
               "platform": "bilibili",
-              "content": "DeepSeek是用英伟达芯片训练的... v4英文版技术报告写得很清楚，报告16页,20页提到的TCGenO5、MegaMoE²等等几个相关算子，是只有CUDA上才有的，在华为昇腾上压根就没有相关适配。\n而且v4Pro模型是mxFP4+FP8混合精度框架，模型的权重记忆、CSA索引、MoE等等基于FP4精度进行的训练，而昇腾卡还不支持FP4训练。按华为规划，最快最快 要等到年末的950DT发布，",
-              "like_count": 142,
-              "publish_time": null,
-              "stance": "neutral"
-            },
-            {
-              "platform": "bilibili",
-              "content": "deepseek的恩情还不完",
-              "like_count": 76,
+              "content": "👉本期实测国产大模型DeepSeek直接上手写论文的两种方法\n1、官网+指令手动生成（高效指令求个三连鼓励发）\n2、deepseek论文大模型网站一键生成💡翻遍全网找到宝藏网站👇\ndeepseek.ailunwen.online\n✅一键生成完整论文（封面/目录/图表/真实文献）\n✅深度优化模型，AIGC检测率直降29.6%\n✅5分钟出大纲，20分钟拿初稿，格式直接过审！",
+              "like_count": 1898,
               "publish_time": null,
               "stance": "support"
             },
             {
-              "platform": "bilibili",
-              "content": "deepseek：这都啥问题啊，不如睡觉",
-              "like_count": 72,
-              "publish_time": null,
-              "stance": "neutral"
-            },
-            {
-              "platform": "bilibili",
-              "content": "灰到咯，传了一张图片，deepseek理解很准确，就是输出答案之后立马把答案吞回去了[doge]",
-              "like_count": 58,
-              "publish_time": null,
+              "platform": "douyin",
+              "content": "Deepseek+Suno才是绝配[灵机一动]",
+              "like_count": 1529,
+              "publish_time": "2025-02-11T23:42:25",
               "stance": "support"
             },
             {
               "platform": "bilibili",
-              "content": "你用deepseek，标签为啥加chathpt",
-              "like_count": 52,
-              "publish_time": null,
-              "stance": "neutral"
-            },
-            {
-              "platform": "bilibili",
-              "content": "DeepSeek爹给我个名额吧😭",
-              "like_count": 18,
-              "publish_time": null,
-              "stance": "support"
-            },
-            {
-              "platform": "bilibili",
-              "content": "这东西真的是进行部分用户测试的吗？这个月总共才用了不到五次deepseek，我刚才点进去看一下有识图模式这个功能[笑哭]",
-              "like_count": 15,
-              "publish_time": null,
-              "stance": "neutral"
-            },
-            {
-              "platform": "bilibili",
-              "content": "deepseek V4 效果不怎么好，代码编写能力也不怎么强，算有无之争",
-              "like_count": 10,
+              "content": "我已经跟deepseek吵了好几天了。期间还有死不认账的，直到我把他的论证网址里的内容复制粘贴出来让他给我找出他的内容，才承认他错了。不过已经不止一次了。还把北京各个景区乱放挪地址，要不是我还有百度地图我真怀疑是我的记忆出现问题了。",
+              "like_count": 373,
               "publish_time": null,
               "stance": "oppose"
             },
             {
               "platform": "bilibili",
-              "content": "deepseek V4 效果不怎么好，代码编写能力也不怎么强，还没有多模态，和国内的豆包和Qwen大概一个级别。当然从技术上看，有一些重新和特点，但是效果上，算不上多惊艳，成本估计低一些。",
-              "like_count": 8,
+              "content": "Up主没有错过短视频，已经吃到deepseek这个红利了[doge]",
+              "like_count": 270,
               "publish_time": null,
+              "stance": "support"
+            },
+            {
+              "platform": "weibo",
+              "content": "华为是难能可贵的，用华为芯片的deepseek也是难能可贵的，宇树就不评价了，不然又被说“基本盘” 反正吧，只有把核心技术掌握在自己手中才能走得安稳、走得长远，否则随时会被卡脖子，这是经过一个个事实验证过的。国内半导体、国内芯片加油吧，唯有自立自强才不会受制于他人",
+              "like_count": 197,
+              "publish_time": "2026-06-07T08:45:43",
+              "stance": "support"
+            },
+            {
+              "platform": "douyin",
+              "content": "歌词听完之后毫无记忆锚点…deepseek还得练[流泪]",
+              "like_count": 158,
+              "publish_time": "2025-09-24T00:25:17",
               "stance": "oppose"
             },
             {
+              "platform": "zhihu",
+              "content": "1、训math和训v4不矛盾，在DeepSeek v3发布之前（大多数人是v3才开始关注ds的），DeepSeek一直在迭代自己的code和math模型，参见梁文锋的访谈：数学和编程是封闭场景，模型可以自己验证对错，是天然的强化学习训练场。2、关于math为什么没有单独的API和网页服务：之前的ds Prover也没有，一来这一块需求比较窄，二来这种模型就是用来验证思路、积累通用模型的训练数据的。",
+              "like_count": 102,
+              "publish_time": null,
+              "stance": "neutral"
+            },
+            {
               "platform": "bilibili",
-              "content": "DeepSeek是算法又不是算力，算力能堆的过美国算我输",
-              "like_count": 5,
+              "content": "deepseek说这次已经三婚囖[doge]",
+              "like_count": 73,
+              "publish_time": null,
+              "stance": "neutral"
+            },
+            {
+              "platform": "bilibili",
+              "content": "2026年5月15日信息差。\n1、南方多地发布山洪灾害预警：水利部、中国气象局14日联合发布黄色山洪预警，福建南部、广东东部等地需严防山洪风险。\n2、武汉大学正式取消社会公众进校预约制度：仅凭本人身份证即可步行入校，工作日及节假日均开放。\n3、DeepSeek专家模式下线“上传文件”功能，官方提示：擅长复杂问题，资源紧张，不支持文件上传。\n4、中美元首北京会谈：确立&#34;中美建设性战略稳定关系",
+              "like_count": 71,
+              "publish_time": null,
+              "stance": "background"
+            },
+            {
+              "platform": "bilibili",
+              "content": "对法学没什么冲击，我用deepseek做平时作业只对30%多点[笑哭]",
+              "like_count": 53,
               "publish_time": null,
               "stance": "oppose"
             }
@@ -570,74 +612,73 @@
         "sentiment_trend": {
           "buckets": [
             {
-              "date": "2026-04-26",
+              "date": "2026-06-05",
+              "post_count": 13,
+              "distribution": {
+                "neutral": 0.615,
+                "background": 0.154,
+                "support": 0.154,
+                "oppose": 0.077
+              }
+            },
+            {
+              "date": "2026-06-08",
               "post_count": 1,
               "distribution": {
                 "support": 1.0
               }
             },
             {
-              "date": "2026-04-27",
-              "post_count": 2,
+              "date": "2026-06-09",
+              "post_count": 13,
               "distribution": {
-                "neutral": 1.0
+                "neutral": 0.385,
+                "oppose": 0.154,
+                "support": 0.385,
+                "background": 0.077
               }
             },
             {
-              "date": "2026-04-29",
-              "post_count": 2,
-              "distribution": {
-                "neutral": 1.0
-              }
-            },
-            {
-              "date": "2026-04-30",
-              "post_count": 6,
-              "distribution": {
-                "support": 0.667,
-                "neutral": 0.333
-              }
-            },
-            {
-              "date": "2026-05-01",
-              "post_count": 3,
+              "date": "2026-06-10",
+              "post_count": 15,
               "distribution": {
                 "neutral": 0.667,
-                "background": 0.333
+                "support": 0.333
               }
             },
             {
-              "date": "2026-05-02",
-              "post_count": 1,
+              "date": "2026-06-11",
+              "post_count": 4,
               "distribution": {
-                "support": 1.0
+                "neutral": 0.75,
+                "support": 0.25
               }
             }
           ],
-          "trend_direction": "rising",
-          "trend_summary": "自4月26日以来，公众对DeepSeek新模型的舆论从全面支持转向中立主导，随后在4月30日出现强烈反弹（支持率67%），但5月1日再度回归中立基调（67%），而5月2日最新表态又重回完全支持，整体呈现波动上升趋势，支持立场在关键节点仍具主导性。"
+          "trend_direction": "falling",
+          "trend_summary": "Public sentiment on DeepSeek's brand trust has shifted from mixed early June (with notable neutrality and some opposition) to a predominantly neutral stance by June 10-11, with declining discussion volume and a steady but diminished support fraction, indicating waning controversy but no strong renewed confidence."
         },
         "crawl_triggered": false
       }
     },
     "media_agent": {
-      "available": true,
+      "available": false,
       "mode": "live",
-      "summary_length": 2270
+      "summary_length": 0
     }
   },
   "coordinator_trace": [
-    "[MediaAgentNode] test_data_injected — 2270 chars in 0.0s",
-    "[QueryAgentNode] Loaded from cache in 0.0s",
-    "[DataBridge] Total bridged propositions: 17",
-    "[DivergenceMatrix] 6 sources, 15 pairs — max divergence: weibo|zhihu = 1.000, min divergence: bilibili|social_media_overall = 0.003, hotspots: 11",
-    "[PerspectiveGen] analysis_type=general → perspectives: ['Facts & Data', 'Public Emotion & Social Psychology', 'Stakeholder Analysis', 'Historical & Cross-Domain Reflection']",
-    "[Deliberation] 3-phase complete in 98.3s — consensus=8, dissents=8, confidence=0.80",
-    "[EchoChamber] 0 warning(s) detected",
-    "[FactOpinion] facts=6, opinions=3, frameworks=3",
-    "[PlatformInterpreter] Generated interpretations for 3 platforms: ['bilibili', 'weibo', 'zhihu']",
-    "[Synthesis] MoA aggregation complete in 15.7s — confidence=0.65, insights=3",
-    "[ReportAgentNode] academic_report — 26082 chars in 0.0s"
+    "[MediaAgentNode] skipped_unconfigured — missing config: MEDIA_ENGINE_API_KEY in 0.0s",
+    "[QueryAgentNode] Success in 106.3s — sources=52, coverage=1.00, analysis_type=brand",
+    "[DataBridge] Total bridged propositions: 13",
+    "[DivergenceMatrix] 7 sources, 21 pairs — max divergence: douyin|zhihu = 1.000, min divergence: tieba|zhihu = 0.009, hotspots: 11",
+    "[PerspectiveGen] analysis_type=brand → perspectives: ['Consumer Experience', 'Business Strategy & Competition', 'Media Narrative & Framing', 'Investor & Market Reaction']",
+    "[Deliberation] 3-phase complete in 67.0s — consensus=10, dissents=6, confidence=0.75",
+    "[EchoChamber] 1 warning(s) detected; silent_majority_hypothesis generated",
+    "[FactOpinion] facts=6, opinions=4, frameworks=3",
+    "[PlatformInterpreter] Generated interpretations for 5 platforms: ['douyin', 'bilibili', 'weibo', 'tieba', 'zhihu']",
+    "[Synthesis] MoA aggregation complete in 12.6s — confidence=0.70, insights=3",
+    "[ReportAgentNode] academic_report — 28996 chars in 0.2s"
   ],
   "agent_errors": []
 }
