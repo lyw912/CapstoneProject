@@ -1,190 +1,234 @@
-# API Evaluation Plan for Engine Selection
+# API Evaluation Toolkit
 
-This folder is independent from the main project. It is intended to benchmark candidate APIs before wiring any provider into `MediaEngine`, `QueryEngine`, `ReportEngine`, `ForumEngine`, or `MindSpider`.
+This directory contains a standalone evaluation harness and completed benchmark results for selecting APIs for:
 
-## Goal
+- `MediaEngine`
+- `QueryEngine`
+- `ReportEngine`
+- `ForumEngine`
+- `MindSpider`
 
-Pick the best API/provider/model for each engine based on the engine's real workload, not generic chatbot quality.
+It is intentionally independent from the main application runtime. The goal is to test candidate LLM/search APIs before wiring them into the production engines.
 
-The project has two API families:
+## Current Evaluation Summary
 
-- LLM APIs: OpenAI-compatible chat completion providers such as DeepSeek, Moonshot/Kimi, Qwen/Bailian/SiliconFlow, Gemini proxy, etc.
-- Search APIs: Tavily, Anspire, Bocha.
+The completed evaluation tested:
 
-## Engine Profiles
+- `deepseek-chat`
+- `deepseek-reasoner`
+- `qwen-plus-compatible`
+- `bocha` search
 
-### MediaEngine
+Two rounds were run:
 
-Primary need: retrieve and synthesize broad public/media narratives.
+- `results_smoke_real`: 1 repetition per test case.
+- `results_full_r3`: 3 repetitions per test case.
 
-High-value capabilities:
+The 3-run evaluation completed with no failed calls. All tested providers had `success_rate=1.0`.
 
-- Chinese web/media coverage.
-- Current public opinion discovery.
-- Multi-source synthesis.
-- Evidence extraction with URLs.
-- Robustness on noisy or conflicting search results.
+Final pragmatic recommendation:
 
-Recommended benchmark mix:
+| Engine | Recommended API |
+| --- | --- |
+| MediaEngine LLM | `qwen-plus-compatible` |
+| MediaEngine Search | `bocha` |
+| QueryEngine LLM | `deepseek-chat` |
+| QueryEngine Search | `bocha` |
+| ReportEngine LLM | `deepseek-chat` |
+| ForumEngine LLM | `deepseek-chat` or `qwen-plus-compatible` |
+| MindSpider LLM | `qwen-plus-compatible` |
+| MindSpider Search | `bocha` |
 
-- Search: Anspire vs Bocha, optionally Tavily for non-Chinese/current global topics.
-- LLM: long-context synthesis, citation discipline, structured JSON output.
+If operational simplicity and lower latency matter more than small quality gains, use `deepseek-chat` for all LLM engines and `bocha` for search.
 
-### QueryEngine
+## Key Results
 
-Primary need: stance-aware retrieval, source classification, gap filling, and structured outputs.
+Source: `results_full_r3/summary.csv`
 
-High-value capabilities:
+| Engine | Type | Best Provider | Score | Avg Latency |
+| --- | --- | --- | ---: | ---: |
+| MediaEngine | LLM | `qwen-plus-compatible` | 4.418 | 5.673s |
+| MediaEngine | Search | `bocha` | 4.646 | 14.399s |
+| QueryEngine | LLM | `deepseek-chat` | 4.505 | 2.423s |
+| QueryEngine | Search | `bocha` | 4.668 | 13.006s |
+| ReportEngine | LLM | `deepseek-chat` | 4.227 | 5.479s |
+| ForumEngine | LLM | `qwen-plus-compatible` | 4.269 | 3.235s |
+| MindSpider | LLM | `qwen-plus-compatible` | 4.378 | 5.217s |
+| MindSpider | Search | `bocha` | 4.709 | 13.840s |
 
-- Accurate search query planning.
-- Cross-source stance classification.
-- JSON reliability.
-- Low hallucination under source constraints.
-- Timely retrieval.
+Notable observations:
 
-Recommended benchmark mix:
+- `deepseek-chat` is the best practical default for QueryEngine and ReportEngine.
+- `qwen-plus-compatible` is strongest for Chinese synthesis/topic extraction tasks.
+- `deepseek-reasoner` did not outperform the other candidates enough to justify its higher latency in this test set.
+- `bocha` search scored well but is relatively slow, with average latency around 13-14 seconds.
 
-- Search: Tavily as baseline, Anspire for Chinese web enhancement.
-- LLM: strict JSON, source-grounded stance analysis, short reasoning latency.
+See the full report: [`API_EVALUATION_REPORT.md`](API_EVALUATION_REPORT.md).
 
-### ReportEngine
+## Directory Contents
 
-Primary need: long-form report generation from upstream structured artifacts.
+| Path | Purpose |
+| --- | --- |
+| `run_evaluation.py` | Main benchmark runner. |
+| `providers.example.json` | Safe provider config template. |
+| `providers.local.json` | Current evaluated provider config. Uses environment variable names only; no API keys are stored. |
+| `test_cases.json` | LLM and search test cases mapped to engine profiles. |
+| `engine_profiles.json` | Engine-specific scoring weights. |
+| `EVALUATION_RUNBOOK.md` | Step-by-step run instructions. |
+| `API_EVALUATION_REPORT.md` | Final evaluation report and recommendations. |
+| `results_smoke_real/` | Successful 1-run smoke test summaries. |
+| `results_full_r3/` | Successful 3-run evaluation summaries. |
 
-High-value capabilities:
+Large raw outputs are intentionally ignored:
 
-- Long-context following.
-- Coherent multi-section writing.
-- Chart/table instruction following.
-- Stable formatting in Markdown/HTML-like output.
-- Low repetition and low truncation.
+- `raw_results.jsonl`
+- `__pycache__/`
+- dry-run/config-check result folders
 
-Recommended benchmark mix:
+## How to Reproduce
 
-- LLM only.
-- Emphasize long output quality, structure, and cost per finished report.
-
-### ForumEngine
-
-Primary need: host/moderator behavior, discussion summarization, and concise steering.
-
-High-value capabilities:
-
-- Fast response.
-- Stable persona and moderation style.
-- Concise summaries.
-- Low cost for repeated calls.
-
-Recommended benchmark mix:
-
-- LLM only.
-- Favor latency/cost more than maximum reasoning depth.
-
-### MindSpider
-
-Primary need: hot-topic extraction and summary from news lists.
-
-High-value capabilities:
-
-- Keyword extraction.
-- Clustering/summarization.
-- Good Chinese handling.
-- Cheap batch processing.
-
-Recommended benchmark mix:
-
-- LLM only, optionally with search if the upstream news fetcher is replaced.
-- Favor structured keyword output and cost.
-
-## Scoring Model
-
-Use a 0-5 score for each metric:
-
-- 5: excellent, production-ready.
-- 4: good, minor issues.
-- 3: usable but needs guardrails.
-- 2: weak for this engine.
-- 1: mostly unusable.
-- 0: failed call, invalid output, or unsafe result.
-
-### Common LLM Metrics
-
-- `task_success`: Did it answer the task correctly?
-- `format_compliance`: Did it follow required JSON/Markdown/schema?
-- `grounding`: Did it avoid unsupported claims?
-- `reasoning_quality`: Are classifications and synthesis defensible?
-- `language_quality`: Is Chinese/English output fluent for the requested language?
-- `latency`: Relative score from measured seconds.
-- `cost`: Relative score from estimated token cost.
-- `stability`: Consistency across retries.
-
-### Common Search Metrics
-
-- `relevance`: Are top results relevant?
-- `freshness`: Are current-event queries fresh?
-- `source_quality`: Are sources authoritative/diverse?
-- `coverage`: Does it return enough useful results?
-- `metadata_quality`: Dates/snippets/images/structured cards available?
-- `latency`: Relative score from measured seconds.
-- `cost`: Relative score from provider pricing.
-- `parseability`: Is the response easy to normalize?
-
-## Suggested Engine Weights
-
-Weights are in `engine_profiles.json`. Adjust them based on your actual priorities.
-
-Typical defaults:
-
-- MediaEngine LLM: grounding and synthesis quality dominate.
-- MediaEngine Search: relevance, Chinese coverage, freshness dominate.
-- QueryEngine LLM: JSON compliance and classification accuracy dominate.
-- QueryEngine Search: relevance, freshness, and metadata dominate.
-- ReportEngine LLM: long-form structure and language quality dominate.
-- ForumEngine LLM: latency/cost and concise quality dominate.
-- MindSpider LLM: keyword extraction and Chinese handling dominate.
-
-## Workflow
-
-1. Copy `providers.example.json` to `providers.local.json`.
-2. Fill candidate APIs, base URLs, models, and keys.
-3. Run the benchmark:
+Set the required keys in the current PowerShell session:
 
 ```powershell
 cd D:\huang\Desktop\Project\api_evaluation
-python run_evaluation.py --providers providers.local.json --out results
+
+$env:DEEPSEEK_API_KEY="your_deepseek_key"
+$env:DASHSCOPE_API_KEY="your_qwen_key"
+$env:BOCHA_WEB_SEARCH_API_KEY="your_bocha_key"
 ```
 
-4. Review:
+Run a quick smoke test:
 
-- `results/raw_results.jsonl`: every raw API call result.
-- `results/summary.csv`: provider scores per engine/task.
-- `results/recommendations.md`: ranked recommendation per engine.
+```powershell
+python run_evaluation.py --providers providers.local.json --out results_smoke_real
+```
 
-## Important Evaluation Rules
+Run the more reliable 3-run evaluation:
 
-- Test each provider with the same prompts and same temperature.
-- Run at least 3 repetitions for finalists.
-- Record failures, invalid JSON, and timeouts as real signal.
-- Use representative Chinese public-opinion topics, not generic trivia.
-- Separate search API quality from LLM quality.
-- Do not pick a provider based on one spectacular answer. Prefer stable performance.
+```powershell
+python run_evaluation.py --providers providers.local.json --out results_full_r3 --repetitions 3
+```
 
-## Interpreting Results
+Review outputs:
 
-For each engine, choose:
+```powershell
+notepad results_full_r3\summary.csv
+notepad results_full_r3\recommendations.md
+notepad results_full_r3\manual_review.csv
+```
 
-- Best quality provider if quality gap is large.
-- Cheapest acceptable provider if quality scores are close.
-- Fastest acceptable provider for ForumEngine-style repeated calls.
-- Provider with best JSON/schema reliability for QueryEngine.
-- Provider with best long-context output for ReportEngine.
+If only the summary files need to be rebuilt from existing raw results, use:
 
-Final selection should look like:
+```powershell
+python run_evaluation.py --providers providers.local.json --out results_full_r3 --summarize-only
+```
 
-| Engine | LLM API | Search API | Reason |
-| --- | --- | --- | --- |
-| MediaEngine | model/provider A | Anspire/Bocha | best Chinese retrieval + grounded synthesis |
-| QueryEngine | model/provider B | Tavily + Anspire | best JSON + stance classification |
-| ReportEngine | model/provider C | N/A | best long report quality |
-| ForumEngine | model/provider D | N/A | fast and cheap |
-| MindSpider | model/provider E | N/A | good keyword extraction at low cost |
+## Scoring Method
+
+Each provider is scored on a 0-5 scale. Engine-level weighted scores are computed from metrics in `engine_profiles.json`.
+
+LLM metrics include:
+
+- `task_success`
+- `format_compliance`
+- `grounding`
+- `reasoning_quality`
+- `language_quality`
+- `latency`
+- `cost`
+- `stability`
+
+Search metrics include:
+
+- `relevance`
+- `freshness`
+- `source_quality`
+- `coverage`
+- `metadata_quality`
+- `latency`
+- `cost`
+- `parseability`
+
+The script also checks:
+
+- required JSON fields
+- required keywords
+- forbidden hallucination-prone phrases
+- output length constraints
+- API latency and call failures
+
+Automatic scoring is useful for screening, but final production selection should include manual review of `manual_review.csv`, especially for:
+
+- QueryEngine JSON classification and gap filling.
+- ReportEngine long-form report quality.
+- MediaEngine rumor/noise filtering.
+- Bocha result relevance and source diversity.
+
+## Current Deployment Suggestions
+
+Quality-oriented setup:
+
+```env
+MEDIA_ENGINE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+MEDIA_ENGINE_MODEL_NAME=qwen-plus
+
+QUERY_ENGINE_BASE_URL=https://api.deepseek.com
+QUERY_ENGINE_MODEL_NAME=deepseek-chat
+
+REPORT_ENGINE_BASE_URL=https://api.deepseek.com
+REPORT_ENGINE_MODEL_NAME=deepseek-chat
+
+FORUM_HOST_BASE_URL=https://api.deepseek.com
+FORUM_HOST_MODEL_NAME=deepseek-chat
+
+MINDSPIDER_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+MINDSPIDER_MODEL_NAME=qwen-plus
+
+SEARCH_TOOL_TYPE=BochaAPI
+BOCHA_BASE_URL=https://api.bocha.cn/v1/ai-search
+```
+
+Simple low-latency setup:
+
+```env
+MEDIA_ENGINE_BASE_URL=https://api.deepseek.com
+MEDIA_ENGINE_MODEL_NAME=deepseek-chat
+
+QUERY_ENGINE_BASE_URL=https://api.deepseek.com
+QUERY_ENGINE_MODEL_NAME=deepseek-chat
+
+REPORT_ENGINE_BASE_URL=https://api.deepseek.com
+REPORT_ENGINE_MODEL_NAME=deepseek-chat
+
+FORUM_HOST_BASE_URL=https://api.deepseek.com
+FORUM_HOST_MODEL_NAME=deepseek-chat
+
+MINDSPIDER_BASE_URL=https://api.deepseek.com
+MINDSPIDER_MODEL_NAME=deepseek-chat
+
+SEARCH_TOOL_TYPE=BochaAPI
+BOCHA_BASE_URL=https://api.bocha.cn/v1/ai-search
+```
+
+## Extending the Evaluation
+
+To add another LLM provider:
+
+1. Add it to `providers.local.json`.
+2. Use an environment variable for the key.
+3. Set `"enabled": true`.
+4. Rerun the benchmark.
+
+To add another search provider:
+
+1. Add the provider config.
+2. Implement a `call_*` adapter in `run_evaluation.py`.
+3. Normalize its response to `{answer, results, images, cards}` where possible.
+4. Add test cases if the provider has special capabilities.
+
+Recommended future comparisons:
+
+- Enable `qwen-max-compatible` for a second-round quality test.
+- Compare `bocha` with Anspire for Chinese search latency/relevance tradeoffs.
+- Add real project artifacts as test cases from MediaEngine, QueryEngine, and ReportEngine outputs.
+- Add actual provider pricing in `providers.local.json` so cost scoring becomes meaningful.
