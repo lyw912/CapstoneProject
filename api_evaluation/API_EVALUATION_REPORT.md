@@ -2,7 +2,7 @@
 
 Date: 2026-06-14  
 Scope: Independent API evaluation for MediaEngine, QueryEngine, ReportEngine, ForumEngine, and MindSpider.  
-Evaluation folder: `D:\huang\Desktop\Project\api_evaluation`
+Evaluation folder: `api_evaluation/` within the repository.
 
 ## Executive Summary
 

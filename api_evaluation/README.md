@@ -90,7 +90,7 @@ Large raw outputs are intentionally ignored:
 Set the required keys in the current PowerShell session:
 
 ```powershell
-cd D:\huang\Desktop\Project\api_evaluation
+cd CapstoneProject\api_evaluation
 
 $env:DEEPSEEK_API_KEY="your_deepseek_key"
 $env:DASHSCOPE_API_KEY="your_qwen_key"

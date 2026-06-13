@@ -11,7 +11,7 @@ Use this runbook for the current selection round:
 PowerShell:
 
 ```powershell
-cd D:\huang\Desktop\Project\api_evaluation
+cd CapstoneProject\api_evaluation
 
 $env:DEEPSEEK_API_KEY="your_deepseek_key"
 $env:DASHSCOPE_API_KEY="your_qwen_key"
