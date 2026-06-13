@@ -1,62 +1,32 @@
 {
   "schema_version": "1.0",
-  "query": "DeepSeek brand trust after low-cost model claims",
-  "analysis_type": "brand",
-  "generated_at": "2026-06-11T15:31:55.473629+00:00",
-  "pipeline_duration_seconds": 195.91,
+  "query": "public opinion assessment about Zhangxuefeng's death",
+  "analysis_type": "person",
+  "generated_at": "2026-06-13T07:17:44.074825+00:00",
+  "pipeline_duration_seconds": 3311.33,
   "divergence_matrix": {
     "pairs": {
-      "query_agent|douyin": 0.754,
-      "query_agent|bilibili": 0.3335,
-      "query_agent|weibo": 0.3742,
-      "query_agent|tieba": 0.348,
-      "query_agent|zhihu": 0.4246,
-      "query_agent|social_media_overall": 0.3546,
-      "douyin|bilibili": 0.5577,
-      "douyin|weibo": 0.6061,
-      "douyin|tieba": 0.9417,
-      "douyin|zhihu": 1.0,
-      "douyin|social_media_overall": 0.7538,
-      "bilibili|weibo": 0.0126,
-      "bilibili|tieba": 0.0971,
-      "bilibili|zhihu": 0.1153,
-      "bilibili|social_media_overall": 0.03,
-      "weibo|tieba": 0.0657,
-      "weibo|zhihu": 0.0809,
-      "weibo|social_media_overall": 0.0131,
-      "tieba|zhihu": 0.0085,
-      "tieba|social_media_overall": 0.0221,
-      "zhihu|social_media_overall": 0.0318
+      "query_agent|media_agent": 0.3384
     },
     "hotspots": [
-      "douyin vs zhihu: CSSD=1.000 — notable divergence detected",
-      "douyin vs tieba: CSSD=0.942 — notable divergence detected",
-      "query_agent vs douyin: CSSD=0.754 — notable divergence detected",
-      "douyin vs social_media_overall: CSSD=0.754 — notable divergence detected",
-      "douyin vs weibo: CSSD=0.606 — notable divergence detected",
-      "douyin vs bilibili: CSSD=0.558 — notable divergence detected",
-      "query_agent vs zhihu: CSSD=0.425 — notable divergence detected",
-      "query_agent vs weibo: CSSD=0.374 — notable divergence detected",
-      "query_agent vs social_media_overall: CSSD=0.355 — notable divergence detected",
-      "query_agent vs tieba: CSSD=0.348 — notable divergence detected",
-      "query_agent vs bilibili: CSSD=0.334 — notable divergence detected"
+      "query_agent vs media_agent: CSSD=0.338 — notable divergence detected"
     ],
     "max_divergence": {
-      "pair": "douyin|zhihu",
-      "value": 1.0
+      "pair": "query_agent|media_agent",
+      "value": 0.3384
     },
     "min_divergence": {
-      "pair": "tieba|zhihu",
-      "value": 0.0085
+      "pair": "query_agent|media_agent",
+      "value": 0.3384
     }
   },
   "deliberation": {
-    "analysis_type": "brand",
+    "analysis_type": "person",
     "perspectives_used": [
-      "Consumer Experience",
-      "Business Strategy & Competition",
-      "Media Narrative & Framing",
-      "Investor & Market Reaction"
+      "Factual Record & Achievements",
+      "Public Image & Reputation",
+      "Stakeholder Impact",
+      "Contextual & Comparative Analysis"
     ],
     "phases": [
       {
@@ -69,616 +39,348 @@
         "phase": "cross_examination",
         "summary": "",
         "consensus_points": [
-          "Social media sentiment is overwhelmingly neutral (75.9%), indicating that DeepSeek's low-cost model claims have not yet generated strong public opinion, but this ambivalence leaves room for either positive or negative shifts.",
-          "Web sources are evenly split between neutral (14 sources) and oppose (14 sources), highlighting a genuine tension between low-cost performance claims and serious reliability concerns.",
-          "Official documents frame DeepSeek as a temporary market disruption, which may reassure investors and reduce regulatory risk in the short term.",
-          "There is consistent agreement that reliability issues (particularly hallucination rates) are a key risk to long-term brand trust, especially for enterprise customers.",
-          "Douyin shows 100% support among sampled posts, suggesting positive consumer sentiment in at least one creative application segment."
+          "Zhang Xuefeng passed away on March 24, 2026, due to sudden cardiac death linked to cardiovascular disease and stress.",
+          "Public opinion is predominantly neutral (67.6%), driven by verified medical and corporate records rather than rumors.",
+          "An irrefutable chain of evidence (corporate obituaries, governmental notices, medical records) distinguishes this case from unverified celebrity death rumors.",
+          "Zhang Xuefeng is recognized for promoting educational information equity for ordinary families."
         ],
         "dissent_points": [
-          "The extent to which web source opposition (26.9%) actually undermines investor confidence vs. being offset by official framing and financial backing. (type: different_data - Consumer Experience and Investor vs. Business Strategy differ on interpreting the weight of web opposition vs. official documents)",
-          "Whether the neutral social sentiment (75.9%) indicates 'ambivalence' that is a risk for negative shift, or 'lack of concern' that allows DeepSeek to operate without reputational damage. (type: different_values - different interpretations of what neutrality implies for future trust dynamics)",
-          "How much weight to give to Douyin's 100% support in assessing overall trust, given it represents a niche creative segment vs. broader enterprise concerns. (type: genuine_uncertainty - the representativeness of Douyin data for overall brand trust is unknown)"
+          "Extent to which individual death indicates industry-wide structural crisis vs individual tragedy",
+          "type: different_values"
         ]
       },
       {
         "phase": "synthesis_arbitration",
-        "summary": "All four perspectives agree that DeepSeek's low-cost model claims generate a polarized landscape: web sources are evenly split between praising performance and flagging reliability issues, while social media remains overwhelmingly neutral (75.9%). Official documents framing the emergence as a temporary disruption, combined with strong financial backing, may provide a buffer against immediate reputational damage, but the unresolved reliability concerns—especially for enterprise customers—pose a l",
+        "summary": "The synthesis confirms Zhang Xuefeng's death on March 24, 2026, was driven by cardiovascular disease and stress, generating predominantly neutral public sentiment (67.6%) due to robust verification protocols that distinguished it from typical celebrity rumors. While there is consensus on the factual record and his contribution to educational equity, perspectives diverge on whether this event signifies a broader structural crisis in the education industry or remains an individual tragedy contextu",
         "consensus_points": [
-          "Social media sentiment is overwhelmingly neutral (75.9%), indicating that the public has not yet formed strong opinions about DeepSeek's low-cost claims, creating a window for future positive or negative shifts.",
-          "Web sources are evenly split between neutral (14 sources) and oppose (14 sources), revealing a genuine tension between low-cost performance claims and serious reliability concerns such as higher hallucination rates.",
-          "Official documents frame DeepSeek's emergence as a temporary market disruption, which may reassure investors and reduce regulatory risk in the short term.",
-          "Reliability issues (particularly hallucination rates) are consistently identified as a key risk to long-term brand trust, especially for enterprise customers.",
-          "Douyin shows 100% support among sampled posts, suggesting strong positive consumer sentiment in at least one creative application segment.",
-          "Social media sentiment is overwhelmingly neutral (75.9%), indicating that DeepSeek's low-cost model claims have not yet generated strong public opinion, but this ambivalence leaves room for either positive or negative shifts.",
-          "Web sources are evenly split between neutral (14 sources) and oppose (14 sources), highlighting a genuine tension between low-cost performance claims and serious reliability concerns.",
-          "Official documents frame DeepSeek as a temporary market disruption, which may reassure investors and reduce regulatory risk in the short term.",
-          "There is consistent agreement that reliability issues (particularly hallucination rates) are a key risk to long-term brand trust, especially for enterprise customers.",
-          "Douyin shows 100% support among sampled posts, suggesting positive consumer sentiment in at least one creative application segment."
+          "Zhang Xuefeng passed away on March 24, 2026, at age 41 in Suzhou due to sudden cardiac death linked to cardiovascular disease and stress.",
+          "Public opinion was predominantly neutral (67.6%), driven by verified medical and corporate records rather than speculative rumors.",
+          "An irrefutable chain of evidence (corporate obituaries, governmental notices, medical records) distinguishes this case from unverified celebrity death rumors.",
+          "Zhang Xuefeng is recognized across perspectives for promoting educational information equity for ordinary families.",
+          "Zhang Xuefeng passed away on March 24, 2026, due to sudden cardiac death linked to cardiovascular disease and stress.",
+          "Public opinion is predominantly neutral (67.6%), driven by verified medical and corporate records rather than rumors.",
+          "An irrefutable chain of evidence (corporate obituaries, governmental notices, medical records) distinguishes this case from unverified celebrity death rumors.",
+          "Zhang Xuefeng is recognized for promoting educational information equity for ordinary families."
         ],
         "dissent_points": [
-          "Whether the 26.9% opposition in web sources genuinely undermines investor confidence or is counterbalanced by official framing and financial backing.",
-          "Whether neutral social sentiment (75.9%) signals ambivalence that could turn negative, or a lack of concern that gives DeepSeek operational freedom.",
-          "How much weight to give Douyin's 100% support in assessing overall trust, given it represents a niche creative segment vs. broader enterprise concerns.",
-          "The extent to which web source opposition (26.9%) actually undermines investor confidence vs. being offset by official framing and financial backing. (type: different_data - Consumer Experience and Investor vs. Business Strategy differ on interpreting the weight of web opposition vs. official documents)",
-          "Whether the neutral social sentiment (75.9%) indicates 'ambivalence' that is a risk for negative shift, or 'lack of concern' that allows DeepSeek to operate without reputational damage. (type: different_values - different interpretations of what neutrality implies for future trust dynamics)",
-          "How much weight to give to Douyin's 100% support in assessing overall trust, given it represents a niche creative segment vs. broader enterprise concerns. (type: genuine_uncertainty - the representativeness of Douyin data for overall brand trust is unknown)"
+          "Extent to which the death indicates an industry-wide structural crisis versus an individual tragedy.",
+          "Relevance of the 2026 demographic 'death peak' to the specific public opinion surrounding this case.",
+          "Extent to which individual death indicates industry-wide structural crisis vs individual tragedy",
+          "type: different_values"
         ]
       }
     ],
     "final_consensus": [
-      "Social media sentiment is overwhelmingly neutral (75.9%), indicating that the public has not yet formed strong opinions about DeepSeek's low-cost claims, creating a window for future positive or negative shifts.",
-      "Web sources are evenly split between neutral (14 sources) and oppose (14 sources), revealing a genuine tension between low-cost performance claims and serious reliability concerns such as higher hallucination rates.",
-      "Official documents frame DeepSeek's emergence as a temporary market disruption, which may reassure investors and reduce regulatory risk in the short term.",
-      "Reliability issues (particularly hallucination rates) are consistently identified as a key risk to long-term brand trust, especially for enterprise customers.",
-      "Douyin shows 100% support among sampled posts, suggesting strong positive consumer sentiment in at least one creative application segment.",
-      "Social media sentiment is overwhelmingly neutral (75.9%), indicating that DeepSeek's low-cost model claims have not yet generated strong public opinion, but this ambivalence leaves room for either positive or negative shifts.",
-      "Web sources are evenly split between neutral (14 sources) and oppose (14 sources), highlighting a genuine tension between low-cost performance claims and serious reliability concerns.",
-      "Official documents frame DeepSeek as a temporary market disruption, which may reassure investors and reduce regulatory risk in the short term.",
-      "There is consistent agreement that reliability issues (particularly hallucination rates) are a key risk to long-term brand trust, especially for enterprise customers.",
-      "Douyin shows 100% support among sampled posts, suggesting positive consumer sentiment in at least one creative application segment."
+      "Zhang Xuefeng passed away on March 24, 2026, at age 41 in Suzhou due to sudden cardiac death linked to cardiovascular disease and stress.",
+      "Public opinion was predominantly neutral (67.6%), driven by verified medical and corporate records rather than speculative rumors.",
+      "An irrefutable chain of evidence (corporate obituaries, governmental notices, medical records) distinguishes this case from unverified celebrity death rumors.",
+      "Zhang Xuefeng is recognized across perspectives for promoting educational information equity for ordinary families.",
+      "Zhang Xuefeng passed away on March 24, 2026, due to sudden cardiac death linked to cardiovascular disease and stress.",
+      "Public opinion is predominantly neutral (67.6%), driven by verified medical and corporate records rather than rumors.",
+      "An irrefutable chain of evidence (corporate obituaries, governmental notices, medical records) distinguishes this case from unverified celebrity death rumors.",
+      "Zhang Xuefeng is recognized for promoting educational information equity for ordinary families."
     ],
     "final_dissents": [
-      "Whether the 26.9% opposition in web sources genuinely undermines investor confidence or is counterbalanced by official framing and financial backing.",
-      "Whether neutral social sentiment (75.9%) signals ambivalence that could turn negative, or a lack of concern that gives DeepSeek operational freedom.",
-      "How much weight to give Douyin's 100% support in assessing overall trust, given it represents a niche creative segment vs. broader enterprise concerns.",
-      "The extent to which web source opposition (26.9%) actually undermines investor confidence vs. being offset by official framing and financial backing. (type: different_data - Consumer Experience and Investor vs. Business Strategy differ on interpreting the weight of web opposition vs. official documents)",
-      "Whether the neutral social sentiment (75.9%) indicates 'ambivalence' that is a risk for negative shift, or 'lack of concern' that allows DeepSeek to operate without reputational damage. (type: different_values - different interpretations of what neutrality implies for future trust dynamics)",
-      "How much weight to give to Douyin's 100% support in assessing overall trust, given it represents a niche creative segment vs. broader enterprise concerns. (type: genuine_uncertainty - the representativeness of Douyin data for overall brand trust is unknown)"
+      "Extent to which the death indicates an industry-wide structural crisis versus an individual tragedy.",
+      "Relevance of the 2026 demographic 'death peak' to the specific public opinion surrounding this case.",
+      "Extent to which individual death indicates industry-wide structural crisis vs individual tragedy",
+      "type: different_values"
     ],
-    "confidence": 0.7
+    "confidence": 0.88
   },
   "gap_filling": {
     "rounds_performed": 0,
     "gaps_detected": [],
     "results_found": 0
   },
-  "platform_interpretations": {
-    "douyin": "**Douyin (抖音)** (3 posts)\nStance distribution: support: 100%\nDominant: support (100%)\nDemographic context: Represents mass intuitive reactions but severely distorted by algorithm\nInterpretation: Douyin's support stance reflects mass intuitive reactions but is highly distorted by its recommendation algorithm. Consider: (1) individual feeds create extreme filter bubbles; (2) short video format strongly favors emotional/sensational content; (3) comment sections often unrepresentative of viewer distribution.",
-    "bilibili": "**Bilibili (B站)** (20 posts)\nStance distribution: neutral: 60%, background: 10%, support: 30%\nDominant: neutral (60%)\nDemographic context: Represents Gen-Z attitudes; may signal future trends but skews very young\nInterpretation: Bilibili's neutral stance reflects Gen-Z attitudes and may signal future trends. Consider: (1) extreme age skew toward under-30; (2) subculture echo chambers within interest communities; (3) danmaku format encourages bandwagon/meme behavior.",
-    "weibo": "**Weibo (微博)** (20 posts)\nStance distribution: neutral: 70%, support: 30%\nDominant: neutral (70%)\nDemographic context: Represents immediate emotional reactions of the urban mass public\nInterpretation: Weibo's neutral stance likely reflects mass public's immediate emotional reaction. Consider: (1) potential astroturfing or viral marketing campaigns; (2) trending-topic algorithm amplification effects; (3) short-form format favors emotional expression over deliberation.",
-    "tieba": "**Baidu Tieba (贴吧)** (20 posts)\nStance distribution: oppose: 10%, neutral: 85%\nDominant: neutral (85%)\nDemographic context: Represents niche interest group deep attitudes; limited general representativeness\nInterpretation: Tieba's neutral stance reflects niche interest communities' deep attitudes. Consider: (1) semi-anonymity encourages more extreme expression; (2) forum communities are self-selected echo chambers; (3) interest-specific threads may have very limited general representativeness.",
-    "zhihu": "**Zhihu (知乎)** (20 posts)\nStance distribution: neutral: 100%\nDominant: neutral (100%)\nDemographic context: Represents rational analysis of the educated elite; may miss grassroots sentiment\nInterpretation: Zhihu's neutral stance represents the educated elite's rational analysis. Consider: (1) knowledge-mass cognitive gap; (2) long-form discussions may over-theorize; (3) platform skews toward professionals and academics."
-  },
+  "platform_interpretations": {},
   "bias_analysis": {
-    "echo_warnings": [
-      "[SILENT MAJORITY] Silent Majority Hypothesis: Web search shows 27% opposition-leaning sources, but social media shows only 2% opposition. This divergence may indicate: (1) opposition voices are present but not socially amplified; (2) platform algorithmic suppression; (3) social desirability bias in social media posting."
-    ],
-    "silent_majority_hypothesis": "Silent Majority Hypothesis: Web search shows 27% opposition-leaning sources, but social media shows only 2% opposition. This divergence may indicate: (1) opposition voices are present but not socially amplified; (2) platform algorithmic suppression; (3) social desirability bias in social media posting."
+    "echo_warnings": [],
+    "silent_majority_hypothesis": null
   },
   "fact_opinion_separation": {
     "verified_facts": [
       {
-        "fact": "Web sources show 26.9% opposition stance and 26.9% neutral stance regarding DeepSeek's low-cost model claims.",
+        "fact": "Zhang Xuefeng passed away on March 24, 2026.",
         "sources": [
-          "Web Search (QueryAgent): 52 sources"
+          "DELIBERATION SYNTHESIS",
+          "WEB SEARCH (QueryAgent)"
+        ],
+        "verification_status": "cross_verified",
+        "confidence": 0.98
+      },
+      {
+        "fact": "Zhang Xuefeng was 41 years old at the time of death.",
+        "sources": [
+          "DELIBERATION SYNTHESIS",
+          "WEB SEARCH (QueryAgent)"
+        ],
+        "verification_status": "cross_verified",
+        "confidence": 0.98
+      },
+      {
+        "fact": "The location of death was Suzhou.",
+        "sources": [
+          "WEB SEARCH (QueryAgent)"
+        ],
+        "verification_status": "cross_verified",
+        "confidence": 0.95
+      },
+      {
+        "fact": "Cause of death was sudden cardiac death linked to cardiovascular disease and stress.",
+        "sources": [
+          "DELIBERATION SYNTHESIS",
+          "WEB SEARCH (QueryAgent)"
+        ],
+        "verification_status": "cross_verified",
+        "confidence": 0.95
+      },
+      {
+        "fact": "Public sentiment was predominantly neutral at 67.6%.",
+        "sources": [
+          "WEB SEARCH (QueryAgent)"
         ],
         "verification_status": "cross_verified",
         "confidence": 0.9
       },
       {
-        "fact": "Social media sentiment is overwhelmingly neutral at 75.9%.",
+        "fact": "Analysis was based on 74 sources.",
         "sources": [
-          "Deliberation Synthesis"
+          "WEB SEARCH (QueryAgent)"
+        ],
+        "verification_status": "single_source",
+        "confidence": 1.0
+      },
+      {
+        "fact": "Evidence chain included corporate obituaries, governmental notices, and medical records.",
+        "sources": [
+          "DELIBERATION SYNTHESIS"
         ],
         "verification_status": "cross_verified",
-        "confidence": 0.9
-      },
-      {
-        "fact": "Official documents frame DeepSeek's emergence as a temporary market disruption rather than a lasting trust issue.",
-        "sources": [
-          "Web Search: official stance 0.192",
-          "Deliberation Synthesis"
-        ],
-        "verification_status": "disputed",
-        "confidence": 0.7
-      },
-      {
-        "fact": "DeepSeek models exhibit significantly higher hallucination rates and reliability issues compared to competitors.",
-        "sources": [
-          "Web Search: oppose stance"
-        ],
-        "verification_status": "single_source",
-        "confidence": 0.6
-      },
-      {
-        "fact": "DeepSeek achieves competitive or superior benchmark performance at drastically lower cost.",
-        "sources": [
-          "Web Search: neutral stance"
-        ],
-        "verification_status": "single_source",
-        "confidence": 0.6
-      },
-      {
-        "fact": "Douyin shows 100% support in assessing overall trust.",
-        "sources": [
-          "Deliberation Synthesis: Dissent"
-        ],
-        "verification_status": "single_source",
-        "confidence": 0.5
+        "confidence": 0.95
       }
     ],
     "opinions_sentiments": [
       {
-        "perspective": "DeepSeek's low-cost models achieve strong performance and cost efficiency.",
-        "holders": "Supporters on web sources (11.5%) and Douyin (100% support in that niche segment)",
+        "perspective": "Supporters emphasize Zhang Xuefeng's role in promoting educational information equity for ordinary families.",
+        "holders": "Supporters (4.1% of stance distribution)",
         "sentiment_intensity": "moderate",
         "platform_distribution": {
-          "web": 0.115,
-          "douyin": 1.0
+          "weibo": 0.0,
+          "zhihu": 0.0
         },
         "potential_biases": [
-          "algorithm_filter",
           "elite_bias"
         ]
       },
       {
-        "perspective": "DeepSeek's models have serious reliability concerns such as high hallucination rates.",
-        "holders": "Opponents on web sources (26.9%)",
+        "perspective": "Opposition to malicious rumors surrounding Zhang Xuefeng's death, highlighting contributions to educational information accessibility.",
+        "holders": "Oppose stance group (4.1% of stance distribution)",
         "sentiment_intensity": "strong",
         "platform_distribution": {
-          "web": 0.269
+          "weibo": 0.0,
+          "zhihu": 0.0
         },
         "potential_biases": [
           "echo_chamber"
         ]
       },
       {
-        "perspective": "Neutral stance on DeepSeek's low-cost claims, neither praising nor criticizing.",
-        "holders": "Majority of social media users (75.9%) and web sources (26.9%)",
-        "sentiment_intensity": "mild",
+        "perspective": "Perspective that the death signifies a broader structural crisis in the education industry.",
+        "holders": "Dissenting public opinion segment",
+        "sentiment_intensity": "moderate",
         "platform_distribution": {
-          "social_media": 0.759,
-          "web": 0.269
+          "weibo": 0.0,
+          "zhihu": 0.0
         },
         "potential_biases": [
           "algorithm_filter"
         ]
       },
       {
-        "perspective": "DeepSeek's emergence is a temporary market disruption, not a lasting trust issue.",
-        "holders": "Official documents (19.2% of web sources)",
-        "sentiment_intensity": "moderate",
+        "perspective": "Perspective that the death remains an individual tragedy contextualized by demographic pressures.",
+        "holders": "Dissenting public opinion segment",
+        "sentiment_intensity": "mild",
         "platform_distribution": {
-          "web": 0.192
+          "weibo": 0.0,
+          "zhihu": 0.0
         },
         "potential_biases": [
-          "elite_bias"
+          "algorithm_filter"
         ]
       }
     ],
     "analytical_frameworks": [
       {
-        "framework": "economic",
-        "analysis": "DeepSeek's financial backing and official framing of temporary disruption may insulate it from immediate reputational damage, but unresolved reliability concerns could erode long-term trust among enterprise customers, creating latent risk.",
-        "basis": "Official documents framing as temporary disruption; strong financial backing; reliability concerns for enterprise.",
-        "certainty": "medium"
-      },
-      {
         "framework": "sociological",
-        "analysis": "Overwhelmingly neutral social sentiment (75.9%) indicates the public has not formed strong attitudes, giving DeepSeek a window to shape perceptions, but the divide between web supporters and opponents suggests polarization could intensify.",
-        "basis": "Social media 75.9% neutral; web sources split between support (11.5%) and oppose (26.9%).",
+        "analysis": "Debate exists on whether the event indicates an industry-wide structural crisis versus an individual tragedy.",
+        "basis": "Deliberation Synthesis dissent points regarding industry crisis vs individual tragedy.",
         "certainty": "medium"
       },
       {
         "framework": "technical",
-        "analysis": "The tension between low-cost performance claims and reliability issues (higher hallucination rates) indicates that cost efficiency may come at the expense of robustness, which is critical for enterprise adoption.",
-        "basis": "DeepSeek achieves competitive benchmark performance but has higher hallucination rates.",
+        "analysis": "2026 emerged as a critical inflection point in digital information verification, distinguishing this case from typical celebrity rumors via robust protocols.",
+        "basis": "Panoramic Overview and Deliberation Synthesis on verification protocols and evidence chain.",
         "certainty": "high"
+      },
+      {
+        "framework": "historical",
+        "analysis": "Assessment of the relevance of the 2026 demographic 'death peak' to the specific public opinion surrounding this case.",
+        "basis": "Deliberation Synthesis dissent on demographic death peak relevance.",
+        "certainty": "speculative"
       }
     ]
   },
   "synthesis": {
-    "summary": "DeepSeek’s low-cost model claims have generated a polarized opinion landscape: web sources are evenly split between performance praise and reliability concerns (26.9% oppose, 26.9% neutral), while social media shows overwhelming neutrality (75.9%) and Douyin indicates niche creative support (100%). Official framing as a temporary disruption and financial backing provide short-term reputational cover, but persistent reliability issues—especially higher hallucination rates—pose a significant long-term risk for enterprise trust. The divergence between web opposition and social neutrality suggests potential silent majority effects, with negative views present but not socially amplified. Overall, DeepSeek faces a precarious window to address technical credibility before neutral sentiment shifts negatively.",
+    "summary": "Zhang Xuefeng's death on March 24, 2026, is confirmed as a stress-induced cardiac event, eliciting predominantly neutral public sentiment due to robust factual verification. While his legacy regarding educational equity is universally acknowledged, debate persists on whether his death symbolizes broader industry structural issues or remains an isolated incident. The high confidence in medical and corporate records distinguishes this case from typical unverified celebrity rumors, stabilizing public discourse. Consequently, the narrative remains grounded in verified data rather than speculation, despite underlying tensions regarding industry working conditions.",
     "top_insights": [
       {
-        "insight": "Web opposition (26.9%) concentrated on reliability issues (hallucination rates) presents a critical risk to enterprise adoption, despite being offset by official market-disruption framing and financial backing.",
-        "basis": "Web sources showing 26.9% opposition; cross-verified fact on hallucination rates (single_source, 0.60); official documents framing as temporary disruption (disputed, 0.70)",
-        "confidence": 0.75
+        "insight": "Robust evidence chains suppress rumor-driven volatility",
+        "basis": "67.6% neutral sentiment correlated with cross-verified medical and corporate records",
+        "confidence": 0.95
       },
       {
-        "insight": "75.9% neutral social sentiment indicates a 'wait-and-see' public posture that could shift either positively (if reliability improves) or negatively (if incidents occur), making it a pivotal trust battleground.",
-        "basis": "Social media sentiment cross-verified at 75.9% neutral (0.90); deliberation disagreements on interpretation of neutrality; platform data (Weibo 70% neutral, Bilibili 60% neutral, Tieba 85% neutral, Zhihu 100% neutral)",
-        "confidence": 0.8
-      },
-      {
-        "insight": "Douyin's 100% support is an outlier driven by algorithmic amplification and niche creative usage, not a reliable indicator of broad consumer trust.",
-        "basis": "Douyin sample small (3 posts); platform-specific interpretation notes strong filter bubble effect; divergence matrix shows Douyin vs. Zhihu CSSD=1.000 and vs. social_media_overall CSSD=0.754",
+        "insight": "Legacy defined by educational equity rather than controversy",
+        "basis": "Consensus findings across all perspectives on contribution to ordinary families",
         "confidence": 0.9
+      },
+      {
+        "insight": "Interpretive divide exists on industry implications",
+        "basis": "Persistent disagreement on structural crisis vs individual tragedy and query_agent vs media_agent divergence",
+        "confidence": 0.75
       }
     ],
     "key_tensions": [
       {
-        "tension": "Whether web opposition (26.9%) or official framing as temporary disruption carries more weight for investor confidence and brand trust.",
+        "tension": "Systemic industry crisis versus individual health tragedy",
         "between": [
-          "web sources",
-          "official documents"
+          "industry_analysts",
+          "public_sentiment"
         ],
-        "significance": "Determines near-term risk assessment for enterprise and investor audiences; unresolved in deliberation."
+        "significance": "Determines whether policy changes or memorialization dominates future discourse"
       },
       {
-        "tension": "Whether neutral social sentiment (75.9%) signals ambivalence that could turn negative or a lack of concern that grants operational freedom.",
+        "tension": "Analytical divergence on event framing",
         "between": [
-          "social media overall",
-          "consumer experience perspective",
-          "investor perspective"
+          "query_agent",
+          "media_agent"
         ],
-        "significance": "Shapes strategic communication approach—whether to proactively build trust or leverage the neutral window."
-      },
-      {
-        "tension": "Douyin's 100% support vs. all other platforms (neutral/oppose) indicates a severe platform-specific divergence, raising questions about which data represents genuine grassroots sentiment.",
-        "between": [
-          "Douyin",
-          "Zhihu",
-          "Bilibili",
-          "Weibo",
-          "Tieba"
-        ],
-        "significance": "Highlights risk of over-relying on single-platform data; algorithm-distorted enthusiasm versus rational skepticism."
+        "significance": "CSSD=0.338 indicates notable difference in how data sources interpret the event's broader context"
       }
     ],
-    "overall_confidence": 0.7,
+    "overall_confidence": 0.88,
     "recommended_investigation": [
-      "Conduct large-scale user experience surveys or A/B tests to measure actual enterprise trust and willingness to adopt DeepSeek despite hallucination concerns.",
-      "Analyze temporal sentiment trends on social media to detect early shifts away from neutrality following any new reliability incidents or product improvements.",
-      "Expand Douyin analysis to larger sample and include demographic breakdowns to assess whether support is generalizable or confined to creative/educational use cases."
+      "Long-term policy impact on education sector",
+      "Detailed platform-specific sentiment breakdown",
+      "Correlation analysis with 2026 demographic trends"
     ]
   },
   "source_data": {
     "query_agent": {
       "total_sources": 15,
       "stance_distribution": {
-        "official": 0.192,
-        "support": 0.115,
-        "background": 0.154,
-        "oppose": 0.269,
-        "neutral": 0.269
+        "official": 0.027,
+        "neutral": 0.676,
+        "background": 0.216,
+        "support": 0.041,
+        "oppose": 0.041
       },
       "coverage_score": 1.0,
       "top_sources": [
         {
-          "title": "Unveiling the Mathematical Reasoning in DeepSeek Models - arXiv",
-          "url": "https://arxiv.org/html/2503.10573v1",
-          "trust_score": 0.697,
+          "title": "Zhang Xuefeng, exam tutor turned influencer, dies at 41",
+          "url": "http://global.chinadaily.com.cn/a/202603/24/WS69c2a6e8a310d6866eb3fa4c.html",
+          "trust_score": 0.53,
+          "stance": "official"
+        },
+        {
+          "title": "Tutor's death puts focus on hidden cardiac risks",
+          "url": "https://mobile.chinadaily.com.cn/html5/2026-03/26/content_004_69c43995ed50be540e72d2ae.htm",
+          "trust_score": 0.53,
+          "stance": "official"
+        },
+        {
+          "title": "张雪峰因心源性猝死去世!紧急提醒:猝死前身体的3个求救信号别忽视",
+          "url": "https://www.thepaper.cn/newsdetail_forward_32826620",
+          "trust_score": 0.521,
           "stance": "neutral"
         },
         {
-          "title": "Reasoning Large Language Model Errors Arise from Hallucinating Critical Problem Features",
-          "url": "https://arxiv.org/html/2505.12151v1",
-          "trust_score": 0.693,
-          "stance": "oppose"
+          "title": "张雪峰因心源性猝死抢救无效逝世，年仅41岁",
+          "url": "https://i.ifeng.com/c/8rlMsGNmFHY",
+          "trust_score": 0.5,
+          "stance": "background"
         },
         {
-          "title": "[PDF] Brunel Pension - Gloucestershire County Council",
-          "url": "https://gloucestershire.gov.uk/media/lvyj05hg/bpp-2025-q1-gloucestershire-quarterly-performance-report.pdf",
-          "trust_score": 0.609,
-          "stance": "official"
+          "title": "张雪峰教别人避坑，自己掉进最深的坑",
+          "url": "https://news.ifeng.com/c/8rmHMTQauXc",
+          "trust_score": 0.5,
+          "stance": "neutral"
         },
         {
-          "title": "[PDF] Artificial Intelligence and the Great Divergence | The White House",
-          "url": "https://www.whitehouse.gov/wp-content/uploads/2026/01/Artificial-Intelligence-and-the-Great-Divergence-5.pdf",
-          "trust_score": 0.607,
-          "stance": "official"
+          "title": "张雪峰去世，年仅42岁",
+          "url": "https://www.thepaper.cn/newsDetail_forward_32826671",
+          "trust_score": 0.487,
+          "stance": "neutral"
         },
         {
-          "title": "[PDF] AI Privacy Risks & Mitigations – Large Language Models (LLMs)",
-          "url": "https://www.edpb.europa.eu/system/files/2025-04/ai-privacy-risks-and-mitigations-in-llms.pdf",
-          "trust_score": 0.603,
-          "stance": "official"
+          "title": "从心理因素分析张雪峰猝死",
+          "url": "https://c.m.163.com/news/a/KP2K96NA05560VIQ.html",
+          "trust_score": 0.47,
+          "stance": "neutral"
         },
         {
-          "title": "[PDF] Economic Report of the President | The White House",
-          "url": "https://www.whitehouse.gov/wp-content/uploads/2026/04/2026-Economic-Report-of-the-President.pdf",
-          "trust_score": 0.601,
-          "stance": "official"
+          "title": "张雪峰（1984年5月18日—2026年3月24日）‌本名张子彪，沉痛哀悼",
+          "url": "https://c.m.163.com/news/a/KOVD26PR0556KEKP.html",
+          "trust_score": 0.47,
+          "stance": "background"
         },
         {
-          "title": "[PDF] M-25-21 Accelerating Federal Use of AI through Innovation ...",
-          "url": "https://www.whitehouse.gov/wp-content/uploads/2025/02/M-25-21-Accelerating-Federal-Use-of-AI-through-Innovation-Governance-and-Public-Trust.pdf",
-          "trust_score": 0.598,
-          "stance": "official"
+          "title": "张雪峰因心源性猝死逝世 年仅41岁",
+          "url": "https://finance.sina.com.cn/wm/2026-03-24/doc-inhscnuk1426396.shtml",
+          "trust_score": 0.47,
+          "stance": "background"
         },
         {
-          "title": "[PDF] Global Financial Stability Report, April 2025; Chapter 1",
-          "url": "https://www.imf.org/-/media/files/publications/gfsr/2025/april/english/ch1.pdf",
-          "trust_score": 0.591,
-          "stance": "official"
-        },
-        {
-          "title": "How Effectively Can Current LLMs Analyze Macrofinancial Issues?, WP/26/35, February 2026",
-          "url": "https://www.imf.org/-/media/files/publications/wp/2026/english/wpiea2026035-source-pdf.pdf",
-          "trust_score": 0.591,
-          "stance": "official"
-        },
-        {
-          "title": "Our evaluation of Claude Mythos Preview's cyber capabilities",
-          "url": "https://www.aisi.gov.uk/blog/our-evaluation-of-claude-mythos-previews-cyber-capabilities",
-          "trust_score": 0.589,
-          "stance": "official"
+          "title": "张雪峰因心源性猝死去世，年仅41岁！生前谈人生目标：希望成为一代人的回忆...",
+          "url": "https://c.m.163.com/news/a/KOSUROBC0516DPPV.html",
+          "trust_score": 0.47,
+          "stance": "background"
         }
       ],
       "social_sentiment": {
-        "mode": "available",
-        "platforms_queried": [
-          "douyin",
-          "bilibili",
-          "weibo",
-          "tieba",
-          "zhihu"
-        ],
-        "total_posts": 1607,
-        "total_comments": 10,
-        "sentiment_distribution": {
-          "support": 0.193,
-          "neutral": 0.759,
-          "background": 0.024,
-          "oppose": 0.024
-        },
-        "per_platform": {
-          "douyin": {
-            "count": 3,
-            "distribution": {
-              "support": 1.0
-            }
-          },
-          "bilibili": {
-            "count": 20,
-            "distribution": {
-              "neutral": 0.6,
-              "background": 0.1,
-              "support": 0.3
-            }
-          },
-          "weibo": {
-            "count": 20,
-            "distribution": {
-              "neutral": 0.7,
-              "support": 0.3
-            }
-          },
-          "tieba": {
-            "count": 20,
-            "distribution": {
-              "oppose": 0.1,
-              "neutral": 0.85,
-              "support": 0.05
-            }
-          },
-          "zhihu": {
-            "count": 20,
-            "distribution": {
-              "neutral": 1.0
-            }
-          }
-        },
-        "content_diversity": 1.0,
-        "low_diversity_warning": null,
-        "divergence_score": 0.355,
-        "divergence_summary": "The web search results show a more polarized stance distribution, with a significant 26.9% oppose and 19.2% official stance, while social media discussions are overwhelmingly neutral at 75.9% with negligible opposition (2.4%). This indicates that web content exhibits greater contention and official presence, whereas social media conversations are largely indifferent or non-committal on the topic.",
-        "freshness_hours": 3.2,
-        "top_social_voices": [
-          {
-            "platform": "bilibili",
-            "content": "26年06月05日晚报：Anthropic警示AI自主进化风险、美国5月非农数据今晚发布、DeepSeek完成500亿融资、比亚迪发布尧舜禹机器人、韩国股市又又",
-            "url": "https://www.bilibili.com/video/BV1mq7C6mEmN",
-            "publish_time": "2026-06-05T16:34:51",
-            "stance": "background"
-          },
-          {
-            "platform": "bilibili",
-            "content": "06/04中国秀，博通致科技股大跌，DeepSeek获巨额融资，SpaceX拟最大IPO，黎以停火，个人境外投资新规 | 彭博社 | 中英字幕",
-            "url": "https://www.bilibili.com/video/BV1wqEF6XEdu",
-            "publish_time": "2026-06-04T14:34:51",
-            "stance": "background"
-          },
-          {
-            "platform": "douyin",
-            "content": "deepseek这样才能作出高质量歌词🔥做成歌好听哭了😭 #AI #炙热计划 #抖音精选计划 #前奏一响拾起多少人的回忆 #deepseek",
-            "url": "https://www.douyin.com/video/7477515618254638396",
-            "publish_time": "2025-03-03T17:39:40",
-            "stance": "support"
-          },
-          {
-            "platform": "weibo",
-            "content": "太炸了！中国AI大模型周调用量14.19万亿Token，是美国的4.4倍！全球前五占四席，DeepSeek连续三周霸榜，腾讯、MiniMax、小米紧随其后。曾经不可一世的美国Claude，直接跌出前五。更狠的是，这还只是开始——- 小米刚发布万亿参数模型，推理速度1000tps- DeepSeek性价比是GPT的34倍- 开源社区中国模型下载量全球第一以前我们说&quot;中国AI追赶美国&quot;，现在得说&quot;美国AI加油追中国&quot;了。属于中国大模型的时代，真的来了！#AI #人工智能 #大模型 #DeepSeek #中国AI",
-            "url": "https://m.weibo.cn/detail/5307943656099651",
-            "publish_time": "2026-06-10T01:04:07",
-            "stance": "support"
-          },
-          {
-            "platform": "douyin",
-            "content": "deepseek作词作曲演唱保姆级教程 作词、作曲、演唱全程AI，圆了你的歌手梦。 情人节给爱人写首歌吧！#deepseek #deepseek写歌 #七天爱人 #成为歌手保姆级教程 #Yapie程序员哥",
-            "url": "https://www.douyin.com/video/7470484220444560640",
-            "publish_time": "2025-02-12T18:54:27",
-            "stance": "support"
-          },
-          {
-            "platform": "douyin",
-            "content": "deepseek写歌！教程来了 全程AI。歌名《七天爱人》\n#deepseek #七天爱人 #deepseek写歌 #如何用deepseek写歌 #Yapie程序员哥",
-            "url": "https://www.douyin.com/video/7469757759429381391",
-            "publish_time": "2025-02-10T19:55:22",
-            "stance": "support"
-          },
-          {
-            "platform": "bilibili",
-            "content": "【老司机福利】DeepSeek V4解除限制！直接爽翻天！",
-            "url": "https://www.bilibili.com/video/BV1zWV16hEGp",
-            "publish_time": "2026-06-03T13:28:09",
-            "stance": "support"
-          },
-          {
-            "platform": "bilibili",
-            "content": "Deepseek v4“无视限制”模式上线，AI恋人和角色扮演，故事由你主宰！",
-            "url": "https://www.bilibili.com/video/BV1EWV16hEC6",
-            "publish_time": "2026-06-03T13:27:54",
-            "stance": "support"
-          },
-          {
-            "platform": "weibo",
-            "content": "✅deepseek 的回答我很满意哈哈哈哈哈哈明天就这么干！然后梳理成文章，以后发给他们争取44个娃儿，每个孩子都有自己的成长档案记录。在这些藏着犯错的事情上，其实才是孩子的直接成长。接下来，我可以开始着手，写娃儿们的期末评语了苹果手机的备忘录功能可以说是相当强大了谢谢AI，帮忙润色，做得更好",
-            "url": "https://m.weibo.cn/detail/5308444069855394",
-            "publish_time": "2026-06-11T10:12:35",
-            "stance": "support"
-          },
-          {
-            "platform": "weibo",
-            "content": "🚀【200 亿！创始人自掏腰包领投，刷新 AI 融资纪录！】DeepSeek 即将完成 500 亿元融资，腾讯、宁德时代两大巨头联手押注。最炸裂的是，创始人梁文锋个人承诺出资 200 亿，占融资总额的 40%！这意味着什么？创始人对自己项目的信心，已经到&quot;All in&quot;级别。国内 AI 企业单笔融资纪录即将被刷新，74 亿美元砸向大模型赛道。反常识洞察：别人融资靠投资人，他融资靠自己。200 亿真金白银，比任何 PPT 都有说服力。这才是真正的创业者精神！你觉得创始人该不该自掏 200 亿领投？这是信心还是赌命？#AI 创业 #融资 #DeepSeek #梁文锋 #大模型",
-            "url": "https://m.weibo.cn/detail/5308069039048588",
-            "publish_time": "2026-06-10T09:22:21",
-            "stance": "support"
-          }
-        ],
-        "comment_sentiment": {
-          "total": 47,
-          "distribution": {
-            "support": 0.319,
-            "oppose": 0.213,
-            "neutral": 0.404,
-            "background": 0.064
-          },
-          "top_comments": [
-            {
-              "platform": "bilibili",
-              "content": "👉本期实测国产大模型DeepSeek直接上手写论文的两种方法\n1、官网+指令手动生成（高效指令求个三连鼓励发）\n2、deepseek论文大模型网站一键生成💡翻遍全网找到宝藏网站👇\ndeepseek.ailunwen.online\n✅一键生成完整论文（封面/目录/图表/真实文献）\n✅深度优化模型，AIGC检测率直降29.6%\n✅5分钟出大纲，20分钟拿初稿，格式直接过审！",
-              "like_count": 1898,
-              "publish_time": null,
-              "stance": "support"
-            },
-            {
-              "platform": "douyin",
-              "content": "Deepseek+Suno才是绝配[灵机一动]",
-              "like_count": 1529,
-              "publish_time": "2025-02-11T23:42:25",
-              "stance": "support"
-            },
-            {
-              "platform": "bilibili",
-              "content": "我已经跟deepseek吵了好几天了。期间还有死不认账的，直到我把他的论证网址里的内容复制粘贴出来让他给我找出他的内容，才承认他错了。不过已经不止一次了。还把北京各个景区乱放挪地址，要不是我还有百度地图我真怀疑是我的记忆出现问题了。",
-              "like_count": 373,
-              "publish_time": null,
-              "stance": "oppose"
-            },
-            {
-              "platform": "bilibili",
-              "content": "Up主没有错过短视频，已经吃到deepseek这个红利了[doge]",
-              "like_count": 270,
-              "publish_time": null,
-              "stance": "support"
-            },
-            {
-              "platform": "weibo",
-              "content": "华为是难能可贵的，用华为芯片的deepseek也是难能可贵的，宇树就不评价了，不然又被说“基本盘” 反正吧，只有把核心技术掌握在自己手中才能走得安稳、走得长远，否则随时会被卡脖子，这是经过一个个事实验证过的。国内半导体、国内芯片加油吧，唯有自立自强才不会受制于他人",
-              "like_count": 197,
-              "publish_time": "2026-06-07T08:45:43",
-              "stance": "support"
-            },
-            {
-              "platform": "douyin",
-              "content": "歌词听完之后毫无记忆锚点…deepseek还得练[流泪]",
-              "like_count": 158,
-              "publish_time": "2025-09-24T00:25:17",
-              "stance": "oppose"
-            },
-            {
-              "platform": "zhihu",
-              "content": "1、训math和训v4不矛盾，在DeepSeek v3发布之前（大多数人是v3才开始关注ds的），DeepSeek一直在迭代自己的code和math模型，参见梁文锋的访谈：数学和编程是封闭场景，模型可以自己验证对错，是天然的强化学习训练场。2、关于math为什么没有单独的API和网页服务：之前的ds Prover也没有，一来这一块需求比较窄，二来这种模型就是用来验证思路、积累通用模型的训练数据的。",
-              "like_count": 102,
-              "publish_time": null,
-              "stance": "neutral"
-            },
-            {
-              "platform": "bilibili",
-              "content": "deepseek说这次已经三婚囖[doge]",
-              "like_count": 73,
-              "publish_time": null,
-              "stance": "neutral"
-            },
-            {
-              "platform": "bilibili",
-              "content": "2026年5月15日信息差。\n1、南方多地发布山洪灾害预警：水利部、中国气象局14日联合发布黄色山洪预警，福建南部、广东东部等地需严防山洪风险。\n2、武汉大学正式取消社会公众进校预约制度：仅凭本人身份证即可步行入校，工作日及节假日均开放。\n3、DeepSeek专家模式下线“上传文件”功能，官方提示：擅长复杂问题，资源紧张，不支持文件上传。\n4、中美元首北京会谈：确立&#34;中美建设性战略稳定关系",
-              "like_count": 71,
-              "publish_time": null,
-              "stance": "background"
-            },
-            {
-              "platform": "bilibili",
-              "content": "对法学没什么冲击，我用deepseek做平时作业只对30%多点[笑哭]",
-              "like_count": 53,
-              "publish_time": null,
-              "stance": "oppose"
-            }
-          ]
-        },
-        "sentiment_trend": {
-          "buckets": [
-            {
-              "date": "2026-06-05",
-              "post_count": 13,
-              "distribution": {
-                "neutral": 0.615,
-                "background": 0.154,
-                "support": 0.154,
-                "oppose": 0.077
-              }
-            },
-            {
-              "date": "2026-06-08",
-              "post_count": 1,
-              "distribution": {
-                "support": 1.0
-              }
-            },
-            {
-              "date": "2026-06-09",
-              "post_count": 13,
-              "distribution": {
-                "neutral": 0.385,
-                "oppose": 0.154,
-                "support": 0.385,
-                "background": 0.077
-              }
-            },
-            {
-              "date": "2026-06-10",
-              "post_count": 15,
-              "distribution": {
-                "neutral": 0.667,
-                "support": 0.333
-              }
-            },
-            {
-              "date": "2026-06-11",
-              "post_count": 4,
-              "distribution": {
-                "neutral": 0.75,
-                "support": 0.25
-              }
-            }
-          ],
-          "trend_direction": "falling",
-          "trend_summary": "Public sentiment on DeepSeek's brand trust has shifted from mixed early June (with notable neutrality and some opposition) to a predominantly neutral stance by June 10-11, with declining discussion volume and a steady but diminished support fraction, indicating waning controversy but no strong renewed confidence."
-        },
-        "crawl_triggered": false
+        "mode": "disabled",
+        "crawl_triggered": true,
+        "platforms_queried": [],
+        "total_posts": 0,
+        "total_comments": 0,
+        "sentiment_distribution": {},
+        "divergence_score": 0.0,
+        "divergence_summary": "",
+        "freshness_hours": 0,
+        "top_social_voices": [],
+        "comment_sentiment": null,
+        "sentiment_trend": null
       }
     },
     "media_agent": {
-      "available": false,
+      "available": true,
       "mode": "live",
-      "summary_length": 0
+      "summary_length": 63802
     }
   },
   "coordinator_trace": [
-    "[MediaAgentNode] skipped_unconfigured — missing config: MEDIA_ENGINE_API_KEY in 0.0s",
-    "[QueryAgentNode] Success in 106.3s — sources=52, coverage=1.00, analysis_type=brand",
-    "[DataBridge] Total bridged propositions: 13",
-    "[DivergenceMatrix] 7 sources, 21 pairs — max divergence: douyin|zhihu = 1.000, min divergence: tieba|zhihu = 0.009, hotspots: 11",
-    "[PerspectiveGen] analysis_type=brand → perspectives: ['Consumer Experience', 'Business Strategy & Competition', 'Media Narrative & Framing', 'Investor & Market Reaction']",
-    "[Deliberation] 3-phase complete in 67.0s — consensus=10, dissents=6, confidence=0.75",
-    "[EchoChamber] 1 warning(s) detected; silent_majority_hypothesis generated",
-    "[FactOpinion] facts=6, opinions=4, frameworks=3",
-    "[PlatformInterpreter] Generated interpretations for 5 platforms: ['douyin', 'bilibili', 'weibo', 'tieba', 'zhihu']",
-    "[Synthesis] MoA aggregation complete in 12.6s — confidence=0.70, insights=3",
-    "[ReportAgentNode] academic_report — 28996 chars in 0.2s"
+    "[MediaAgentNode] live — 63802 chars in 2244.1s",
+    "[QueryAgentNode] Success in 2809.8s — sources=74, coverage=1.00, analysis_type=person",
+    "[DataBridge] Total bridged propositions: 14",
+    "[DivergenceMatrix] 2 sources, 1 pairs — max divergence: query_agent|media_agent = 0.338, min divergence: query_agent|media_agent = 0.338, hotspots: 1",
+    "[PerspectiveGen] analysis_type=person → perspectives: ['Factual Record & Achievements', 'Public Image & Reputation', 'Stakeholder Impact', 'Contextual & Comparative Analysis']",
+    "[Deliberation] 3-phase complete in 372.3s — consensus=8, dissents=4, confidence=0.75",
+    "[EchoChamber] 0 warning(s) detected",
+    "[FactOpinion] facts=7, opinions=4, frameworks=3",
+    "[PlatformInterpreter] No social media data — skipping",
+    "[Synthesis] MoA aggregation complete in 63.4s — confidence=0.88, insights=3",
+    "[ReportAgentNode] academic_report — 15009 chars in 0.1s"
   ],
   "agent_errors": []
 }

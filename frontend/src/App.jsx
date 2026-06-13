@@ -140,9 +140,7 @@ const CONFIG_GROUPS = [
       ['LANGSMITH_TRACING', 'Tracing enabled', 'boolean'],
       ['LANGSMITH_API_KEY', 'LangSmith key', 'password'],
       ['LANGSMITH_ENDPOINT', 'LangSmith endpoint', 'text'],
-      ['LANGSMITH_PROJECT', 'LangSmith project', 'text'],
-      ['LANGCHAIN_TRACING_V2', 'Legacy tracing', 'boolean'],
-      ['LANGCHAIN_PROJECT', 'Legacy project', 'text']
+      ['LANGSMITH_PROJECT', 'LangSmith project', 'text']
     ]
   }
 ];

@@ -21,6 +21,7 @@ from loguru import logger
 
 from ...llms import LLMClient
 from ...utils.config import settings
+from ...tools.search_dispatcher import _ANSPIRE_AVAILABLE, _MINDSPIDERDB_AVAILABLE
 from utils.output_language import with_output_language_rule
 from ..state import QueryAgentState, SubQueryItem
 
@@ -105,6 +106,7 @@ async def gap_filler_node(state: QueryAgentState) -> dict:
     """
     missing: List[str] = state.get("missing_stances") or []
     query: str = state.get("original_query", "")
+    social_posts = int((state.get("social_sentiment") or {}).get("total_posts") or 0)
 
     if not missing:
         logger.info("[GapFiller] No missing stances, skip supplementary search")
@@ -149,9 +151,12 @@ async def gap_filler_node(state: QueryAgentState) -> dict:
         if item["target_stance"] == "official" and not item["search_params"].get("include_domains"):
             item["search_params"]["include_domains"] = OFFICIAL_DOMAINS_CN
 
-        # support/oppose prefer mindspider_db (social media data more likely to have public support/opposition voices)
+        # Prefer social DB only when it already has usable data; otherwise use web search.
         if item["target_stance"] in ("support", "oppose") and item["target_source"] == "any":
-            item["target_source"] = "mindspider_db"
+            if _MINDSPIDERDB_AVAILABLE and social_posts >= 3:
+                item["target_source"] = "mindspider_db"
+            elif _ANSPIRE_AVAILABLE:
+                item["target_source"] = "anspire"
 
         processed.append(item)
 

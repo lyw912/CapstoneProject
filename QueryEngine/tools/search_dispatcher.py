@@ -191,12 +191,19 @@ class UnifiedSearchDispatcher:
 
     async def dispatch(self, sub_queries: List[Dict]) -> Tuple[List[Dict], List[str]]:
         """
-        Dispatch all sub-queries in parallel.
+        Dispatch sub-queries with bounded concurrency to reduce Tavily connection resets.
 
         Returns:
             (sources, errors)
         """
-        tasks = [self._dispatch_one(sq) for sq in sub_queries]
+        max_concurrent = max(1, int(getattr(settings, "TAVILY_SEARCH_MAX_CONCURRENT", 3) or 3))
+        semaphore = asyncio.Semaphore(max_concurrent)
+
+        async def _dispatch_limited(sq: Dict) -> List[Dict]:
+            async with semaphore:
+                return await self._dispatch_one(sq)
+
+        tasks = [_dispatch_limited(sq) for sq in sub_queries]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         sources: List[Dict] = []

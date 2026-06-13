@@ -8,21 +8,23 @@ Cache is keyed by a hash of the query string.
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import json
-import os
 import time
 from pathlib import Path
 from typing import Dict, Optional
 
 from loguru import logger
 
+from config import settings
 from ..state import CoordinatorState, AgentRunResult
-from ...utils.timeout_guard import with_timeout
+from ...utils.timeout_guard import run_sync_with_timeout
 
 CACHE_DIR = Path(__file__).resolve().parents[3] / "AgentCoordinator" / "cache"
-QUERY_AGENT_TIMEOUT = 300.0  # seconds
+
+
+def _query_agent_timeout_seconds() -> float:
+    return max(60.0, float(getattr(settings, "COORDINATOR_QUERY_AGENT_TIMEOUT", 3600) or 3600))
 
 
 def _cache_path(query: str) -> Path:
@@ -54,8 +56,8 @@ def _save_cache(query: str, output: Dict) -> None:
         logger.warning(f"[QueryAgentNode] Cache save failed: {exc}")
 
 
-async def _run_query_agent(query: str) -> Optional[Dict]:
-    """Import and invoke DeepSearchAgent. Returns QueryAgentOutput dict or None."""
+def _run_query_agent_sync(query: str) -> Optional[Dict]:
+    """Invoke DeepSearchAgent on a worker thread. Returns QueryAgentOutput dict or None."""
     try:
         import sys
         project_root = Path(__file__).resolve().parents[3]
@@ -64,8 +66,7 @@ async def _run_query_agent(query: str) -> Optional[Dict]:
 
         from QueryEngine.agent import DeepSearchAgent
         agent = DeepSearchAgent()
-        output = await agent.research_structured(query)
-        return output
+        return agent.research_structured_sync(query)
     except Exception as exc:
         logger.error(f"[QueryAgentNode] DeepSearchAgent raised: {exc}")
         return None
@@ -92,10 +93,15 @@ async def query_agent_node(state: CoordinatorState) -> dict:
         logger.info(trace)
         return {"query_run": run_result, "coordinator_trace": [trace]}
 
-    # Fresh execution with timeout
-    output = await with_timeout(
-        _run_query_agent(query),
-        timeout_seconds=QUERY_AGENT_TIMEOUT,
+    timeout_seconds = _query_agent_timeout_seconds()
+    logger.info(f"[QueryAgentNode] Timeout budget: {timeout_seconds:.0f}s")
+
+    # Run the LangGraph subgraph in a worker thread so Media/Query can execute
+    # in parallel without blocking the asyncio event loop (which breaks wait_for).
+    output = await run_sync_with_timeout(
+        _run_query_agent_sync,
+        timeout_seconds,
+        query,
         label="QueryAgent.research_structured",
     )
 

@@ -66,14 +66,24 @@ def _cosine_similarity(vec_a: Dict[str, float], vec_b: Dict[str, float]) -> floa
 
 def _extract_probe_keywords(query: str) -> List[str]:
     """Extract meaningful keywords from query for MindSpider probe."""
-    tokens = re.findall(r'[a-zA-Z0-9]+[-.]?[a-zA-Z0-9]*|[\u4e00-\u9fff]+', query)
+    normalized = query.replace("'", " ").replace("'", " ").replace('"', " ")
+    tokens = re.findall(r"[a-zA-Z0-9]+[-.]?[a-zA-Z0-9]*|[\u4e00-\u9fff]+", normalized)
     keywords = []
     for token in tokens:
         token = token.strip()
-        if not token or token in _STOPWORDS or len(token) <= 1:
+        if not token or token.lower() in _STOPWORDS or len(token) <= 1:
             continue
         keywords.append(token)
-    return keywords if keywords else [query]
+
+    keywords.sort(key=len, reverse=True)
+    deduped: List[str] = []
+    seen = set()
+    for kw in keywords:
+        key = kw.lower()
+        if key not in seen:
+            seen.add(key)
+            deduped.append(kw)
+    return deduped if deduped else ([query.strip()] if query.strip() else [query])
 
 
 def _stance_distribution(items: list, key: str = "stance") -> Dict[str, float]:
@@ -115,6 +125,53 @@ def _get_llm_client() -> LLMClient:
     )
 
 
+def _llm_chinese_probe_keywords(query: str) -> List[str]:
+    """Derive Chinese probe keywords for English-topic queries."""
+    if any("\u4e00" <= ch <= "\u9fff" for ch in query):
+        return []
+    try:
+        import json
+
+        llm = _get_llm_client()
+        response = llm.invoke(
+            system_prompt=(
+                "You extract Chinese social-media search keywords. "
+                "Output only a JSON array of 2-4 strings, no other text."
+            ),
+            user_prompt=(
+                f"Topic: {query}\n"
+                "Return concise Chinese keywords suitable for searching "
+                "Weibo/Douyin/Bilibili/Zhihu discussions."
+            ),
+        )
+        text = re.sub(r"```(?:json)?", "", response or "").strip()
+        match = re.search(r"\[.*\]", text, re.DOTALL)
+        payload = match.group() if match else text
+        data = json.loads(payload)
+        if not isinstance(data, list):
+            return []
+        return [str(item).strip() for item in data if str(item).strip()]
+    except Exception as exc:
+        logger.debug(f"[SocialEnrichment] Chinese keyword expansion skipped: {exc}")
+        return []
+
+
+def _resolve_python_bin(project_root: str) -> str:
+    """Pick a Python executable that works on Windows and Unix."""
+    import sys
+
+    candidates = [
+        sys.executable,
+        os.path.join(project_root, ".venv", "Scripts", "python.exe"),
+        os.path.join(project_root, ".venv", "bin", "python"),
+        os.path.join(project_root, ".venv", "Scripts", "python"),
+    ]
+    for candidate in candidates:
+        if candidate and os.path.isfile(candidate):
+            return candidate
+    return sys.executable
+
+
 # ---------------------------------------------------------------------------
 # Ext 3: BroadTopicExtraction trigger (fire-and-forget)
 # ---------------------------------------------------------------------------
@@ -135,20 +192,25 @@ def _maybe_trigger_extraction(db) -> bool:
         os.path.dirname(os.path.abspath(__file__))
     )))
     mindspider_dir = os.path.join(project_root, "MindSpider")
-    python_bin = os.path.join(project_root, ".venv", "bin", "python")
+    python_bin = _resolve_python_bin(project_root)
     script = os.path.join(mindspider_dir, "BroadTopicExtraction", "main.py")
 
     if not os.path.exists(script):
         logger.debug(f"[SocialEnrichment] BTE script not found: {script}")
         return False
 
+    popen_kwargs = {
+        "cwd": mindspider_dir,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+    }
+    if os.name != "nt":
+        popen_kwargs["start_new_session"] = True
+
     try:
         subprocess.Popen(
             [python_bin, script, "--keywords", "30", "--quiet"],
-            cwd=mindspider_dir,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
+            **popen_kwargs,
         )
         logger.info("[SocialEnrichment] Triggered BroadTopicExtraction in background")
         return True
@@ -297,6 +359,17 @@ async def social_enrichment_node(state: QueryAgentState) -> dict:
                 break
         except Exception:
             continue
+
+    if probe_result is None or probe_result.get("total_posts", 0) < _MIN_POSTS_FOR_ENRICHMENT:
+        for kw in _llm_chinese_probe_keywords(query):
+            try:
+                result = db.probe(kw)
+                if result.get("total_posts", 0) >= _MIN_POSTS_FOR_ENRICHMENT:
+                    probe_result = result
+                    best_keyword = kw
+                    break
+            except Exception:
+                continue
 
     if probe_result is None:
         try:

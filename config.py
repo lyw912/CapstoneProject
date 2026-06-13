@@ -153,7 +153,23 @@ class Settings(BaseSettings):
     MAX_PARAGRAPHS: int = Field(6, description="Maximum paragraphs")
     SEARCH_TIMEOUT: int = Field(240, description="Single search request timeout")
     MAX_CONTENT_LENGTH: int = Field(500000, description="Maximum search content length")
-    
+    SEARCH_CONTENT_MAX_LENGTH: int = Field(
+        500000,
+        description="Max search snippet length passed to LLM prompts (Media/Query engines)",
+    )
+    TAVILY_SEARCH_MAX_CONCURRENT: int = Field(
+        3,
+        description="Max parallel Tavily/Anspire sub-queries per search round (lower = fewer connection resets)",
+    )
+    COORDINATOR_MEDIA_AGENT_TIMEOUT: int = Field(
+        3600,
+        description="Max seconds for MediaEngine deep research inside AgentCoordinator (default 1 hour)",
+    )
+    COORDINATOR_QUERY_AGENT_TIMEOUT: int = Field(
+        3600,
+        description="Max seconds for QueryEngine structured research inside AgentCoordinator (default 1 hour)",
+    )
+
     model_config = ConfigDict(
         env_file=ENV_FILE,
         env_prefix="",

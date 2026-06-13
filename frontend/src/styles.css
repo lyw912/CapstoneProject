@@ -1133,13 +1133,6 @@ a:hover { color: var(--hku-2); text-decoration: underline; }
 .ant-progress-text { font-weight: 800; }
 
 @media (max-width: 1180px) {
-  .studio-shell { grid-template-columns: 92px minmax(0, 1fr); }
-  .studio-nav { padding: 18px 12px; }
-  .brand div:not(.brand-mark), .studio-nav nav button span, .nav-status small, .nav-status span { display: none; }
-  .brand { justify-content: center; padding: 6px 0 14px; }
-  .studio-nav nav button { justify-content: center; padding: 13px; }
-  .studio-nav nav button.active::before { left: -12px; }
-  .nav-status { padding: 10px; }
   .metrics-row, .insight-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .review-shell { grid-template-columns: 1fr; }
 }
@@ -1152,8 +1145,16 @@ a:hover { color: var(--hku-2); text-decoration: underline; }
     padding: 14px;
   }
   .studio-nav nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .studio-nav nav button { font-size: 0; }
+  .studio-nav nav button {
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 6px;
+    font-size: 10px;
+    justify-content: center;
+    text-align: center;
+  }
   .studio-nav nav button .anticon { font-size: 18px; }
+  .studio-nav nav button span { display: block; line-height: 1.2; }
   .nav-status { display: none; }
   .hero-bar, .brief-panel, .review-header { display: grid; }
   .brief-actions { justify-content: stretch; }

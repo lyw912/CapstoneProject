@@ -15,9 +15,11 @@ from loguru import logger
 
 from config import settings
 from ..state import CoordinatorState, AgentRunResult
-from ...utils.timeout_guard import with_timeout
+from ...utils.timeout_guard import run_sync_with_timeout
 
-MEDIA_AGENT_TIMEOUT = 180.0
+
+def _media_agent_timeout_seconds() -> float:
+    return max(60.0, float(getattr(settings, "COORDINATOR_MEDIA_AGENT_TIMEOUT", 3600) or 3600))
 
 
 def _missing_media_config() -> list[str]:
@@ -37,8 +39,8 @@ def _missing_media_config() -> list[str]:
     return missing
 
 
-async def _run_media_agent(query: str) -> Optional[str]:
-    """Attempt to invoke MediaAgent. Returns Markdown string or None."""
+def _run_media_agent_sync(query: str) -> Optional[str]:
+    """Invoke MediaAgent on a worker thread. Returns Markdown string or None."""
     try:
         import sys
         from pathlib import Path
@@ -52,8 +54,7 @@ async def _run_media_agent(query: str) -> Optional[str]:
             from MediaEngine.agent import DeepSearchAgent as MediaAgent
 
         agent = MediaAgent()
-        result = await agent.research_async(query)
-        return result
+        return agent.research(query)
     except Exception as exc:
         logger.info(f"[MediaAgentNode] MediaAgent skipped: {exc}")
         return None
@@ -73,10 +74,13 @@ async def media_agent_node(state: CoordinatorState) -> dict:
         detail = f"missing config: {', '.join(missing_config)}"
         logger.info(f"[MediaAgentNode] {mode} — {detail}")
     else:
-        text_output = await with_timeout(
-            _run_media_agent(query),
-            timeout_seconds=MEDIA_AGENT_TIMEOUT,
-            label="MediaAgent.research_async",
+        timeout_seconds = _media_agent_timeout_seconds()
+        logger.info(f"[MediaAgentNode] Timeout budget: {timeout_seconds:.0f}s")
+        text_output = await run_sync_with_timeout(
+            _run_media_agent_sync,
+            timeout_seconds,
+            query,
+            label="MediaAgent.research",
         )
         if text_output:
             mode = "live"
@@ -86,13 +90,14 @@ async def media_agent_node(state: CoordinatorState) -> dict:
             detail = "MediaAgent returned no output"
 
     duration = time.time() - t0
+    agent_success = bool(text_output) if not missing_config else False
 
     run_result: AgentRunResult = {
         "agent_name": "media_agent",
-        "success": True,
+        "success": agent_success,
         "output": None,
         "text_output": text_output,
-        "error": None,
+        "error": None if agent_success else detail,
         "duration_seconds": duration,
     }
 
