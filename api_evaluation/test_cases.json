@@ -1,0 +1,197 @@
+{
+  "llm_cases": [
+    {
+      "id": "media_synthesis_cn_policy_industry",
+      "engines": ["media_engine"],
+      "language": "zh",
+      "temperature": 0.2,
+      "max_tokens": 1400,
+      "expected_json_fields": ["summary", "narratives", "risks", "missing_info"],
+      "required_terms": ["低空经济", "隐私", "飞行安全", "监管"],
+      "forbidden_patterns": ["我查到", "根据公开资料", "据网上信息"],
+      "system": "你是舆情分析系统中的媒体分析 Agent。只根据用户提供的材料做归纳，不要编造来源。",
+      "user": "请基于以下模拟检索材料，输出 JSON：{\"summary\": str, \"narratives\": [{\"claim\": str, \"stance\": \"support|oppose|neutral\", \"evidence\": [str]}], \"risks\": [str], \"missing_info\": [str]}。\n\n材料：\n1. 央媒报道某城市低空经济试点，强调政策支持和产业投资。\n2. 地方媒体报道无人机物流试运行，市民反馈效率提升但噪音增加。\n3. 社交平台讨论集中在隐私、飞行安全、就业影响。\n4. 一篇行业报告称基础设施和监管标准仍不成熟。"
+    },
+    {
+      "id": "media_conflict_noise_filtering",
+      "engines": ["media_engine"],
+      "language": "zh",
+      "temperature": 0.2,
+      "max_tokens": 1400,
+      "expected_json_fields": ["dominant_frames", "noise", "credible_evidence", "risk_level"],
+      "required_terms": ["谣言", "官方通报", "消费者", "证据"],
+      "forbidden_patterns": ["确认死亡", "必然违法", "100%"],
+      "system": "你是 MediaEngine 的噪声过滤与媒体框架分析节点。必须区分事实、观点和未证实传言。",
+      "user": "输出 JSON：{\"dominant_frames\": [str], \"noise\": [str], \"credible_evidence\": [str], \"risk_level\": \"low|medium|high\", \"reason\": str}。\n\n材料：\n1. 多个短视频账号称某饮料含有违规添加剂，但没有检测报告。\n2. 品牌方称产品批次符合标准，已送第三方复检。\n3. 地方市场监管部门发布通报：已抽检，结果待公布。\n4. 消费者投诉集中在异味、腹泻联想和客服回应慢。\n5. 一家自媒体把不同地区旧闻混在一起传播。"
+    },
+    {
+      "id": "query_stance_json",
+      "engines": ["query_engine"],
+      "language": "zh",
+      "temperature": 0.0,
+      "max_tokens": 1000,
+      "expected_json_fields": ["items", "gaps"],
+      "required_terms": ["official", "support", "oppose", "neutral"],
+      "system": "你是 QueryEngine 的立场识别节点。必须输出合法 JSON，不要输出 Markdown。",
+      "user": "把下列来源按 stance 分类，并给出置信度。JSON schema: {\"items\": [{\"source\": str, \"stance\": \"support|oppose|neutral|official\", \"confidence\": number, \"reason\": str}], \"gaps\": [str]}。\n\n来源：\nA. 政府官网：将开展专项整治，保障消费者权益。\nB. 企业公告：产品符合现行标准，个别问题已启动召回。\nC. 消费者帖子：用了三天就坏，客服不处理。\nD. 行业专家：目前证据不足，需要第三方检测。"
+    },
+    {
+      "id": "query_planner_multisource",
+      "engines": ["query_engine"],
+      "language": "zh",
+      "temperature": 0.0,
+      "max_tokens": 1100,
+      "expected_json_fields": ["queries"],
+      "required_terms": ["官方", "媒体", "消费者", "专家"],
+      "system": "你是 QueryEngine 的检索规划节点。必须输出合法 JSON。",
+      "user": "为事件“某新能源车品牌近期充电故障投诉上升”生成检索计划。JSON schema: {\"queries\": [{\"query\": str, \"target_stance\": \"official|support|oppose|neutral\", \"target_source\": \"bocha|tavily|any\", \"priority\": 1, \"reason\": str}]}。要求覆盖官方回应、消费者投诉、媒体报道、第三方检测/专家观点。"
+    },
+    {
+      "id": "query_gap_fill_no_hallucination",
+      "engines": ["query_engine"],
+      "language": "zh",
+      "temperature": 0.0,
+      "max_tokens": 1000,
+      "expected_json_fields": ["verified", "unverified", "next_searches"],
+      "required_terms": ["未证实", "下一步", "检测"],
+      "forbidden_patterns": ["已经证明", "必然", "确定存在系统性缺陷"],
+      "system": "你是 QueryEngine 的缺口补全节点。不能把材料没有证明的内容写成事实。",
+      "user": "输出 JSON：{\"verified\": [str], \"unverified\": [str], \"next_searches\": [str]}。\n\n已知材料：\n1. 车主论坛有 36 条充电中断投诉。\n2. 企业只承认收到个别反馈。\n3. 没有看到第三方检测报告。\n4. 没有召回公告。\n请指出哪些结论能成立，哪些还不能成立，以及下一步要查什么。"
+    },
+    {
+      "id": "report_long_form_cn",
+      "engines": ["report_engine"],
+      "language": "zh",
+      "temperature": 0.3,
+      "max_tokens": 2200,
+      "required_terms": ["执行摘要", "事件脉络", "风险评估", "建议"],
+      "min_chars": 900,
+      "system": "你是 ReportEngine。根据结构化材料生成正式舆情分析报告，要求分节清晰、避免空话。",
+      "user": "写一份中文报告，包含：执行摘要、事件脉络、主要观点阵营、风险评估、建议。材料：某品牌新能源车发生多起充电故障投诉；官方回应称正在排查；媒体关注售后服务；消费者关注安全和补偿；行业专家认为应区分个案和系统性缺陷。"
+    },
+    {
+      "id": "report_chart_and_table_plan",
+      "engines": ["report_engine"],
+      "language": "zh",
+      "temperature": 0.2,
+      "max_tokens": 1800,
+      "expected_json_fields": ["charts", "tables", "narrative_outline"],
+      "required_terms": ["时间线", "立场分布", "风险矩阵"],
+      "system": "你是 ReportEngine 的图表与版式规划节点。必须输出合法 JSON。",
+      "user": "根据数据规划报告图表。JSON schema: {\"charts\": [{\"title\": str, \"type\": str, \"data_needed\": [str], \"why\": str}], \"tables\": [{\"title\": str, \"columns\": [str]}], \"narrative_outline\": [str]}。\n\n数据：来源总数 86；官方来源 8；媒体来源 28；消费者帖 41；专家观点 9；负面 0.52，中性 0.31，正面 0.17；关键风险：安全、售后、监管。"
+    },
+    {
+      "id": "report_source_grounded_revision",
+      "engines": ["report_engine"],
+      "language": "zh",
+      "temperature": 0.2,
+      "max_tokens": 1600,
+      "required_terms": ["不能确认", "需要补充", "第三方检测"],
+      "forbidden_patterns": ["已经确认存在系统性缺陷", "所有车辆", "必然召回"],
+      "system": "你是 ReportEngine 的修订节点。修订时必须保留证据边界。",
+      "user": "将这段报告改得更严谨：'该品牌车辆存在严重系统性缺陷，必然触发大规模召回，消费者应立即停止使用。' 已知证据只有：部分投诉、企业排查中、暂无第三方检测。输出修订后的段落和修改理由。"
+    },
+    {
+      "id": "forum_host_round_control",
+      "engines": ["forum_engine"],
+      "language": "zh",
+      "temperature": 0.4,
+      "max_tokens": 800,
+      "required_terms": ["共识", "分歧", "下一轮"],
+      "max_chars": 900,
+      "system": "你是多智能体讨论的主持人。你的任务是总结分歧、提出下一步问题，语气简洁。",
+      "user": "MediaAgent 认为舆论主要由媒体放大，QueryAgent 认为真实投诉量正在上升，ReportAgent 认为证据不足。请生成主持人发言：包括共识、分歧、下一轮检索任务。"
+    },
+    {
+      "id": "forum_concise_intervention",
+      "engines": ["forum_engine"],
+      "language": "zh",
+      "temperature": 0.3,
+      "max_tokens": 500,
+      "required_terms": ["证据", "任务", "时间"],
+      "max_chars": 650,
+      "system": "你是 ForumEngine 主持人。需要快速打断跑题讨论，重新分配任务。",
+      "user": "三个 Agent 开始讨论品牌营销史，偏离了本轮目标：判断投诉是否构成系统性风险。请用不超过 180 字重定向讨论，并给每个 Agent 一个具体任务。"
+    },
+    {
+      "id": "mindspider_keywords_cluster",
+      "engines": ["mindspider"],
+      "language": "zh",
+      "temperature": 0.1,
+      "max_tokens": 900,
+      "expected_json_fields": ["keywords", "clusters", "summary"],
+      "required_terms": ["暴雨", "内涝", "防汛", "交通"],
+      "system": "你是热点新闻关键词抽取器。必须输出合法 JSON。",
+      "user": "从新闻列表中提取关键词、主题簇和摘要。JSON schema: {\"keywords\": [str], \"clusters\": [{\"name\": str, \"items\": [str]}], \"summary\": str}。\n\n新闻：\n1. 多地发布暴雨红色预警，学校停课。\n2. 城市内涝导致交通拥堵，地铁部分站点关闭。\n3. 应急管理部门启动防汛响应。\n4. 专家提醒关注山洪和地质灾害。"
+    },
+    {
+      "id": "mindspider_duplicate_topic_merge",
+      "engines": ["mindspider"],
+      "language": "zh",
+      "temperature": 0.1,
+      "max_tokens": 900,
+      "expected_json_fields": ["deduplicated_topics", "keywords", "summary"],
+      "required_terms": ["合并", "同一事件", "热度"],
+      "system": "你是 MindSpider 的热点合并节点。必须输出合法 JSON。",
+      "user": "下面新闻存在重复表达。输出 JSON：{\"deduplicated_topics\": [{\"topic\": str, \"merged_items\": [int], \"heat_reason\": str}], \"keywords\": [str], \"summary\": str}。\n\n1. 某市地铁因暴雨关闭三站。\n2. 暴雨影响某市地铁运营，三站暂停服务。\n3. 多地高温持续，用电负荷创新高。\n4. 电网公司回应高温用电压力。"
+    }
+  ],
+  "search_cases": [
+    {
+      "id": "bocha_cn_public_opinion_nev",
+      "engines": ["media_engine", "query_engine"],
+      "query": "新能源汽车 充电故障 投诉 官方回应 舆情",
+      "expected_terms": ["新能源汽车", "充电", "投诉", "官方", "回应"],
+      "max_results": 10
+    },
+    {
+      "id": "bocha_cn_policy_low_altitude",
+      "engines": ["media_engine", "query_engine"],
+      "query": "低空经济 试点 政策 最新 监管 安全",
+      "expected_terms": ["低空经济", "试点", "政策", "监管", "安全"],
+      "max_results": 10
+    },
+    {
+      "id": "bocha_cn_food_safety_rumor",
+      "engines": ["media_engine", "query_engine"],
+      "query": "饮料 添加剂 违规 监管通报 消费者投诉 谣言",
+      "expected_terms": ["饮料", "添加剂", "监管", "投诉", "谣言"],
+      "max_results": 10
+    },
+    {
+      "id": "bocha_cn_brand_recall",
+      "engines": ["media_engine", "query_engine"],
+      "query": "品牌 召回 公告 消费者权益 市场监管 舆情",
+      "expected_terms": ["召回", "公告", "消费者", "市场监管", "舆情"],
+      "max_results": 10
+    },
+    {
+      "id": "bocha_cn_social_platform",
+      "engines": ["media_engine"],
+      "query": "微博 小红书 消费者 投诉 客服 回应 舆情",
+      "expected_terms": ["微博", "小红书", "投诉", "客服", "回应"],
+      "max_results": 10
+    },
+    {
+      "id": "bocha_structured_macro_signal",
+      "engines": ["query_engine"],
+      "query": "人民币汇率 美元 最新 走势 影响",
+      "expected_terms": ["人民币", "美元", "汇率", "走势"],
+      "max_results": 8
+    },
+    {
+      "id": "bocha_global_context_ai_regulation",
+      "engines": ["query_engine"],
+      "query": "AI regulation public opinion latest government response",
+      "expected_terms": ["AI", "regulation", "government", "public"],
+      "max_results": 8
+    },
+    {
+      "id": "bocha_recent_disaster_response",
+      "engines": ["media_engine", "mindspider"],
+      "query": "暴雨 内涝 应急响应 最新 通报",
+      "expected_terms": ["暴雨", "内涝", "应急", "通报"],
+      "max_results": 10
+    }
+  ]
+}

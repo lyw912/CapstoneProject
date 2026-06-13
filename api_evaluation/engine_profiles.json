@@ -1,0 +1,94 @@
+{
+  "engines": {
+    "media_engine": {
+      "llm_weights": {
+        "task_success": 0.18,
+        "format_compliance": 0.12,
+        "grounding": 0.24,
+        "reasoning_quality": 0.18,
+        "language_quality": 0.12,
+        "latency": 0.08,
+        "cost": 0.04,
+        "stability": 0.04
+      },
+      "search_weights": {
+        "relevance": 0.24,
+        "freshness": 0.18,
+        "source_quality": 0.18,
+        "coverage": 0.14,
+        "metadata_quality": 0.10,
+        "latency": 0.08,
+        "cost": 0.04,
+        "parseability": 0.04
+      }
+    },
+    "query_engine": {
+      "llm_weights": {
+        "task_success": 0.18,
+        "format_compliance": 0.24,
+        "grounding": 0.18,
+        "reasoning_quality": 0.18,
+        "language_quality": 0.06,
+        "latency": 0.08,
+        "cost": 0.04,
+        "stability": 0.04
+      },
+      "search_weights": {
+        "relevance": 0.26,
+        "freshness": 0.18,
+        "source_quality": 0.16,
+        "coverage": 0.12,
+        "metadata_quality": 0.14,
+        "latency": 0.06,
+        "cost": 0.04,
+        "parseability": 0.04
+      }
+    },
+    "report_engine": {
+      "llm_weights": {
+        "task_success": 0.18,
+        "format_compliance": 0.18,
+        "grounding": 0.14,
+        "reasoning_quality": 0.14,
+        "language_quality": 0.20,
+        "latency": 0.06,
+        "cost": 0.04,
+        "stability": 0.06
+      }
+    },
+    "forum_engine": {
+      "llm_weights": {
+        "task_success": 0.18,
+        "format_compliance": 0.10,
+        "grounding": 0.08,
+        "reasoning_quality": 0.12,
+        "language_quality": 0.14,
+        "latency": 0.20,
+        "cost": 0.12,
+        "stability": 0.06
+      }
+    },
+    "mindspider": {
+      "llm_weights": {
+        "task_success": 0.22,
+        "format_compliance": 0.20,
+        "grounding": 0.12,
+        "reasoning_quality": 0.14,
+        "language_quality": 0.14,
+        "latency": 0.08,
+        "cost": 0.06,
+        "stability": 0.04
+      },
+      "search_weights": {
+        "relevance": 0.24,
+        "freshness": 0.22,
+        "source_quality": 0.14,
+        "coverage": 0.10,
+        "metadata_quality": 0.10,
+        "latency": 0.08,
+        "cost": 0.04,
+        "parseability": 0.08
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.jsonl
+
+# Dry-run and intermediate checks
+results_config_check*/
+results_smoke/
+results_bocha_deepseek/

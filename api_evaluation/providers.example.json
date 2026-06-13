@@ -1,0 +1,62 @@
+{
+  "llm_providers": [
+    {
+      "name": "deepseek-chat",
+      "base_url": "https://api.deepseek.com",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "model": "deepseek-chat",
+      "input_price_per_1m": 0.0,
+      "output_price_per_1m": 0.0,
+      "enabled": false
+    },
+    {
+      "name": "kimi-k2",
+      "base_url": "https://api.moonshot.cn/v1",
+      "api_key_env": "MOONSHOT_API_KEY",
+      "model": "kimi-k2-0711-preview",
+      "input_price_per_1m": 0.0,
+      "output_price_per_1m": 0.0,
+      "enabled": false
+    },
+    {
+      "name": "aihubmix-gemini-2.5-pro",
+      "base_url": "https://aihubmix.com/v1",
+      "api_key_env": "AIHUBMIX_API_KEY",
+      "model": "gemini-2.5-pro",
+      "input_price_per_1m": 0.0,
+      "output_price_per_1m": 0.0,
+      "enabled": false
+    },
+    {
+      "name": "qwen-plus-compatible",
+      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "api_key_env": "DASHSCOPE_API_KEY",
+      "model": "qwen-plus",
+      "input_price_per_1m": 0.0,
+      "output_price_per_1m": 0.0,
+      "enabled": false
+    }
+  ],
+  "search_providers": [
+    {
+      "name": "tavily",
+      "type": "tavily",
+      "api_key_env": "TAVILY_API_KEY",
+      "enabled": false
+    },
+    {
+      "name": "anspire",
+      "type": "anspire",
+      "base_url": "https://plugin.anspire.cn/api/ntsearch/search",
+      "api_key_env": "ANSPIRE_API_KEY",
+      "enabled": false
+    },
+    {
+      "name": "bocha",
+      "type": "bocha",
+      "base_url": "https://api.bocha.cn/v1/ai-search",
+      "api_key_env": "BOCHA_WEB_SEARCH_API_KEY",
+      "enabled": false
+    }
+  ]
+}
