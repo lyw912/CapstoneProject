@@ -26,6 +26,9 @@ from loguru import logger
 import importlib
 from pathlib import Path
 
+from config import settings
+from utils.sensitive_input_filter import reject_if_sensitive
+
 # Import ReportEngine
 try:
     from ReportEngine.flask_interface import report_bp, initialize_report_engine
@@ -1570,6 +1573,10 @@ def run_coordinator_api():
     if not query:
         return jsonify({'success': False, 'message': 'Analysis query is required'}), 400
 
+    blocked = reject_if_sensitive({'query': query, 'feedback': feedback}, settings)
+    if blocked:
+        return jsonify(blocked), 400
+
     task_id = f"coord_{int(time.time())}_{uuid.uuid4().hex[:6]}"
     now = datetime.utcnow().isoformat() + 'Z'
     with coordinator_task_lock:
@@ -1864,6 +1871,10 @@ def search():
     
     if not query:
         return jsonify({'success': False, 'message': 'Search query cannot be empty'})
+    
+    blocked = reject_if_sensitive({'query': query}, settings)
+    if blocked:
+        return jsonify(blocked), 400
     
     # ForumEngine forum is already running in background, will automatically detect search activity
     # logger.info("ForumEngine: Search request received, forum will automatically detect log changes")

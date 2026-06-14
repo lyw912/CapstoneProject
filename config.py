@@ -170,6 +170,16 @@ class Settings(BaseSettings):
         description="Max seconds for QueryEngine structured research inside AgentCoordinator (default 1 hour)",
     )
 
+    # ================== User Input Sensitive Word Filter ====================
+    ENABLE_SENSITIVE_INPUT_FILTER: bool = Field(
+        True,
+        description="When true, block analysis/report requests whose user-supplied text matches sensitive_words.txt",
+    )
+    SENSITIVE_WORDS_FILE: Path = Field(
+        Path("config/sensitive_words.txt"),
+        description="Path to sensitive word list (one word per line, # for comments)",
+    )
+
     model_config = ConfigDict(
         env_file=ENV_FILE,
         env_prefix="",

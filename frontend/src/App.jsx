@@ -30,7 +30,7 @@ import '@fontsource/inter/500.css';
 import '@fontsource/instrument-serif/400.css';
 
 import { THEME_TOKENS, NAV_ITEMS } from './utils/constants';
-import { apiJson, displayText, reportSeedHtml, clampPct, compactNumber } from './utils/helpers';
+import { apiJson, displayText, reportSeedHtml, clampPct, compactNumber, isSensitiveInputError, showSensitiveInputModal } from './utils/helpers';
 import { useLoadLatest, useLoadStatus, useObservabilityTrace } from './hooks/useApi';
 import usePolling from './hooks/usePolling';
 import useSSE from './hooks/useSSE';
@@ -121,13 +121,17 @@ export default function App() {
         }
       });
     } catch (error) {
+      if (isSensitiveInputError(error)) {
+        showSensitiveInputModal();
+        return;
+      }
       message.error(error.message || 'Analysis failed to start');
     }
   };
 
   const generateReport = async () => {
-    setActive('review');
-    await startReportStream(query, output, setReportTask, setReportEvents, setReportHtml);
+    const started = await startReportStream(query, output, setReportTask, setReportEvents, setReportHtml);
+    if (started) setActive('review');
   };
 
   const saveFeedback = async (runAfter = false) => {

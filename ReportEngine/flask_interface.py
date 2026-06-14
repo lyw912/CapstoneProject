@@ -21,6 +21,7 @@ from loguru import logger
 from .agent import ReportAgent, create_agent
 from .nodes import ChapterJsonParseError
 from .utils.config import settings
+from utils.sensitive_input_filter import reject_if_sensitive
 
 
 # Create Flask Blueprint
@@ -774,6 +775,16 @@ def generate_report():
             data = {}
         query = data.get('query', 'Intelligent Sentiment Analysis Report')
         custom_template = data.get('custom_template', '')
+
+        blocked = reject_if_sensitive(
+            {
+                'query': str(query or ''),
+                'custom_template': str(custom_template or ''),
+            },
+            settings,
+        )
+        if blocked:
+            return jsonify(blocked), 400
 
         # Clear log file
         clear_report_log()

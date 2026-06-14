@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { apiJson, displayLog, reportSeedHtml } from '../utils/helpers';
+import { apiJson, displayLog, reportSeedHtml, isSensitiveInputError, showSensitiveInputModal } from '../utils/helpers';
 
 export default function useSSE() {
   const streamRef = useRef(null);
@@ -48,8 +48,13 @@ export default function useSSE() {
 
       return data;
     } catch (error) {
+      if (isSensitiveInputError(error)) {
+        showSensitiveInputModal();
+        return null;
+      }
       const { message: msg } = await import('antd');
       msg.error(error.message || 'Report generation failed to start');
+      return null;
     }
   };
 

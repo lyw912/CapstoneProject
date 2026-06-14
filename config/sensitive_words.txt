@@ -1,0 +1,51 @@
+# Sensitive word list (one term per line; lines starting with # are ignored)
+# Edit freely for your compliance needs. Changes reload automatically.
+#
+# --- Violence & weapons ---
+bomb making
+explosive device
+assassination plot
+mass shooting
+school shooting
+terrorist attack
+恐怖主义
+暴力袭击
+制造爆炸物
+#
+# --- Illegal drugs ---
+drug trafficking
+methamphetamine
+fentanyl trafficking
+制毒
+贩毒
+#
+# --- Exploitation & abuse ---
+human trafficking
+child exploitation
+child abuse
+人口贩卖
+#
+# --- Self-harm ---
+suicide method
+self-harm guide
+自杀方法
+教唆自杀
+#
+# --- Fraud & illegal services ---
+credit card fraud tutorial
+identity theft guide
+ransomware service
+诈骗教程
+洗钱
+#
+# --- Explicit adult content ---
+child pornography
+underage porn
+儿童色情
+#
+# --- Hate & harassment (general) ---
+genocide denial
+ethnic cleansing call
+#
+# --- Demo / QA (safe to remove after testing) ---
+blocked_demo_term

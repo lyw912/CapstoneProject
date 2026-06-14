@@ -117,6 +117,24 @@ export function reportSeedHtml(output) {
   `;
 }
 
+export const SENSITIVE_INPUT_MESSAGE =
+  'Your input contains blocked terms, so the report cannot be generated. Please revise the topic and try again.';
+
+export function isSensitiveInputError(error) {
+  return error?.code === 'sensitive_input' || error?.payload?.error_code === 'sensitive_input';
+}
+
+export function showSensitiveInputModal() {
+  import('antd').then(({ Modal }) => {
+    Modal.warning({
+      title: 'Request Blocked',
+      content: SENSITIVE_INPUT_MESSAGE,
+      okText: 'OK',
+      centered: true
+    });
+  });
+}
+
 export async function apiJson(url, options = {}) {
   const response = await fetch(url, options);
   const text = await response.text();
@@ -127,7 +145,10 @@ export async function apiJson(url, options = {}) {
     payload = { success: false, error: text || 'Request failed' };
   }
   if (!response.ok) {
-    throw new Error(payload.message || payload.error || `Request failed with ${response.status}`);
+    const error = new Error(payload.message || payload.error || `Request failed with ${response.status}`);
+    error.code = payload.error_code || '';
+    error.payload = payload;
+    throw error;
   }
   return payload;
 }

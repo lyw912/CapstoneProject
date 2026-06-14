@@ -28,6 +28,8 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional
 
+from config import settings
+from utils.sensitive_input_filter import check_sensitive_input, filter_settings_from_config, SENSITIVE_INPUT_MESSAGE
 from loguru import logger
 
 # 全局配置
@@ -495,6 +497,12 @@ def main():
     # Extract or use specified query topic
     query = args.query if args.query else extract_query_from_reports(latest_files)
     logger.info(f"Using report topic: {query}")
+
+    if args.query:
+        enabled, words_file = filter_settings_from_config(settings)
+        if check_sensitive_input(query, enabled=enabled, words_file=words_file):
+            logger.error(f"❌ {SENSITIVE_INPUT_MESSAGE}")
+            sys.exit(1)
 
     # Step 3: Generate report
     result = generate_report(reports, query, pdf_available)
