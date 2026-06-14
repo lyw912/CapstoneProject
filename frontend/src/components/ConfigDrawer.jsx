@@ -50,8 +50,10 @@ export default function ConfigDrawer({ open, onClose, config, setConfig, onSaved
                     <Select value={config[key] || 'AnspireAPI'} onChange={(value) => update(key, value)} options={[{ value: 'AnspireAPI' }, { value: 'BochaAPI' }]} />
                   ) : type === 'boolean' ? (
                     <Switch checked={String(config[key]).toLowerCase() === 'true'} onChange={(checked) => update(key, checked ? 'True' : 'False')} />
+                  ) : type === 'password' ? (
+                    <Input.Password value={config[key] || ''} onChange={(event) => update(key, event.target.value)} />
                   ) : (
-                    <Input.Password visibilityToggle={type === 'password'} type={type === 'password' ? 'password' : 'text'} value={config[key] || ''} onChange={(event) => update(key, event.target.value)} />
+                    <Input value={config[key] || ''} onChange={(event) => update(key, event.target.value)} />
                   )}
                 </label>
               ))}
