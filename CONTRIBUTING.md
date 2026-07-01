@@ -1,54 +1,64 @@
-# 贡献指南
+# Contributing
 
-感谢你愿意为本项目做出贡献！
-为了保持代码质量和版本管理的清晰，请按照以下步骤提交你的修改。
+This project is a capstone-oriented public-opinion intelligence system. Contributions should keep the final Signal Studio workflow, API contracts, and documentation aligned.
 
-# 🪄 提交 Pull Request（PR）步骤
+## Development Setup
 
-## 1️⃣ Fork 仓库
+Follow [Setup](docs/operations/setup.md). For artifact-based review, use [Artifact Review](docs/operations/artifact-review.md).
 
-将本仓库 Fork 到你的 GitHub 账户。
+Recommended quick checks before opening a pull request:
 
-## 2️⃣ 克隆到本地
-
-```bash
-git clone https://github.com/<你的用户名>/<仓库名>.git
-cd <仓库名>
+```powershell
+python -m unittest tests.test_sensitive_input_filter
+python -m unittest tests.test_report_engine_sanitization
+python -m unittest tests.test_coordinator_report_bridge
+python -m unittest tests.test_media_agent_node_optional
+pytest tests/test_monitor.py -v
 ```
 
-## 3️⃣ 创建功能分支
+If `python` is not available on `PATH`, use Conda or `uv` instead of skipping checks:
 
-```bash
-git checkout -b feature/你的功能名
+```powershell
+uv run --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_sensitive_input_filter
+uv run --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_report_engine_sanitization
+uv run --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_coordinator_report_bridge
+uv run --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_media_agent_node_optional
+uv run --python 3.11 --with-requirements requirements.txt pytest tests/test_monitor.py -v
 ```
 
-> 建议分支命名规范：`feature/xxx` 或 `fix/xxx`，便于识别功能或修复类型。
+Conda equivalent: `conda activate capstone-project`, then run the standard commands.
 
-## 4️⃣ 开发与测试
+## Change Guidelines
 
-* 进行代码修改，保持项目代码风格一致。
-* 确保新增功能或修复通过测试。
+| Change Type | Required Updates |
+| --- | --- |
+| Public API change | Update `docs/reference/api.md` and `docs/reference/openapi.yaml`. |
+| Coordinator artifact change | Update `docs/reference/coordinator-output-schema.md`, Signal Studio consumers, and bridge tests. |
+| Report IR change | Update `docs/reference/report-ir.md`, validators, renderers, and sanitization tests. |
+| Frontend workflow change | Update screenshots or `docs/components/signal-studio.md` if the visible workflow changes. |
+| Provider/config change | Update `.env.example`, `docs/reference/configuration.md`, and `docs/quality/api-evaluation.md`. |
+| Runtime asset movement | Update [Runtime Assets](docs/reference/runtime-assets.md) and [Data And Model Assets](docs/reference/data-and-model-assets.md). |
 
-## 5️⃣ 提交修改
+## Documentation Style
 
-```bash
-git add .
-git commit -m "类型: 简短描述"
-```
+- Keep public docs in English.
+- Prefer short explanation plus tables for scanability.
+- Add examples for API or setup behavior that users may copy.
+- Do not move runtime Markdown templates into `docs/`; some Markdown files are loaded by ReportEngine.
+- Keep diagram source and exported PNG together under `docs/assets/diagrams/`.
 
-> 推荐遵循 [Conventional Commits](https://www.conventionalcommits.org/zh-hans/)，保持提交记录清晰。
+## Security
 
-## 6️⃣ 推送到远程仓库
+- Do not commit real `.env` files, API keys, cookies, private prompts, or private feedback logs.
+- Treat generated artifacts as potentially sensitive until reviewed.
+- Do not expose `/api/config`, logs, exports, or shutdown endpoints publicly without authentication.
 
-```bash
-git push origin feature/你的功能名
-```
+## Pull Request Checklist
 
-## 7️⃣ 发起 Pull Request
-
-1. 在 GitHub 上点击 **New Pull Request**。
-2. **目标分支必须是本仓库的 `main` 分支**。
-3. 填写 PR 描述：
-
-   * 说明主要改动内容
-   * 如有相关 issue，请在 PR 中关联
+| Check | Done |
+| --- | --- |
+| Tests or manual verification are described. |  |
+| API/schema docs are updated when contracts change. |  |
+| Setup/runbook docs are updated when commands change. |  |
+| New data/model assets include source/license/privacy notes. |  |
+| Screenshots or diagrams are updated when UI/architecture changes. |  |

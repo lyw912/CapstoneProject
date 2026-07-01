@@ -1,0 +1,20 @@
+@direction LR
+@spacing 80
+
+[Operator] -> [Signal Studio\nReact / Vite UI]
+[Signal Studio\nReact / Vite UI] -> [Flask Orchestrator\napp.py]
+[Flask Orchestrator\napp.py] -> [AgentCoordinator]
+[AgentCoordinator] -> [QueryEngine]
+[AgentCoordinator] -> [MediaEngine]
+[AgentCoordinator] -> [ReportEngine Bridge]
+[QueryEngine] -> [Search Providers\nAnspire / Bocha / Tavily]
+[QueryEngine] -> [MindSpider / Social Data]
+[MediaEngine] -> [Search Providers\nAnspire / Bocha]
+[AgentCoordinator] -> [Coordinator Artifact\nJSON cache]
+[Coordinator Artifact\nJSON cache] -> [Signal Studio\nLatest Readout]
+[Coordinator Artifact\nJSON cache] -> [ReportEngine]
+[ReportEngine] -> [Document IR]
+[Document IR] -> [HTML]
+[Document IR] -> [Markdown]
+[Document IR] -> [PDF]
+[Flask Orchestrator\napp.py] -> [LangSmith\nConfigurable tracing]

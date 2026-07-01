@@ -30,7 +30,7 @@ import '@fontsource/inter/500.css';
 import '@fontsource/instrument-serif/400.css';
 
 import { THEME_TOKENS, NAV_ITEMS } from './utils/constants';
-import { apiJson, displayText, reportSeedHtml, clampPct, compactNumber, isSensitiveInputError, showSensitiveInputModal } from './utils/helpers';
+import { apiJson, displayText, reportSeedHtml, clampPct, compactNumber, isSensitiveInputError, showSensitiveInputModal, readLastQuery, persistLastQuery } from './utils/helpers';
 import { useLoadLatest, useLoadStatus, useObservabilityTrace } from './hooks/useApi';
 import usePolling from './hooks/usePolling';
 import useSSE from './hooks/useSSE';
@@ -53,7 +53,8 @@ export default function App() {
   const [reportEvents, setReportEvents] = useState([]);
   const [reportHtml, setReportHtml] = useState('');
   const [annotations, setAnnotations] = useState([]);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() => readLastQuery());
+  const queryHydratedFromServer = useRef(false);
   const [configOpen, setConfigOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [readoutOpen, setReadoutOpen] = useState(false);
@@ -90,14 +91,45 @@ export default function App() {
   };
 
   useEffect(() => {
-    loadLatest(true);
+    let cancelled = false;
+    (async () => {
+      const data = await loadLatest(true);
+      if (cancelled) return;
+      const serverQuery = displayText(data?.output?.query, '').trim();
+      if (!serverQuery) return;
+      setQuery((current) => {
+        const next = current.trim() || serverQuery;
+        persistLastQuery(next);
+        return next;
+      });
+      queryHydratedFromServer.current = true;
+    })();
     loadStatus();
     loadObservabilityTrace(true);
     return () => {
+      cancelled = true;
       clearPoll();
       clearStream();
     };
   }, []);
+
+  useEffect(() => {
+    if (queryHydratedFromServer.current) return;
+    const serverQuery = displayText(output.query, '').trim();
+    if (!serverQuery) return;
+    setQuery((current) => {
+      const next = current.trim() || serverQuery;
+      persistLastQuery(next);
+      return next;
+    });
+    queryHydratedFromServer.current = true;
+  }, [output.query]);
+
+  const handleQueryChange = (event) => {
+    const value = event.target.value;
+    setQuery(value);
+    persistLastQuery(value);
+  };
 
   const runAnalysis = async (extraFeedback = '') => {
     const analysisQuery = query.trim() || displayText(output.query, '');
@@ -105,6 +137,7 @@ export default function App() {
       message.warning('Enter an analysis brief first');
       return;
     }
+    persistLastQuery(analysisQuery);
     try {
       const data = await apiJson('/api/coordinator/run', {
         method: 'POST',
@@ -117,7 +150,14 @@ export default function App() {
       startPoll(data.task.task_id, async (task) => {
         setCoordinatorTask(task);
         if (['completed', 'error'].includes(task.status)) {
-          if (task.status === 'completed') await loadLatest(true);
+          if (task.status === 'completed') {
+            const data = await loadLatest(true);
+            const completedQuery = displayText(data?.output?.query, '').trim();
+            if (completedQuery) {
+              setQuery(completedQuery);
+              persistLastQuery(completedQuery);
+            }
+          }
         }
       });
     } catch (error) {
@@ -168,6 +208,15 @@ export default function App() {
       const data = await apiJson('/api/system/start', { method: 'POST' });
       message.success(data.message || 'System startup requested');
       loadStatus();
+      const latestData = await loadLatest(true);
+      const serverQuery = displayText(latestData?.output?.query, '').trim();
+      if (serverQuery) {
+        setQuery((current) => {
+          const next = current.trim() || serverQuery;
+          persistLastQuery(next);
+          return next;
+        });
+      }
     } catch (error) {
       message.error(error.message || 'System startup failed');
     }
@@ -231,7 +280,7 @@ export default function App() {
 
           <section className="brief-panel minimal-brief">
             <SearchOutlined />
-            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Topic" />
+            <Input value={query} onChange={handleQueryChange} placeholder="Topic" />
             <CommandDock latest={latest} task={coordinatorTask} onRun={() => runAnalysis()} onReport={generateReport} onFeedback={() => setFeedbackOpen(true)} onOpen={() => setActive(latest ? 'intelligence' : 'control')} />
           </section>
 
@@ -272,10 +321,10 @@ export default function App() {
       <Drawer open={feedbackOpen} onClose={() => setFeedbackOpen(false)} width={520} title="Revision Request">
         <div className="drawer-stack">
           <Form layout="vertical">
-            <Form.Item label="Review target"><Select value={feedbackForm.target} onChange={(value) => setFeedbackForm((current) => ({ ...current, target: value }))} options={['Overall quality', 'Executive readout', 'Evidence grounding', 'Report narrative', 'Risk interpretation'].map((value) => ({ value }))} /></Form.Item>
+            <Form.Item label="Review target"><Select value={feedbackForm.target} onChange={(value) => setFeedbackForm((current) => ({ ...current, target: value }))} options={['Overall quality', 'Executive readout', 'Evidence grounding', 'Report narrative', 'Tension interpretation'].map((value) => ({ value }))} /></Form.Item>
             <Form.Item label="Requested action"><Radio.Group value={feedbackForm.action} onChange={(event) => setFeedbackForm((current) => ({ ...current, action: event.target.value }))}><Radio.Button value="Review">Review</Radio.Button><Radio.Button value="Revise">Revise</Radio.Button><Radio.Button value="Rerun">Rerun</Radio.Button></Radio.Group></Form.Item>
             <Form.Item label="Priority"><Slider marks={{ 0: 'Normal', 50: 'High', 100: 'Critical' }} step={null} value={{ Normal: 0, High: 50, Critical: 100 }[feedbackForm.priority]} onChange={(value) => setFeedbackForm((current) => ({ ...current, priority: value === 100 ? 'Critical' : value === 50 ? 'High' : 'Normal' }))} /></Form.Item>
-            <Form.Item label="Specific request"><Input.TextArea value={feedbackForm.feedback} onChange={(event) => setFeedbackForm((current) => ({ ...current, feedback: event.target.value }))} placeholder="Explain what is wrong, what evidence is missing, or how the report should change" autoSize={{ minRows: 5, maxRows: 8 }} /></Form.Item>
+            <Form.Item label="Specific request"><Input.TextArea value={feedbackForm.feedback} onChange={(event) => setFeedbackForm((current) => ({ ...current, feedback: event.target.value }))} placeholder="Describe the evidence focus, narrative adjustment, or report refinement" autoSize={{ minRows: 5, maxRows: 8 }} /></Form.Item>
           </Form>
           <Button block size="large" onClick={() => saveFeedback(false)}>Save Request</Button>
           <Button block size="large" type="primary" icon={<SendOutlined />} onClick={() => saveFeedback(true)}>Save and Run Refinement</Button>
@@ -284,7 +333,7 @@ export default function App() {
 
       <Modal open={readoutOpen} onCancel={() => setReadoutOpen(false)} footer={null} width={860} title="Readout Details">
         <div className="readout-modal">
-          <p>{displayText(synthesis.summary, 'No synthesis is available yet.')}</p>
+          <p>{displayText(synthesis.summary, 'Synthesis will appear after analysis.')}</p>
           <div className="modal-list">
             {(synthesis.recommended_investigation || []).slice(0, 5).map((item, index) => <div key={index}><span>{(index + 1)}</span>{displayText(item, 'Follow-up')}</div>)}
           </div>

@@ -72,7 +72,7 @@ export default function MonitorView({
           <div><span>Sources</span><strong>{compactNumber(queryAgent.total_sources)}</strong></div>
           <div><span>Confidence</span><strong>{percentText(synthesis.overall_confidence)}</strong></div>
           <div><span>Runtime</span><strong>{durationText(output.pipeline_duration_seconds)}</strong></div>
-          <div><span>Errors</span><strong>{compactNumber(output.agent_errors?.length)}</strong></div>
+          <div><span>Diagnostics</span><strong>{compactNumber(output.agent_errors?.length)}</strong></div>
         </div>
       </div>
 
@@ -83,13 +83,13 @@ export default function MonitorView({
           action={(
             <Space wrap>
               <Tag color={observabilityTrace?.source === 'langsmith' ? 'blue' : observabilityTrace?.configured ? 'gold' : 'default'}>
-                {observabilityTrace?.source === 'langsmith' ? 'Live' : observabilityTrace?.configured ? 'Fallback' : 'Not configured'}
+                {observabilityTrace?.source === 'langsmith' ? 'Live' : observabilityTrace?.configured ? 'Local' : 'Trace setup'}
               </Tag>
               {(observabilityTrace?.project_url || observability?.enabled) && <Button icon={<RadarChartOutlined />} href={observabilityTrace?.project_url || langSmithProjectUrl(observability)} target="_blank">Open LangSmith</Button>}
             </Space>
           )}
         />
-        <p className="card-brief">Local replay stays readable here. LangSmith adds the full model-call trace, timings, errors, and evaluation trail.</p>
+        <p className="card-brief">Local replay stays readable here. LangSmith adds the full model-call trace, timings, diagnostics, and evaluation trail.</p>
         <TraceMetrics observabilityTrace={observabilityTrace} />
         <div className="trace-visual-grid">
           <div className="trace-chart-panel">
@@ -120,7 +120,7 @@ export default function MonitorView({
             <div className="feedback-item" key={item.id}>
               <Tag color={String(item.priority).toLowerCase() === 'critical' ? 'red' : 'blue'}>{displayText(item.priority, 'Normal')}</Tag>
               <strong>{displayText(item.target, 'Overall quality')}</strong>
-              <p>{displayText(item.feedback, 'Feedback unavailable')}</p>
+              <p>{displayText(item.feedback, 'Feedback pending')}</p>
               <span>{timeText(item.created_at)}</span>
             </div>
           ))}

@@ -1,32 +1,32 @@
 {
   "schema_version": "1.0",
-  "query": "public opinion assessment about Zhangxuefeng's death",
-  "analysis_type": "person",
-  "generated_at": "2026-06-13T07:17:44.074825+00:00",
-  "pipeline_duration_seconds": 3311.33,
+  "query": "Analyse the influence of the game Valorant",
+  "analysis_type": "brand",
+  "generated_at": "2026-07-01T11:14:39.910806+00:00",
+  "pipeline_duration_seconds": 2278.14,
   "divergence_matrix": {
     "pairs": {
-      "query_agent|media_agent": 0.3384
+      "query_agent|media_agent": 0.3846
     },
     "hotspots": [
-      "query_agent vs media_agent: CSSD=0.338 — notable divergence detected"
+      "query_agent vs media_agent: CSSD=0.385 — notable divergence detected"
     ],
     "max_divergence": {
       "pair": "query_agent|media_agent",
-      "value": 0.3384
+      "value": 0.3846
     },
     "min_divergence": {
       "pair": "query_agent|media_agent",
-      "value": 0.3384
+      "value": 0.3846
     }
   },
   "deliberation": {
-    "analysis_type": "person",
+    "analysis_type": "brand",
     "perspectives_used": [
-      "Factual Record & Achievements",
-      "Public Image & Reputation",
-      "Stakeholder Impact",
-      "Contextual & Comparative Analysis"
+      "Consumer Experience",
+      "Business Strategy & Competition",
+      "Media Narrative & Framing",
+      "Investor & Market Reaction"
     ],
     "phases": [
       {
@@ -39,54 +39,59 @@
         "phase": "cross_examination",
         "summary": "",
         "consensus_points": [
-          "Zhang Xuefeng passed away on March 24, 2026, due to sudden cardiac death linked to cardiovascular disease and stress.",
-          "Public opinion is predominantly neutral (67.6%), driven by verified medical and corporate records rather than rumors.",
-          "An irrefutable chain of evidence (corporate obituaries, governmental notices, medical records) distinguishes this case from unverified celebrity death rumors.",
-          "Zhang Xuefeng is recognized for promoting educational information equity for ordinary families."
+          "Valorant has successfully expanded to consoles (PS5/Xbox) in 2024 and mobile (China) in 2025.",
+          "The Unreal Engine 5 upgrade occurred in July 2025 without raising minimum system requirements.",
+          "Community toxicity and gender discrimination are universally acknowledged as a significant reputational and experiential risk across all perspectives.",
+          "The esports ecosystem is thriving with massive viewership and revenue growth."
         ],
         "dissent_points": [
-          "Extent to which individual death indicates industry-wide structural crisis vs individual tragedy",
-          "type: different_values"
+          "Discrepancy in The Game Awards recognition dates (2022-2023 vs 2022-2025) due to different data sources (Query Agent vs Media Agent). (type: different_data)",
+          "Quantification of toxicity impact: Consumer perspective views it as 'pervasive' based on experience, while Media quantifies it as 17.5% of sources. (type: different_values)",
+          "Financial impact on third-party esports organizations remains unknown across all perspectives. (type: genuine_uncertainty)"
         ]
       },
       {
         "phase": "synthesis_arbitration",
-        "summary": "The synthesis confirms Zhang Xuefeng's death on March 24, 2026, was driven by cardiovascular disease and stress, generating predominantly neutral public sentiment (67.6%) due to robust verification protocols that distinguished it from typical celebrity rumors. While there is consensus on the factual record and his contribution to educational equity, perspectives diverge on whether this event signifies a broader structural crisis in the education industry or remains an individual tragedy contextu",
+        "summary": "Valorant's influence is characterized by successful technical and platform expansion (Console 2024, Mobile 2025, UE5 2025) driving a thriving esports ecosystem, but this growth is counterbalanced by a universally acknowledged reputational risk regarding community toxicity. While business and investor perspectives highlight market dominance and revenue potential, consumer and media perspectives nuance this with accessibility benefits and specific framing of social issues, revealing a gap between ",
         "consensus_points": [
-          "Zhang Xuefeng passed away on March 24, 2026, at age 41 in Suzhou due to sudden cardiac death linked to cardiovascular disease and stress.",
-          "Public opinion was predominantly neutral (67.6%), driven by verified medical and corporate records rather than speculative rumors.",
-          "An irrefutable chain of evidence (corporate obituaries, governmental notices, medical records) distinguishes this case from unverified celebrity death rumors.",
-          "Zhang Xuefeng is recognized across perspectives for promoting educational information equity for ordinary families.",
-          "Zhang Xuefeng passed away on March 24, 2026, due to sudden cardiac death linked to cardiovascular disease and stress.",
-          "Public opinion is predominantly neutral (67.6%), driven by verified medical and corporate records rather than rumors.",
-          "An irrefutable chain of evidence (corporate obituaries, governmental notices, medical records) distinguishes this case from unverified celebrity death rumors.",
-          "Zhang Xuefeng is recognized for promoting educational information equity for ordinary families."
+          "Valorant successfully expanded to consoles (PS5/Xbox) in August 2024 and mobile (China) in August 2025.",
+          "The Unreal Engine 5 upgrade occurred in July 2025 without raising minimum system requirements, preserving accessibility.",
+          "Community toxicity and gender discrimination are universally acknowledged as a significant reputational and experiential risk.",
+          "The esports ecosystem is thriving with massive viewership and revenue growth, recognized as Best Esports Game.",
+          "Valorant has successfully expanded to consoles (PS5/Xbox) in 2024 and mobile (China) in 2025.",
+          "The Unreal Engine 5 upgrade occurred in July 2025 without raising minimum system requirements.",
+          "Community toxicity and gender discrimination are universally acknowledged as a significant reputational and experiential risk across all perspectives.",
+          "The esports ecosystem is thriving with massive viewership and revenue growth."
         ],
         "dissent_points": [
-          "Extent to which the death indicates an industry-wide structural crisis versus an individual tragedy.",
-          "Relevance of the 2026 demographic 'death peak' to the specific public opinion surrounding this case.",
-          "Extent to which individual death indicates industry-wide structural crisis vs individual tragedy",
-          "type: different_values"
+          "Discrepancy in The Game Awards recognition dates (2022-2023 vs 2022-2025).",
+          "Quantification of toxicity impact: Consumer perspective views it as 'pervasive' based on experience, while Media quantifies it as 17.5% of sources.",
+          "Financial impact on third-party esports organizations remains unknown.",
+          "Discrepancy in The Game Awards recognition dates (2022-2023 vs 2022-2025) due to different data sources (Query Agent vs Media Agent). (type: different_data)",
+          "Quantification of toxicity impact: Consumer perspective views it as 'pervasive' based on experience, while Media quantifies it as 17.5% of sources. (type: different_values)",
+          "Financial impact on third-party esports organizations remains unknown across all perspectives. (type: genuine_uncertainty)"
         ]
       }
     ],
     "final_consensus": [
-      "Zhang Xuefeng passed away on March 24, 2026, at age 41 in Suzhou due to sudden cardiac death linked to cardiovascular disease and stress.",
-      "Public opinion was predominantly neutral (67.6%), driven by verified medical and corporate records rather than speculative rumors.",
-      "An irrefutable chain of evidence (corporate obituaries, governmental notices, medical records) distinguishes this case from unverified celebrity death rumors.",
-      "Zhang Xuefeng is recognized across perspectives for promoting educational information equity for ordinary families.",
-      "Zhang Xuefeng passed away on March 24, 2026, due to sudden cardiac death linked to cardiovascular disease and stress.",
-      "Public opinion is predominantly neutral (67.6%), driven by verified medical and corporate records rather than rumors.",
-      "An irrefutable chain of evidence (corporate obituaries, governmental notices, medical records) distinguishes this case from unverified celebrity death rumors.",
-      "Zhang Xuefeng is recognized for promoting educational information equity for ordinary families."
+      "Valorant successfully expanded to consoles (PS5/Xbox) in August 2024 and mobile (China) in August 2025.",
+      "The Unreal Engine 5 upgrade occurred in July 2025 without raising minimum system requirements, preserving accessibility.",
+      "Community toxicity and gender discrimination are universally acknowledged as a significant reputational and experiential risk.",
+      "The esports ecosystem is thriving with massive viewership and revenue growth, recognized as Best Esports Game.",
+      "Valorant has successfully expanded to consoles (PS5/Xbox) in 2024 and mobile (China) in 2025.",
+      "The Unreal Engine 5 upgrade occurred in July 2025 without raising minimum system requirements.",
+      "Community toxicity and gender discrimination are universally acknowledged as a significant reputational and experiential risk across all perspectives.",
+      "The esports ecosystem is thriving with massive viewership and revenue growth."
     ],
     "final_dissents": [
-      "Extent to which the death indicates an industry-wide structural crisis versus an individual tragedy.",
-      "Relevance of the 2026 demographic 'death peak' to the specific public opinion surrounding this case.",
-      "Extent to which individual death indicates industry-wide structural crisis vs individual tragedy",
-      "type: different_values"
+      "Discrepancy in The Game Awards recognition dates (2022-2023 vs 2022-2025).",
+      "Quantification of toxicity impact: Consumer perspective views it as 'pervasive' based on experience, while Media quantifies it as 17.5% of sources.",
+      "Financial impact on third-party esports organizations remains unknown.",
+      "Discrepancy in The Game Awards recognition dates (2022-2023 vs 2022-2025) due to different data sources (Query Agent vs Media Agent). (type: different_data)",
+      "Quantification of toxicity impact: Consumer perspective views it as 'pervasive' based on experience, while Media quantifies it as 17.5% of sources. (type: different_values)",
+      "Financial impact on third-party esports organizations remains unknown across all perspectives. (type: genuine_uncertainty)"
     ],
-    "confidence": 0.88
+    "confidence": 0.85
   },
   "gap_filling": {
     "rounds_performed": 0,
@@ -101,81 +106,59 @@
   "fact_opinion_separation": {
     "verified_facts": [
       {
-        "fact": "Zhang Xuefeng passed away on March 24, 2026.",
+        "fact": "Valorant officially launched on June 2, 2020, developed and published by Riot Games.",
         "sources": [
-          "DELIBERATION SYNTHESIS",
-          "WEB SEARCH (QueryAgent)"
+          "MEDIA AGENT"
         ],
-        "verification_status": "cross_verified",
-        "confidence": 0.98
-      },
-      {
-        "fact": "Zhang Xuefeng was 41 years old at the time of death.",
-        "sources": [
-          "DELIBERATION SYNTHESIS",
-          "WEB SEARCH (QueryAgent)"
-        ],
-        "verification_status": "cross_verified",
-        "confidence": 0.98
-      },
-      {
-        "fact": "The location of death was Suzhou.",
-        "sources": [
-          "WEB SEARCH (QueryAgent)"
-        ],
-        "verification_status": "cross_verified",
+        "verification_status": "single_source",
         "confidence": 0.95
       },
       {
-        "fact": "Cause of death was sudden cardiac death linked to cardiovascular disease and stress.",
+        "fact": "Valorant expanded to consoles (PS5/Xbox) in August 2024.",
         "sources": [
-          "DELIBERATION SYNTHESIS",
-          "WEB SEARCH (QueryAgent)"
-        ],
-        "verification_status": "cross_verified",
-        "confidence": 0.95
-      },
-      {
-        "fact": "Public sentiment was predominantly neutral at 67.6%.",
-        "sources": [
-          "WEB SEARCH (QueryAgent)"
+          "DELIBERATION SYNTHESIS"
         ],
         "verification_status": "cross_verified",
         "confidence": 0.9
       },
       {
-        "fact": "Analysis was based on 74 sources.",
-        "sources": [
-          "WEB SEARCH (QueryAgent)"
-        ],
-        "verification_status": "single_source",
-        "confidence": 1.0
-      },
-      {
-        "fact": "Evidence chain included corporate obituaries, governmental notices, and medical records.",
+        "fact": "Valorant expanded to mobile (China) in August 2025.",
         "sources": [
           "DELIBERATION SYNTHESIS"
         ],
         "verification_status": "cross_verified",
-        "confidence": 0.95
+        "confidence": 0.9
+      },
+      {
+        "fact": "The Unreal Engine 5 upgrade occurred in July 2025 without raising minimum system requirements.",
+        "sources": [
+          "DELIBERATION SYNTHESIS"
+        ],
+        "verification_status": "cross_verified",
+        "confidence": 0.9
+      },
+      {
+        "fact": "Media sources quantify community toxicity discussions as 17.5% of total sources.",
+        "sources": [
+          "DELIBERATION SYNTHESIS",
+          "WEB SEARCH (QueryAgent)"
+        ],
+        "verification_status": "disputed",
+        "confidence": 0.6
+      },
+      {
+        "fact": "Web search analysis of 40 sources shows stance distribution: official 0.15, background 0.325, oppose 0.175, neutral 0.175, support 0.175.",
+        "sources": [
+          "WEB SEARCH (QueryAgent)"
+        ],
+        "verification_status": "single_source",
+        "confidence": 0.8
       }
     ],
     "opinions_sentiments": [
       {
-        "perspective": "Supporters emphasize Zhang Xuefeng's role in promoting educational information equity for ordinary families.",
-        "holders": "Supporters (4.1% of stance distribution)",
-        "sentiment_intensity": "moderate",
-        "platform_distribution": {
-          "weibo": 0.0,
-          "zhihu": 0.0
-        },
-        "potential_biases": [
-          "elite_bias"
-        ]
-      },
-      {
-        "perspective": "Opposition to malicious rumors surrounding Zhang Xuefeng's death, highlighting contributions to educational information accessibility.",
-        "holders": "Oppose stance group (4.1% of stance distribution)",
+        "perspective": "Community toxicity and gender discrimination are pervasive negative influences on player experience.",
+        "holders": "Consumers, Players, Critics",
         "sentiment_intensity": "strong",
         "platform_distribution": {
           "weibo": 0.0,
@@ -186,8 +169,20 @@
         ]
       },
       {
-        "perspective": "Perspective that the death signifies a broader structural crisis in the education industry.",
-        "holders": "Dissenting public opinion segment",
+        "perspective": "Valorant exerts significant influence through a thriving esports ecosystem with massive viewership and revenue growth.",
+        "holders": "Business, Investors, Supporters",
+        "sentiment_intensity": "strong",
+        "platform_distribution": {
+          "weibo": 0.0,
+          "zhihu": 0.0
+        },
+        "potential_biases": [
+          "elite_bias"
+        ]
+      },
+      {
+        "perspective": "There is a gap between player experience and media coverage volume regarding social issues.",
+        "holders": "Analysts, Media Observers",
         "sentiment_intensity": "moderate",
         "platform_distribution": {
           "weibo": 0.0,
@@ -198,154 +193,158 @@
         ]
       },
       {
-        "perspective": "Perspective that the death remains an individual tragedy contextualized by demographic pressures.",
-        "holders": "Dissenting public opinion segment",
+        "perspective": "Valorant serves as a case study for digital marketing strategies within the global esports industry.",
+        "holders": "Neutral Observers, Academics",
         "sentiment_intensity": "mild",
         "platform_distribution": {
           "weibo": 0.0,
           "zhihu": 0.0
         },
-        "potential_biases": [
-          "algorithm_filter"
-        ]
+        "potential_biases": []
       }
     ],
     "analytical_frameworks": [
       {
-        "framework": "sociological",
-        "analysis": "Debate exists on whether the event indicates an industry-wide structural crisis versus an individual tragedy.",
-        "basis": "Deliberation Synthesis dissent points regarding industry crisis vs individual tragedy.",
-        "certainty": "medium"
-      },
-      {
         "framework": "technical",
-        "analysis": "2026 emerged as a critical inflection point in digital information verification, distinguishing this case from typical celebrity rumors via robust protocols.",
-        "basis": "Panoramic Overview and Deliberation Synthesis on verification protocols and evidence chain.",
+        "analysis": "Successful platform expansion (Console, Mobile) and engine upgrades (UE5) drove growth while preserving accessibility.",
+        "basis": "Console 2024, Mobile 2025, UE5 2025 consensus facts",
         "certainty": "high"
       },
       {
+        "framework": "sociological",
+        "analysis": "Community toxicity and gender discrimination present a universally acknowledged reputational risk counterbalancing growth.",
+        "basis": "Web Search oppose stance, Deliberation Synthesis consensus on toxicity",
+        "certainty": "high"
+      },
+      {
+        "framework": "economic",
+        "analysis": "Business perspectives highlight market dominance and revenue potential, though financial impact on third-party esports organizations remains unknown.",
+        "basis": "Web Search support stance, Deliberation Synthesis dissent on financial impact",
+        "certainty": "medium"
+      },
+      {
         "framework": "historical",
-        "analysis": "Assessment of the relevance of the 2026 demographic 'death peak' to the specific public opinion surrounding this case.",
-        "basis": "Deliberation Synthesis dissent on demographic death peak relevance.",
-        "certainty": "speculative"
+        "analysis": "Development history from Project A (2019) to launch (2020) and subsequent expansions establishes a timeline of rapid industry integration.",
+        "basis": "Media Agent launch history, Deliberation Synthesis expansion dates",
+        "certainty": "high"
       }
     ]
   },
   "synthesis": {
-    "summary": "Zhang Xuefeng's death on March 24, 2026, is confirmed as a stress-induced cardiac event, eliciting predominantly neutral public sentiment due to robust factual verification. While his legacy regarding educational equity is universally acknowledged, debate persists on whether his death symbolizes broader industry structural issues or remains an isolated incident. The high confidence in medical and corporate records distinguishes this case from typical unverified celebrity rumors, stabilizing public discourse. Consequently, the narrative remains grounded in verified data rather than speculation, despite underlying tensions regarding industry working conditions.",
+    "summary": "Valorant has solidified its brand dominance through strategic platform expansion to consoles and mobile markets between 2024 and 2025, coupled with a technically accessible Unreal Engine 5 upgrade. While the esports ecosystem drives significant revenue and viewership, pervasive community toxicity remains a critical reputational liability that contradicts media quantifications. The brand stands at a pivot point where technical accessibility supports growth, but social governance determines long-term sustainability.",
     "top_insights": [
       {
-        "insight": "Robust evidence chains suppress rumor-driven volatility",
-        "basis": "67.6% neutral sentiment correlated with cross-verified medical and corporate records",
-        "confidence": 0.95
-      },
-      {
-        "insight": "Legacy defined by educational equity rather than controversy",
-        "basis": "Consensus findings across all perspectives on contribution to ordinary families",
+        "insight": "Platform diversification successfully mitigated PC market saturation risks",
+        "basis": "Cross-verified console and mobile launch data (0.90 confidence)",
         "confidence": 0.9
       },
       {
-        "insight": "Interpretive divide exists on industry implications",
-        "basis": "Persistent disagreement on structural crisis vs individual tragedy and query_agent vs media_agent divergence",
+        "insight": "Toxicity perception gap poses a brand safety risk exceeding media-reported metrics",
+        "basis": "Deliberation disagreement on toxicity quantification (Consumer vs Media)",
         "confidence": 0.75
+      },
+      {
+        "insight": "Maintaining system requirements during engine upgrade preserved the competitive player base",
+        "basis": "Verified UE5 upgrade facts without requirement increases",
+        "confidence": 0.9
       }
     ],
     "key_tensions": [
       {
-        "tension": "Systemic industry crisis versus individual health tragedy",
+        "tension": "Consumer experience of toxicity vs Media statistical framing",
         "between": [
-          "industry_analysts",
-          "public_sentiment"
+          "Consumer Perspective",
+          "Media Agent"
         ],
-        "significance": "Determines whether policy changes or memorialization dominates future discourse"
+        "significance": "High risk of underestimating community churn and reputational damage"
       },
       {
-        "tension": "Analytical divergence on event framing",
+        "tension": "Award recognition timeline discrepancies",
         "between": [
-          "query_agent",
-          "media_agent"
+          "Query Agent",
+          "Media Agent"
         ],
-        "significance": "CSSD=0.338 indicates notable difference in how data sources interpret the event's broader context"
+        "significance": "Indicates data integrity issues in brand prestige tracking"
       }
     ],
-    "overall_confidence": 0.88,
+    "overall_confidence": 0.85,
     "recommended_investigation": [
-      "Long-term policy impact on education sector",
-      "Detailed platform-specific sentiment breakdown",
-      "Correlation analysis with 2026 demographic trends"
+      "Financial impact on third-party esports organizations",
+      "Deep dive sentiment analysis to reconcile toxicity perception gaps",
+      "Reconciliation of Game Awards recognition data sources"
     ]
   },
   "source_data": {
     "query_agent": {
       "total_sources": 15,
       "stance_distribution": {
-        "official": 0.027,
-        "neutral": 0.676,
-        "background": 0.216,
-        "support": 0.041,
-        "oppose": 0.041
+        "official": 0.15,
+        "background": 0.325,
+        "oppose": 0.175,
+        "neutral": 0.175,
+        "support": 0.175
       },
       "coverage_score": 1.0,
       "top_sources": [
         {
-          "title": "Zhang Xuefeng, exam tutor turned influencer, dies at 41",
-          "url": "http://global.chinadaily.com.cn/a/202603/24/WS69c2a6e8a310d6866eb3fa4c.html",
-          "trust_score": 0.53,
+          "title": "Research for CULT Committee: Esports - background analysis",
+          "url": "https://www.europarl.europa.eu/cmsdata/248295/PE699_635_Esports_Background%20Analysis_study.pdf",
+          "trust_score": 0.588,
           "stance": "official"
         },
         {
-          "title": "Tutor's death puts focus on hidden cardiac risks",
-          "url": "https://mobile.chinadaily.com.cn/html5/2026-03/26/content_004_69c43995ed50be540e72d2ae.htm",
-          "trust_score": 0.53,
+          "title": "[PDF] Provisional findings report - GOV.UK",
+          "url": "https://assets.publishing.service.gov.uk/media/63e3e9aee90e0762692b970a/Microsoft_Activision_-_Provisional_Findings_Report_3.pdf",
+          "trust_score": 0.587,
           "stance": "official"
         },
         {
-          "title": "张雪峰因心源性猝死去世!紧急提醒:猝死前身体的3个求救信号别忽视",
-          "url": "https://www.thepaper.cn/newsdetail_forward_32826620",
-          "trust_score": 0.521,
-          "stance": "neutral"
+          "title": "Creative Europe MEDIA strand - Culture and Creativity",
+          "url": "https://culture.ec.europa.eu/creative-europe/creative-europe-media-strand",
+          "trust_score": 0.587,
+          "stance": "official"
         },
         {
-          "title": "张雪峰因心源性猝死抢救无效逝世，年仅41岁",
-          "url": "https://i.ifeng.com/c/8rlMsGNmFHY",
-          "trust_score": 0.5,
+          "title": "[PDF] Anticipated acquisition by Microsoft of Activision Blizzard, Inc",
+          "url": "https://assets.publishing.service.gov.uk/media/644939aa529eda000c3b0525/Microsoft_Activision_Final_Report_.pdf",
+          "trust_score": 0.587,
+          "stance": "official"
+        },
+        {
+          "title": "Mayor sets ambition to place London at the heart of global esports ...",
+          "url": "https://www.london.gov.uk/mayor-sets-ambition-place-london-heart-global-esports-new-report-sets-out-exciting-future-industry",
+          "trust_score": 0.587,
+          "stance": "official"
+        },
+        {
+          "title": "Valorant Agent Release Order: A Complete Timeline | Turbosmurfs",
+          "url": "https://turbosmurfs.gg/article/valorant-agent-release-order-a-complete-timeline",
+          "trust_score": 0.542,
           "stance": "background"
         },
         {
-          "title": "张雪峰教别人避坑，自己掉进最深的坑",
-          "url": "https://news.ifeng.com/c/8rmHMTQauXc",
-          "trust_score": 0.5,
-          "stance": "neutral"
-        },
-        {
-          "title": "张雪峰去世，年仅42岁",
-          "url": "https://www.thepaper.cn/newsDetail_forward_32826671",
-          "trust_score": 0.487,
-          "stance": "neutral"
-        },
-        {
-          "title": "从心理因素分析张雪峰猝死",
-          "url": "https://c.m.163.com/news/a/KP2K96NA05560VIQ.html",
-          "trust_score": 0.47,
-          "stance": "neutral"
-        },
-        {
-          "title": "张雪峰（1984年5月18日—2026年3月24日）‌本名张子彪，沉痛哀悼",
-          "url": "https://c.m.163.com/news/a/KOVD26PR0556KEKP.html",
-          "trust_score": 0.47,
+          "title": "The history of VALORANT: A trip down memory lane",
+          "url": "https://www.redbull.com/us-en/history-of-valorant",
+          "trust_score": 0.541,
           "stance": "background"
         },
         {
-          "title": "张雪峰因心源性猝死逝世 年仅41岁",
-          "url": "https://finance.sina.com.cn/wm/2026-03-24/doc-inhscnuk1426396.shtml",
-          "trust_score": 0.47,
+          "title": "Riot Games - Wikipedia",
+          "url": "https://en.wikipedia.org/wiki/Riot_Games",
+          "trust_score": 0.531,
           "stance": "background"
         },
         {
-          "title": "张雪峰因心源性猝死去世，年仅41岁！生前谈人生目标：希望成为一代人的回忆...",
-          "url": "https://c.m.163.com/news/a/KOSUROBC0516DPPV.html",
-          "trust_score": 0.47,
+          "title": "VALORANT - Liquipedia Esports Wiki",
+          "url": "https://liquipedia.net/esports/VALORANT",
+          "trust_score": 0.529,
           "stance": "background"
+        },
+        {
+          "title": "How does VCT make money? Explained",
+          "url": "https://esports.gg/guides/valorant/how-does-valorant-esports-make-money",
+          "trust_score": 0.525,
+          "stance": "support"
         }
       ],
       "social_sentiment": {
@@ -366,21 +365,21 @@
     "media_agent": {
       "available": true,
       "mode": "live",
-      "summary_length": 63802
+      "summary_length": 48416
     }
   },
   "coordinator_trace": [
-    "[MediaAgentNode] live — 63802 chars in 2244.1s",
-    "[QueryAgentNode] Success in 2809.8s — sources=74, coverage=1.00, analysis_type=person",
-    "[DataBridge] Total bridged propositions: 14",
-    "[DivergenceMatrix] 2 sources, 1 pairs — max divergence: query_agent|media_agent = 0.338, min divergence: query_agent|media_agent = 0.338, hotspots: 1",
-    "[PerspectiveGen] analysis_type=person → perspectives: ['Factual Record & Achievements', 'Public Image & Reputation', 'Stakeholder Impact', 'Contextual & Comparative Analysis']",
-    "[Deliberation] 3-phase complete in 372.3s — consensus=8, dissents=4, confidence=0.75",
+    "[QueryAgentNode] Success in 528.0s — sources=40, coverage=1.00, analysis_type=brand",
+    "[MediaAgentNode] live — 48416 chars in 1551.3s",
+    "[DataBridge] Total bridged propositions: 13",
+    "[DivergenceMatrix] 2 sources, 1 pairs — max divergence: query_agent|media_agent = 0.385, min divergence: query_agent|media_agent = 0.385, hotspots: 1",
+    "[PerspectiveGen] analysis_type=brand → perspectives: ['Consumer Experience', 'Business Strategy & Competition', 'Media Narrative & Framing', 'Investor & Market Reaction']",
+    "[Deliberation] 3-phase complete in 432.6s — consensus=8, dissents=6, confidence=0.82",
     "[EchoChamber] 0 warning(s) detected",
-    "[FactOpinion] facts=7, opinions=4, frameworks=3",
+    "[FactOpinion] facts=6, opinions=4, frameworks=4",
     "[PlatformInterpreter] No social media data — skipping",
-    "[Synthesis] MoA aggregation complete in 63.4s — confidence=0.88, insights=3",
-    "[ReportAgentNode] academic_report — 15009 chars in 0.1s"
+    "[Synthesis] MoA aggregation complete in 191.9s — confidence=0.85, insights=3",
+    "[ReportAgentNode] academic_report — 16046 chars in 0.0s"
   ],
   "agent_errors": []
 }

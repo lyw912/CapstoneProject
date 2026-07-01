@@ -108,7 +108,7 @@ class Settings(BaseSettings):
     SEARCH_TIMEOUT: int = Field(240, description="Single search request timeout")
     MAX_CONTENT_LENGTH: int = Field(500000, description="Maximum content length for search")
     SEARCH_CONTENT_MAX_LENGTH: int = Field(
-        500000,
+        50000,
         description="Max search snippet length passed to LLM prompts (Media/Query engines)",
     )
     TAVILY_SEARCH_MAX_CONCURRENT: int = Field(

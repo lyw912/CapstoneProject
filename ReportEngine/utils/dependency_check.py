@@ -77,7 +77,7 @@ def _get_platform_specific_instructions():
                 "🪟 Windows System Solution:",
                 "",
                 "Step 1: Install GTK3 Runtime (run on host machine)",
-                "  Download: GTK3 Runtime link in README (default path recommended)",
+                "  Install GTK3/Pango runtime libraries as documented in docs/operations/setup.md",
                 "",
                 "Step 2: Add GTK bin directory to PATH (requires new terminal)",
                 "  set PATH=C:\\Program Files\\GTK3-Runtime Win64\\bin;%PATH%",
@@ -91,7 +91,7 @@ def _get_platform_specific_instructions():
             ]
         )
     else:
-        return _box_lines(["Please see PDF Export README for installation instructions for your system"])
+        return _box_lines(["Please see docs/operations/setup.md#3-pdf-export-dependencies for installation instructions for your system"])
 
 
 def _ensure_windows_gtk_paths():
@@ -307,7 +307,7 @@ def check_pango_available():
                 + missing_note
                 + platform_instructions
                 + _box_line()
-                + _box_line("📖 Documentation: static/Partial README for PDF Exporting/README.md")
+                + _box_line("Documentation: docs/operations/troubleshooting.md#report-issues")
                 + box_bottom
             )
         return False, f"⚠ PDF dependency loading failed: {error_msg}; Missing/unrecognized: {', '.join(missing_native) if missing_native else 'unknown'}"
@@ -333,7 +333,7 @@ def log_dependency_status():
     else:
         logger.warning(message)
         logger.info("💡 Tip: PDF export feature requires Pango library support, but does not affect other system functions")
-        logger.info("📚 Installation instructions: static/Partial README for PDF Exporting/README.md")
+        logger.info("Installation instructions: docs/operations/setup.md and docs/operations/troubleshooting.md")
 
     return is_available
 

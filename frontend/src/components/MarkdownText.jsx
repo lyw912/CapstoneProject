@@ -2,7 +2,7 @@ import DOMPurify from 'dompurify';
 import { displayText, escapeHtml } from '../utils/helpers';
 
 export default function MarkdownText({ value }) {
-  const escaped = escapeHtml(displayText(value, 'No reading available'));
+  const escaped = escapeHtml(displayText(value, 'Reading pending'));
   const html = escaped
     .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
     .replace(/`([^`]+)`/g, '<code>$1</code>')

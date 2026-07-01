@@ -1493,7 +1493,7 @@ def export_pdf(task_id: str):
             return jsonify({
                 'success': False,
                 'error': 'PDF export unavailable: missing system dependencies',
-                'details': 'Please refer to README.md in the root directory, step 2 of "Source Startup" (PDF export dependencies) for installation instructions',
+                'details': 'Install the PDF dependencies documented in docs/operations/setup.md#3-pdf-export-dependencies, or use the Docker image.',
                 'system_message': pango_message
             }), 503
 
@@ -1581,7 +1581,7 @@ def export_pdf_from_ir():
             return jsonify({
                 'success': False,
                 'error': 'PDF export unavailable: missing system dependencies',
-                'details': 'Please refer to README.md in the root directory, step 2 of "Source Startup" (PDF export dependencies) for installation instructions',
+                'details': 'Install the PDF dependencies documented in docs/operations/setup.md#3-pdf-export-dependencies, or use the Docker image.',
                 'system_message': pango_message
             }), 503
 

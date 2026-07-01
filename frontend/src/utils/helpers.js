@@ -1,16 +1,16 @@
-import { MICRO_STEPS, FLOW_STEPS } from './constants';
+import { MICRO_STEPS, FLOW_STEPS, LAST_QUERY_STORAGE_KEY } from './constants';
 
 export function isObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value);
 }
 
-export function displayText(value, fallback = 'Text unavailable') {
+export function displayText(value, fallback = 'Text pending') {
   const text = String(value ?? '').trim();
   return text || fallback;
 }
 
 export function stripMarkdown(value) {
-  return displayText(value, 'No reading available')
+  return displayText(value, 'Reading pending')
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
@@ -104,16 +104,16 @@ export function sourceTitle(source, index) {
 }
 
 export function reportSeedHtml(output) {
-  const summary = output?.synthesis?.summary || 'No report draft is available yet. Run an analysis or generate a report to start reviewing.';
+  const summary = output?.synthesis?.summary || 'Run an analysis or generate a report to start reviewing.';
   const insights = output?.synthesis?.top_insights || [];
   const tensions = output?.synthesis?.key_tensions || [];
   return `
     <h2>Executive Brief</h2>
     ${htmlFromText(summary)}
     <h2>Priority Insights</h2>
-    ${insights.map((item) => `<h3>${escapeHtml(displayText(item.insight, 'Insight unavailable'))}</h3><p>${escapeHtml(displayText(item.basis, 'Evidence basis unavailable'))}</p>`).join('') || '<p>No insights available.</p>'}
-    <h2>Open Risks</h2>
-    ${tensions.map((item) => `<p><strong>${escapeHtml(displayText(item.tension, 'Risk unavailable'))}</strong><br>${escapeHtml(displayText(item.significance, 'Significance unavailable'))}</p>`).join('') || '<p>No unresolved risks available.</p>'}
+    ${insights.map((item) => `<h3>${escapeHtml(displayText(item.insight, 'Insight pending'))}</h3><p>${escapeHtml(displayText(item.basis, 'Evidence basis pending'))}</p>`).join('') || '<p>Insights will appear after analysis.</p>'}
+    <h2>Open Tensions</h2>
+    ${tensions.map((item) => `<p><strong>${escapeHtml(displayText(item.tension, 'Tension pending'))}</strong><br>${escapeHtml(displayText(item.significance, 'Significance pending'))}</p>`).join('') || '<p>Tension review will appear after analysis.</p>'}
   `;
 }
 
@@ -203,7 +203,7 @@ export function traceMetricRows(observabilityTrace) {
     { key: 'trace_count', label: 'Traces', value: compactNumber(summary.trace_count) },
     { key: 'run_count', label: 'Steps', value: compactNumber(summary.run_count) },
     { key: 'avg_duration_ms', label: 'Avg time', value: msText(summary.avg_duration_ms) },
-    { key: 'error_count', label: 'Errors', value: compactNumber(summary.error_count) },
+    { key: 'error_count', label: 'Diagnostics', value: compactNumber(summary.error_count) },
     { key: 'total_tokens', label: 'Tokens', value: compactNumber(summary.total_tokens) },
     { key: 'total_cost', label: 'Cost', value: moneyText(summary.total_cost) }
   ];
@@ -225,4 +225,20 @@ export function traceChildrenByType(children = []) {
     counts[key] = (counts[key] || 0) + 1;
   });
   return Object.entries(counts).map(([name, value]) => ({ name, value }));
+}
+
+export function readLastQuery() {
+  try {
+    return window.localStorage.getItem(LAST_QUERY_STORAGE_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+export function persistLastQuery(value) {
+  try {
+    window.localStorage.setItem(LAST_QUERY_STORAGE_KEY, String(value ?? ''));
+  } catch {
+    return undefined;
+  }
 }

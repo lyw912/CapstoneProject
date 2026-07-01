@@ -1,11 +1,13 @@
-version: "3.9"
-
 services:
   public-opinion-system:
-    image: your-registry/public-opinion-system:latest
-    # Replace with your actual image registry
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: public-opinion-system:latest
     container_name: public-opinion-system
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       - PYTHONUNBUFFERED=1
       - STREAMLIT_SERVER_ENABLE_FILE_WATCHER=false
@@ -16,8 +18,10 @@ services:
       - "8503:8503"
     volumes:
       - ./logs:/app/logs
+      - ./output:/app/output
+      - ./AgentCoordinator/cache:/app/AgentCoordinator/cache
       - ./final_reports:/app/final_reports
-      - ./.env:/app/.env  
+      - ./.env:/app/.env
       - ./insight_engine_streamlit_reports:/app/insight_engine_streamlit_reports
       - ./media_engine_streamlit_reports:/app/media_engine_streamlit_reports
       - ./query_engine_streamlit_reports:/app/query_engine_streamlit_reports

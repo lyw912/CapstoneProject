@@ -65,8 +65,8 @@ class FirstSearchNode(BaseNode):
             
             logger.info("Generating first search query")
             
-            # Call LLM
-            response = self.llm_client.stream_invoke_to_string(SYSTEM_PROMPT_FIRST_SEARCH, message)
+            # Short JSON output — non-streaming invoke is faster than stream_invoke_to_string
+            response = self.llm_client.invoke(SYSTEM_PROMPT_FIRST_SEARCH, message)
             
             # Process response
             processed_response = self.process_output(response)
@@ -200,8 +200,8 @@ class ReflectionNode(BaseNode):
             
             logger.info("Reflecting and generating new search query")
             
-            # Call LLM
-            response = self.llm_client.stream_invoke_to_string(SYSTEM_PROMPT_REFLECTION, message)
+            # Short JSON output — non-streaming invoke is faster than stream_invoke_to_string
+            response = self.llm_client.invoke(SYSTEM_PROMPT_REFLECTION, message)
             
             # Process response
             processed_response = self.process_output(response)

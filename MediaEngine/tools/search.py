@@ -47,6 +47,14 @@ if utils_dir not in sys.path:
 
 from retry_helper import with_graceful_retry, SEARCH_API_RETRY_CONFIG
 
+
+def _search_http_timeout() -> int:
+    return int(
+        getattr(settings, "MEDIA_SEARCH_HTTP_TIMEOUT", None)
+        or getattr(settings, "SEARCH_TIMEOUT", 60)
+        or 60
+    )
+
 # --- 1. Core Client and Tool Set ---
 from dataclasses import dataclass, field
 
@@ -124,6 +132,7 @@ class BochaMultimodalSearch:
             'Content-Type': 'application/json',
             'Accept': '*/*'
         }
+        self._http_timeout = _search_http_timeout()
 
     def _parse_search_response(self, response_dict: Dict[str, Any], query: str) -> BochaResponse:
         """Parse structured BochaResponse object from API raw dictionary response"""
@@ -194,7 +203,7 @@ class BochaMultimodalSearch:
 
         try:
 
-            response = requests.post(self.BOCHA_BASE_URL, headers=self._headers, json=payload, timeout=30)
+            response = requests.post(self.BOCHA_BASE_URL, headers=self._headers, json=payload, timeout=self._http_timeout)
             response.raise_for_status()  # Raise exception if HTTP status is 4xx or 5xx
 
             response_dict = response.json()
@@ -291,6 +300,7 @@ class AnspireAISearch:
             'Connection': 'keep-alive',
             'Accept': '*/*'
         }
+        self._http_timeout = _search_http_timeout()
 
     def _parse_search_response(self, response_dict: Dict[str, Any], query: str) -> AnspireResponse:
         final_response = AnspireResponse(query=query)
@@ -321,7 +331,7 @@ class AnspireAISearch:
         }
 
         try:
-            response = requests.get(self.ANSPIRE_BASE_URL, headers=self._headers, params=payload, timeout=30)
+            response = requests.get(self.ANSPIRE_BASE_URL, headers=self._headers, params=payload, timeout=self._http_timeout)
             response.raise_for_status()  # Raise exception if HTTP status is 4xx or 5xx
 
             response_dict = response.json()

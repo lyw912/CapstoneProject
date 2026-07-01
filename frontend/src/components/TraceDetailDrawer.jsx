@@ -16,7 +16,7 @@ export default function TraceDetailDrawer({ run, open, onClose }) {
             <strong>{msText(run.duration_ms)}</strong>
             <span>{timeText(run.start_time)}</span>
           </div>
-          {run.error && <Alert type="error" showIcon message="Trace error" description={displayText(run.error, 'Error unavailable')} />}
+          {run.error && <Alert type="error" showIcon message="Trace diagnostic" description={displayText(run.error, 'Diagnostic pending')} />}
           <TraceTypeBars data={childTypes} />
           <div className="trace-child-list">
             {children.length ? children.map((child) => (

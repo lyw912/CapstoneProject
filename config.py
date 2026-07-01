@@ -151,23 +151,59 @@ class Settings(BaseSettings):
     MAX_HIGH_CONFIDENCE_SENTIMENT_RESULTS: int = Field(0, description="Maximum high confidence sentiment analysis results")
     MAX_REFLECTIONS: int = Field(3, description="Maximum reflection iterations")
     MAX_PARAGRAPHS: int = Field(6, description="Maximum paragraphs")
-    SEARCH_TIMEOUT: int = Field(240, description="Single search request timeout")
+    MEDIA_PARAGRAPH_WORKERS: int = Field(
+        3,
+        description="Parallel workers for MediaEngine paragraph processing (1=sequential, 3-5 recommended)",
+    )
+    MEDIA_PARAGRAPH_RETRY_PASSES: int = Field(
+        1,
+        description="After parallel pass, sequentially retry failed paragraphs this many extra times",
+    )
+    MEDIA_REFLECTION_STATE_MAX_CHARS: int = Field(
+        50000,
+        description="Max chars of paragraph_latest_state sent to reflection-summary LLM (reduces latency)",
+    )
+    QUERY_MAX_SEARCH_ITERATIONS: int = Field(
+        2,
+        description="Max gap-fill search rounds in QueryEngine structured pipeline (was hardcoded 3)",
+    )
+    LLM_SHORT_TASK_TIMEOUT: int = Field(
+        120,
+        description="HTTP timeout (seconds) for short LLM calls (search query JSON, classification)",
+    )
+    LLM_LONG_TASK_TIMEOUT: int = Field(
+        600,
+        description="HTTP timeout (seconds) for streaming LLM calls (summaries, chapters)",
+    )
+    LLM_STREAM_IDLE_TIMEOUT: int = Field(
+        240,
+        description="Abort streaming LLM call if no token/chunk arrives within this many seconds",
+    )
+    MEDIA_USE_LLM_REPORT_FORMAT: bool = Field(
+        False,
+        description="When false, MediaEngine final report is assembled without an extra LLM pass",
+    )
+    MEDIA_SEARCH_HTTP_TIMEOUT: int = Field(
+        60,
+        description="HTTP timeout (seconds) for MediaEngine Bocha/Anspire search requests",
+    )
+    SEARCH_TIMEOUT: int = Field(60, description="HTTP timeout (seconds) for web search APIs")
     MAX_CONTENT_LENGTH: int = Field(500000, description="Maximum search content length")
     SEARCH_CONTENT_MAX_LENGTH: int = Field(
-        500000,
-        description="Max search snippet length passed to LLM prompts (Media/Query engines)",
+        50000,
+        description="Max chars per search snippet in LLM prompts (Media/Query engines); lower=faster",
     )
     TAVILY_SEARCH_MAX_CONCURRENT: int = Field(
         3,
         description="Max parallel Tavily/Anspire sub-queries per search round (lower = fewer connection resets)",
     )
     COORDINATOR_MEDIA_AGENT_TIMEOUT: int = Field(
-        3600,
-        description="Max seconds for MediaEngine deep research inside AgentCoordinator (default 1 hour)",
+        10800,
+        description="Max seconds for MediaEngine deep research inside AgentCoordinator (default 3 hours)",
     )
     COORDINATOR_QUERY_AGENT_TIMEOUT: int = Field(
-        3600,
-        description="Max seconds for QueryEngine structured research inside AgentCoordinator (default 1 hour)",
+        1800,
+        description="Max seconds for QueryEngine structured research inside AgentCoordinator (default 30 min)",
     )
 
     # ================== User Input Sensitive Word Filter ====================

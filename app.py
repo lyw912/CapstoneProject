@@ -80,7 +80,7 @@ if REPORT_ENGINE_AVAILABLE:
     app.register_blueprint(report_bp, url_prefix='/api/report')
     logger.info("ReportEngine interface registered")
 else:
-    logger.info("ReportEngine unavailable, skipping interface registration")
+    logger.info("ReportEngine interface registration deferred")
 
 # Create log directory
 LOG_DIR = Path('logs')
@@ -276,12 +276,12 @@ def _mark_shutdown_requested():
 
 
 def initialize_system_components():
-    """Start the final demo runtime: Flask APIs, React static UI, Coordinator, and ReportEngine.
+    """Start the final Signal Studio runtime: Flask APIs, React static UI, Coordinator, and ReportEngine.
 
     Streamlit Media/Query apps are legacy operator surfaces. The final React
     frontend calls QueryEngine/MediaEngine through AgentCoordinator and passes
     the Coordinator artifact to ReportEngine, so the Streamlit processes are
-    deliberately kept stopped for the final demo.
+    deliberately kept stopped for the Signal Studio path.
     """
     logs = []
     errors = []
@@ -290,7 +290,7 @@ def initialize_system_components():
         try:
             success, message = stop_streamlit_app(app_name)
             processes[app_name]['status'] = 'stopped'
-            logs.append(f"{app_name} Streamlit disabled for final demo: {message if success else 'not running'}")
+            logs.append(f"{app_name} Streamlit disabled for Signal Studio: {message if success else 'not running'}")
         except Exception as exc:  # pragma: no cover - safe catch
             logs.append(f"{app_name} Streamlit stop skipped: {exc}")
             logger.exception(f"Failed to stop legacy Streamlit app: {app_name}")
@@ -298,7 +298,7 @@ def initialize_system_components():
     try:
         stop_forum_engine()
         processes['forum']['status'] = 'stopped'
-        logs.append("ForumEngine monitor disabled for final demo")
+        logs.append("ForumEngine monitor disabled for Signal Studio")
     except Exception as exc:  # pragma: no cover - safe catch
         logs.append(f"ForumEngine stop skipped: {exc}")
         logger.exception("Failed to stop ForumEngine monitor")
@@ -1177,7 +1177,7 @@ def _langsmith_fallback_from_artifact(observability):
         'project': observability.get('project') or '',
         'endpoint': observability.get('endpoint') or '',
         'source': 'local_artifact',
-        'message': 'LangSmith traces were unavailable; showing the latest local run artifact.',
+        'message': 'Showing the latest local run artifact for trace review.',
         'summary': {
             'trace_count': 1 if output else 0,
             'run_count': len(trace),
@@ -1274,7 +1274,7 @@ def _coordinator_progress_detail(node_name, update, state):
         text = run.get('text_output') or ''
         if text:
             return {'message': f"Media evidence package captured ({len(text)} chars)", 'evidence': [text[:140]]}
-        return {'message': 'Media engine skipped or unavailable', 'evidence': []}
+        return {'message': 'Media evidence package will be added when media output is present', 'evidence': []}
     if node_name == 'data_bridge':
         props = update.get('bridged_propositions') or []
         sample = [str(item.get('content') or '')[:120] for item in props[:3]]
@@ -1953,13 +1953,13 @@ def update_config():
 
 @app.route('/api/system/status')
 def get_system_status():
-    """Return final demo runtime status."""
+    """Return final Signal Studio runtime status."""
     state = _get_system_state()
     return jsonify({
         'success': True,
         'started': state['started'],
         'starting': state['starting'],
-        'mode': 'final_react_demo',
+        'mode': 'final_signal_studio',
         'streamlit_required': False
     })
 

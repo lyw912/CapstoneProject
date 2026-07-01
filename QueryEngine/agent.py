@@ -494,7 +494,7 @@ class DeepSearchAgent:
             "analysis_type": "general",
             "sub_queries": [],
             "search_iterations": 0,
-            "max_iterations": 3,
+            "max_iterations": int(getattr(self.config, "QUERY_MAX_SEARCH_ITERATIONS", 2) or 2),
             "raw_sources": [],
             "deduped_sources": [],
             "scored_sources": [],

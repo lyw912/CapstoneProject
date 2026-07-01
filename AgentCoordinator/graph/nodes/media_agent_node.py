@@ -4,11 +4,16 @@ MediaAgent is optional for the Coordinator pipeline. If it is configured, this
 node calls the real MediaEngine agent. If its API/search keys are missing,
 imports fail, or execution times out, the node records a trace-only skip and
 lets the rest of the Coordinator continue with the available agents.
+
+Caching: After the first successful run, Markdown output is saved to
+AgentCoordinator/cache/. Subsequent runs load from cache (keyed by query hash).
 """
 
 from __future__ import annotations
 
+import hashlib
 import time
+from pathlib import Path
 from typing import Optional
 
 from loguru import logger
@@ -17,9 +22,39 @@ from config import settings
 from ..state import CoordinatorState, AgentRunResult
 from ...utils.timeout_guard import run_sync_with_timeout
 
+CACHE_DIR = Path(__file__).resolve().parents[3] / "AgentCoordinator" / "cache"
+
 
 def _media_agent_timeout_seconds() -> float:
     return max(60.0, float(getattr(settings, "COORDINATOR_MEDIA_AGENT_TIMEOUT", 3600) or 3600))
+
+
+def _cache_path(query: str) -> Path:
+    key = hashlib.md5(query.encode()).hexdigest()[:12]
+    return CACHE_DIR / f"media_agent_{key}.md"
+
+
+def _load_cache(query: str) -> Optional[str]:
+    path = _cache_path(query)
+    if path.exists():
+        try:
+            text = path.read_text(encoding="utf-8")
+            if text.strip():
+                logger.info(f"[MediaAgentNode] Cache hit: {path.name} ({len(text)} chars)")
+                return text
+        except Exception as exc:
+            logger.warning(f"[MediaAgentNode] Cache load failed: {exc}")
+    return None
+
+
+def _save_cache(query: str, markdown: str) -> None:
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    path = _cache_path(query)
+    try:
+        path.write_text(markdown, encoding="utf-8")
+        logger.info(f"[MediaAgentNode] Cached result → {path.name}")
+    except Exception as exc:
+        logger.warning(f"[MediaAgentNode] Cache save failed: {exc}")
 
 
 def _missing_media_config() -> list[str]:
@@ -44,7 +79,7 @@ def _run_media_agent_sync(query: str) -> Optional[str]:
     try:
         import sys
         from pathlib import Path
-        project_root = Path(__file__).resolve().parents[4]
+        project_root = Path(__file__).resolve().parents[3]
         if str(project_root) not in sys.path:
             sys.path.insert(0, str(project_root))
 
@@ -66,6 +101,21 @@ async def media_agent_node(state: CoordinatorState) -> dict:
     logger.info(f"[MediaAgentNode] Starting for query: {query!r}")
     t0 = time.time()
 
+    cached = _load_cache(query)
+    if cached is not None:
+        duration = time.time() - t0
+        run_result: AgentRunResult = {
+            "agent_name": "media_agent",
+            "success": True,
+            "output": None,
+            "text_output": cached,
+            "error": None,
+            "duration_seconds": duration,
+        }
+        trace = f"[MediaAgentNode] Loaded from cache in {duration:.1f}s ({len(cached)} chars)"
+        logger.info(trace)
+        return {"media_run": run_result, "coordinator_trace": [trace]}
+
     text_output: Optional[str] = None
     missing_config = _missing_media_config()
 
@@ -83,6 +133,7 @@ async def media_agent_node(state: CoordinatorState) -> dict:
             label="MediaAgent.research",
         )
         if text_output:
+            _save_cache(query, text_output)
             mode = "live"
             detail = f"{len(text_output)} chars"
         else:

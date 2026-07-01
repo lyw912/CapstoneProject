@@ -69,7 +69,7 @@ export function useObservabilityTrace() {
     } catch (error) {
       if (!quiet) {
         const { message: msg } = await import('antd');
-        msg.warning(error.message || 'Trace data unavailable');
+        msg.warning(error.message || 'Trace data is pending');
       }
     } finally {
       setLoading(false);

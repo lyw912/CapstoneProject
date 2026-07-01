@@ -225,12 +225,22 @@ def make_retryable_request(
     return _execute()
 
 # Predefined common retry configurations
-LLM_RETRY_CONFIG = RetryConfig(
-    max_retries=6,        # Keep extra retry attempts
-    initial_delay=60.0,   # Wait at least 1 minute initially
-    backoff_factor=2.0,   # Continue using exponential backoff
-    max_delay=600.0       # Maximum wait 10 minutes per attempt
+LLM_SHORT_RETRY_CONFIG = RetryConfig(
+    max_retries=2,
+    initial_delay=3.0,
+    backoff_factor=2.0,
+    max_delay=15.0,
 )
+
+LLM_LONG_RETRY_CONFIG = RetryConfig(
+    max_retries=1,
+    initial_delay=10.0,
+    backoff_factor=2.0,
+    max_delay=60.0,
+)
+
+# Backward-compatible alias for long streaming calls
+LLM_RETRY_CONFIG = LLM_LONG_RETRY_CONFIG
 
 SEARCH_API_RETRY_CONFIG = RetryConfig(
     max_retries=5,        # Increase to 5 retries

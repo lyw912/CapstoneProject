@@ -1,0 +1,56 @@
+name: Documentation Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check local Markdown links
+        shell: pwsh
+        run: |
+          $root=(Get-Location).Path
+          $files=@('README.md') + (Get-ChildItem docs -Recurse -File -Filter *.md | ForEach-Object { $_.FullName.Substring($root.Length+1) })
+          $broken=@()
+          foreach ($rel in $files) {
+            $text=Get-Content -Raw $rel
+            $dir=Split-Path $rel
+            if ($dir -eq '') { $dir='.' }
+            [regex]::Matches($text, '!\[[^\]]*\]\(([^)]+)\)|(?<!! )\[[^\]]+\]\(([^)]+)\)') | ForEach-Object {
+              $target=$_.Groups[1].Value
+              if (-not $target) { $target=$_.Groups[2].Value }
+              if ($target -match '^(https?:|mailto:|#)') { return }
+              $clean=($target -split '#')[0].Trim('<','>')
+              if ($clean -and -not (Test-Path (Join-Path $dir $clean))) {
+                $broken += "BROKEN $rel -> $target"
+              }
+            }
+          }
+          if ($broken.Count -gt 0) {
+            $broken | ForEach-Object { Write-Error $_ }
+            exit 1
+          }
+
+      - name: Parse OpenAPI YAML
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+          python - <<'PY'
+          import pathlib
+          import yaml
+
+          path = pathlib.Path("docs/reference/openapi.yaml")
+          data = yaml.safe_load(path.read_text(encoding="utf-8"))
+          assert data.get("openapi"), "missing openapi version"
+          assert data.get("paths"), "missing paths"
+          assert data.get("components"), "missing components"
+          print(f"OpenAPI paths: {len(data['paths'])}")
+          PY

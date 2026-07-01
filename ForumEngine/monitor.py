@@ -170,7 +170,7 @@ class LogMonitor:
     def is_valuable_content(self, line: str) -> bool:
         """Determine if the content is valuable (excluding short prompts and error messages)"""
         # If the line contains "Cleaned output", it is considered valuable
-        if "Cleaned output" in line:
+        if self._cleaned_output_marker(line):
             return True
 
         # Exclude common short prompt messages and error messages
@@ -207,7 +207,27 @@ class LogMonitor:
     
     def is_json_start_line(self, line: str) -> bool:
         """Determine if this is a JSON start line"""
-        return "Cleaned output: {" in line
+        marker = self._cleaned_output_marker(line)
+        if not marker:
+            return False
+        return "{" in line[line.find(marker) + len(marker):].lstrip()
+
+    def _cleaned_output_marker(self, line: str) -> Optional[str]:
+        """Return the cleaned-output marker used by English or Chinese logs."""
+        for marker in ("Cleaned output:", "清理后的输出:"):
+            if marker in line:
+                return marker
+        return None
+
+    def _strip_log_prefix(self, line: str) -> str:
+        """Remove old timestamp and loguru prefixes from a log line."""
+        clean_line = re.sub(r'^\[\d{2}:\d{2}:\d{2}\]\s*', '', line.strip())
+        clean_line = re.sub(
+            r'^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d{3}\s*\|\s*[A-Z]+\s*\|\s*.*?\s*-\s*',
+            '',
+            clean_line,
+        )
+        return clean_line.strip()
     
     def is_json_end_line(self, line: str) -> bool:
         """Determine if this is a JSON end line
@@ -236,21 +256,23 @@ class LogMonitor:
         try:
             # Find the starting position of JSON
             json_start_idx = -1
+            marker = None
             for i, line in enumerate(json_lines):
-                if "Cleaned output: {" in line:
+                marker = self._cleaned_output_marker(line)
+                if marker and "{" in line[line.find(marker) + len(marker):]:
                     json_start_idx = i
                     break
 
-            if json_start_idx == -1:
+            if json_start_idx == -1 or marker is None:
                 return None
 
             # Extract the JSON part
             first_line = json_lines[json_start_idx]
-            json_start_pos = first_line.find("Cleaned output: {")
+            json_start_pos = first_line.find(marker)
             if json_start_pos == -1:
                 return None
 
-            json_part = first_line[json_start_pos + len("Cleaned output: "):]
+            json_part = first_line[json_start_pos + len(marker):].strip()
 
             # If the first line contains a complete JSON, process it directly
             if json_part.strip().endswith("}") and json_part.count("{") == json_part.count("}"):
@@ -271,12 +293,7 @@ class LogMonitor:
             # Process multi-line JSON
             json_text = json_part
             for line in json_lines[json_start_idx + 1:]:
-                # Remove timestamps: supports old format [HH:MM:SS] and new format loguru (YYYY-MM-DD HH:mm:ss.SSS | LEVEL | ...)
-                # Old format: [HH:MM:SS]
-                clean_line = re.sub(r'^\[\d{2}:\d{2}:\d{2}\]\s*', '', line)
-                # New format: Remove loguru format timestamp and level information
-                # Format: YYYY-MM-DD HH:mm:ss.SSS | LEVEL | module:function:line -
-                clean_line = re.sub(r'^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d{3}\s*\|\s*[A-Z]+\s*\|\s*[^|]+?\s*-\s*', '', clean_line)
+                clean_line = self._strip_log_prefix(line)
                 json_text += clean_line
 
             # Try to parse JSON
@@ -395,7 +412,8 @@ class LogMonitor:
         prefixes_to_remove = [
             "First summary: ",
             "Reflection summary: ",
-            "Cleaned output: "
+            "Cleaned output: ",
+            "清理后的输出: ",
         ]
 
         for prefix in prefixes_to_remove:
@@ -546,11 +564,7 @@ class LogMonitor:
                 # Check if this is the end of JSON
                 # First clean the timestamp, then determine if the cleaned line is an end marker
                 cleaned_line = line.strip()
-                # Clean old format timestamp: [HH:MM:SS]
-                cleaned_line = re.sub(r'^\[\d{2}:\d{2}:\d{2}\]\s*', '', cleaned_line)
-                # Clean new format timestamp: YYYY-MM-DD HH:mm:ss.SSS | LEVEL | module:function:line -
-                cleaned_line = re.sub(r'^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d{3}\s*\|\s*[A-Z]+\s*\|\s*[^|]+?\s*-\s*', '', cleaned_line)
-                cleaned_line = cleaned_line.strip()
+                cleaned_line = self._strip_log_prefix(cleaned_line)
 
                 # After cleaning, determine if this is an end marker
                 if cleaned_line == "}" or cleaned_line == "] }":

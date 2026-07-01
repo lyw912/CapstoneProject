@@ -63,7 +63,7 @@ export const CONFIG_GROUPS = [
   },
   {
     title: 'Trace Quality',
-    description: 'LangSmith tracing for model calls, timing, errors, and review quality.',
+    description: 'LangSmith tracing for model calls, timing, diagnostics, and review quality.',
     fields: [
       ['LANGSMITH_TRACING', 'Tracing enabled', 'boolean'],
       ['LANGSMITH_API_KEY', 'LangSmith key', 'password'],
@@ -108,3 +108,5 @@ export const STANCE_COLORS = {
   background: '#8bb9a8',
   unknown: '#8a978f'
 };
+
+export const LAST_QUERY_STORAGE_KEY = 'signal-studio-last-query';

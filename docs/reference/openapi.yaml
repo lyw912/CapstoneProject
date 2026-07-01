@@ -1,0 +1,464 @@
+openapi: 3.0.3
+info:
+  title: CapstoneProject Runtime API
+  version: "1.0"
+  description: Main REST API surface for Signal Studio, AgentCoordinator, and ReportEngine.
+servers:
+  - url: http://127.0.0.1:5000
+paths:
+  /api/system/status:
+    get:
+      summary: Get final Signal Studio runtime status
+      responses:
+        "200":
+          description: Runtime status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemStatusResponse"
+  /api/system/start:
+    post:
+      summary: Start final Signal Studio runtime components
+      responses:
+        "200":
+          description: Startup succeeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "500":
+          description: Startup diagnostic response
+  /api/system/shutdown:
+    post:
+      summary: Stop runtime components and schedule server shutdown
+      responses:
+        "200":
+          description: Shutdown command accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /api/config:
+    get:
+      summary: Read selected configuration values
+      responses:
+        "200":
+          description: Configuration values
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigResponse"
+    post:
+      summary: Update selected configuration values
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: Updated configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigResponse"
+        "400":
+          description: Empty or unsupported update
+  /api/coordinator/latest:
+    get:
+      summary: Load latest Coordinator artifact
+      responses:
+        "200":
+          description: Latest artifact loaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoordinatorLatestResponse"
+        "404":
+          description: No artifact exists yet
+  /api/coordinator/run:
+    post:
+      summary: Start integrated Coordinator analysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                feedback:
+                  type: string
+      responses:
+        "200":
+          description: Task started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoordinatorTaskResponse"
+        "400":
+          description: Invalid or sensitive input
+  /api/coordinator/task/{task_id}:
+    get:
+      summary: Get Coordinator task status
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Task found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoordinatorTaskResponse"
+        "404":
+          description: Task not found
+  /api/coordinator/feedback:
+    get:
+      summary: List Coordinator feedback records
+      responses:
+        "200":
+          description: Feedback records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedbackListResponse"
+    post:
+      summary: Save Coordinator feedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeedbackRequest"
+      responses:
+        "200":
+          description: Feedback saved
+        "400":
+          description: Invalid feedback
+  /api/observability/langsmith:
+    get:
+      summary: Load LangSmith or local observability summary
+      responses:
+        "200":
+          description: Observability response
+  /api/report/status:
+    get:
+      summary: Get ReportEngine status
+      responses:
+        "200":
+          description: ReportEngine status
+  /api/report/generate:
+    post:
+      summary: Start report generation
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                custom_template:
+                  type: string
+      responses:
+        "200":
+          description: Report task started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportTaskStartResponse"
+        "400":
+          description: Invalid input or upstream artifact diagnostic
+  /api/report/progress/{task_id}:
+    get:
+      summary: Get report task progress
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Report task progress
+  /api/report/stream/{task_id}:
+    get:
+      summary: Stream report task events
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Server-Sent Events stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "404":
+          description: Task not found
+  /api/report/result/{task_id}:
+    get:
+      summary: Get completed report HTML
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: HTML report
+          content:
+            text/html:
+              schema:
+                type: string
+  /api/report/result/{task_id}/json:
+    get:
+      summary: Get completed report as JSON payload
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Report task and HTML content
+  /api/report/download/{task_id}:
+    get:
+      summary: Download completed report HTML
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: HTML attachment
+  /api/report/cancel/{task_id}:
+    post:
+      summary: Cancel a pending or running report task
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Task cancelled or already terminal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "404":
+          description: Task not found
+  /api/report/templates:
+    get:
+      summary: List available ReportEngine Markdown templates
+      responses:
+        "200":
+          description: Template list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateListResponse"
+  /api/report/log:
+    get:
+      summary: Read ReportEngine log lines
+      responses:
+        "200":
+          description: Recent report log lines
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportLogResponse"
+  /api/report/log/clear:
+    post:
+      summary: Clear ReportEngine log file
+      responses:
+        "200":
+          description: Log cleared
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /api/report/export/md/{task_id}:
+    get:
+      summary: Export report Markdown
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Markdown attachment
+  /api/report/export/pdf/{task_id}:
+    get:
+      summary: Export report PDF
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: PDF bytes
+  /api/report/export/pdf-from-ir:
+    post:
+      summary: Export PDF directly from Document IR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - document_ir
+              properties:
+                document_ir:
+                  type: object
+                optimize:
+                  type: boolean
+      responses:
+        "200":
+          description: PDF bytes
+components:
+  parameters:
+    TaskId:
+      name: task_id
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    MessageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+    SystemStatusResponse:
+      allOf:
+        - $ref: "#/components/schemas/MessageResponse"
+        - type: object
+          properties:
+            started:
+              type: boolean
+            starting:
+              type: boolean
+            mode:
+              type: string
+            streamlit_required:
+              type: boolean
+    ConfigResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        config:
+          type: object
+          additionalProperties: true
+    CoordinatorTask:
+      type: object
+      properties:
+        task_id:
+          type: string
+        query:
+          type: string
+        has_feedback:
+          type: boolean
+        status:
+          type: string
+          enum: [queued, running, completed, error]
+        progress:
+          type: integer
+        message:
+          type: string
+        created_at:
+          type: string
+        updated_at:
+          type: string
+        error:
+          type: string
+    CoordinatorTaskResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        task:
+          $ref: "#/components/schemas/CoordinatorTask"
+    CoordinatorLatestResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        output:
+          type: object
+        metadata:
+          type: object
+        feedback:
+          type: object
+        observability:
+          type: object
+    FeedbackRequest:
+      type: object
+      required:
+        - feedback
+      properties:
+        feedback:
+          type: string
+        query:
+          type: string
+        target:
+          type: string
+        action:
+          type: string
+        priority:
+          type: string
+        thread_id:
+          type: string
+    FeedbackListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        records:
+          type: array
+          items:
+            type: object
+        summary:
+          type: object
+    ReportTaskStartResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        task_id:
+          type: string
+        message:
+          type: string
+        task:
+          type: object
+        source:
+          type: string
+          enum: [engine_files, coordinator_latest]
+        stream_url:
+          type: string
+    TemplateListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        templates:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              filename:
+                type: string
+              path:
+                type: string
+              content:
+                type: string
+    ReportLogResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        logs:
+          type: array
+          items:
+            type: string
+        lines:
+          type: array
+          items:
+            type: string
+        content:
+          type: string

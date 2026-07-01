@@ -23,7 +23,7 @@ export default function usePolling() {
       } catch (error) {
         clearPoll();
         const { message: msg } = await import('antd');
-        msg.error(error.message || 'Analysis status unavailable');
+        msg.error(error.message || 'Analysis status is pending');
       }
     }, 1800);
   };

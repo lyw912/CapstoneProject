@@ -83,31 +83,107 @@ def _bridge_query_agent(query_output: Dict) -> List[BridgedProposition]:
     return propositions
 
 
+def _first_sentence(text: str, max_len: int = 500) -> str:
+    """Return a concise excerpt suitable for a bridged proposition."""
+    cleaned = " ".join(text.split())
+    if not cleaned:
+        return ""
+
+    # Prefer the first sentence when it is informative enough.
+    for sep in (". ", "。", "! ", "? "):
+        if sep in cleaned:
+            head, _ = cleaned.split(sep, 1)
+            candidate = (head + sep.strip()).strip()
+            if len(candidate) >= 40:
+                return candidate[:max_len]
+
+    if len(cleaned) <= max_len:
+        return cleaned
+    return cleaned[: max_len - 3].rstrip() + "..."
+
+
+def _extract_media_sections(media_text: str) -> List[str]:
+    """Pull one proposition per top-level manual-report section (## title blocks)."""
+    props: List[str] = []
+    skip_titles = {"conclusion"}
+
+    for block in media_text.split("\n---\n"):
+        block = block.strip()
+        if not block:
+            continue
+
+        section_title: Optional[str] = None
+        body_parts: List[str] = []
+
+        for line in block.split("\n"):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if stripped.startswith("# ") and not stripped.startswith("## "):
+                continue
+            if stripped.startswith("## ") and section_title is None:
+                section_title = stripped[3:].strip()
+                if section_title.lower() in skip_titles:
+                    section_title = None
+                    break
+                continue
+            if section_title is not None:
+                body_parts.append(stripped)
+
+        if not section_title:
+            continue
+
+        excerpt = _first_sentence(" ".join(body_parts))
+        if excerpt:
+            props.append(f"{section_title}: {excerpt}")
+
+    return props
+
+
+def _extract_media_bullets(media_text: str) -> List[str]:
+    """Legacy bullet extraction for LLM-formatted Media reports."""
+    bullets: List[str] = []
+    for line in media_text.split("\n"):
+        line = line.strip()
+        if not line.startswith("- ") or len(line) <= 20:
+            continue
+        content = line[2:].strip()
+        if "trust:" in content or content.startswith("["):
+            continue
+        bullets.append(content)
+    return bullets
+
+
 def _bridge_media_agent(media_text: str) -> List[BridgedProposition]:
-    """Extract key propositions from MediaAgent Markdown text using heuristics."""
+    """Extract key propositions from MediaAgent Markdown (sections and bullets)."""
     propositions: List[BridgedProposition] = []
     if not media_text:
         return propositions
 
-    lines = media_text.split("\n")
-    bullet_props = []
-    for line in lines:
-        line = line.strip()
-        if line.startswith("- ") and len(line) > 20:
-            content = line[2:].strip()
-            # Skip lines that look like source citations
-            if "trust:" in content or content.startswith("["):
-                continue
-            bullet_props.append(content)
+    section_props = _extract_media_sections(media_text)
+    bullet_props = _extract_media_bullets(media_text)
 
-    # Take first 6 bullets as propositions
-    for content in bullet_props[:6]:
+    combined: List[tuple[str, float]] = []
+    seen: set[str] = set()
+    candidates: List[tuple[str, float]] = [
+        (text, 0.65) for text in section_props
+    ] + [
+        (text, 0.6) for text in bullet_props
+    ]
+    for item, confidence in candidates:
+        key = item[:120].lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        combined.append((item, confidence))
+
+    for content, confidence in combined[:8]:
         propositions.append({
             "prop_id": str(uuid.uuid4())[:8],
             "content": content,
             "source_agent": "media_agent",
             "stance": None,
-            "confidence": 0.6,
+            "confidence": confidence,
             "evidence_urls": [],
             "platform": None,
         })

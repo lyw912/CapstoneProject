@@ -14,6 +14,7 @@ spec = importlib.util.spec_from_file_location(
 )
 module = importlib.util.module_from_spec(spec)
 assert spec.loader is not None
+sys.modules[spec.name] = module
 spec.loader.exec_module(module)
 
 
@@ -37,7 +38,7 @@ class SensitiveInputFilterTests(unittest.TestCase):
             handle.write("BadWord\n")
             words_file = Path(handle.name)
         try:
-            module.get_sensitive_words.cache_clear()
+            module._cached_words.cache_clear()
             self.assertTrue(module.check_sensitive_input("hello BADword world", words_file=words_file))
         finally:
             words_file.unlink(missing_ok=True)
@@ -47,7 +48,7 @@ class SensitiveInputFilterTests(unittest.TestCase):
             handle.write("测试词\n")
             words_file = Path(handle.name)
         try:
-            module.get_sensitive_words.cache_clear()
+            module._cached_words.cache_clear()
             self.assertTrue(module.check_sensitive_input("包含测　试词的内容", words_file=words_file))
         finally:
             words_file.unlink(missing_ok=True)
@@ -57,7 +58,7 @@ class SensitiveInputFilterTests(unittest.TestCase):
             handle.write("secret\n")
             words_file = Path(handle.name)
         try:
-            module.get_sensitive_words.cache_clear()
+            module._cached_words.cache_clear()
             result = module.check_sensitive_fields(
                 {"query": "safe topic", "custom_template": "uses secret word"},
                 words_file=words_file,
