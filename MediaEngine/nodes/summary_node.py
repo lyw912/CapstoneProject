@@ -131,8 +131,9 @@ class FirstSummaryNode(StateMutationNode):
             cleaned_output = remove_reasoning_from_output(output)
             cleaned_output = clean_json_tags(cleaned_output)
             
-            # Record cleaned output for debugging
-            logger.info(f"Cleaned output: {cleaned_output}")
+            # Record cleaned output for debugging (full text at DEBUG only — avoids huge logs)
+            logger.debug(f"Cleaned output: {cleaned_output}")
+            logger.info(f"Cleaned output length: {len(cleaned_output)} chars")
             
             # Parse JSON
             try:
@@ -299,8 +300,9 @@ class ReflectionSummaryNode(StateMutationNode):
             cleaned_output = remove_reasoning_from_output(output)
             cleaned_output = clean_json_tags(cleaned_output)
             
-            # Record cleaned output for debugging
-            logger.info(f"Cleaned output: {cleaned_output}")
+            # Record cleaned output for debugging (full text at DEBUG only — avoids huge logs)
+            logger.debug(f"Cleaned output: {cleaned_output}")
+            logger.info(f"Cleaned output length: {len(cleaned_output)} chars")
             
             # Parse JSON
             try:

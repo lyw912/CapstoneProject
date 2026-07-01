@@ -18,14 +18,15 @@ if utils_dir not in sys.path:
     sys.path.append(utils_dir)
 
 try:
-    from retry_helper import with_retry, LLM_RETRY_CONFIG
+    from retry_helper import with_retry, LLM_SHORT_RETRY_CONFIG, LLM_LONG_RETRY_CONFIG
 except ImportError:
     def with_retry(config=None):
         def decorator(func):
             return func
         return decorator
 
-    LLM_RETRY_CONFIG = None
+    LLM_SHORT_RETRY_CONFIG = None
+    LLM_LONG_RETRY_CONFIG = None
 
 
 class LLMClient:
@@ -43,11 +44,21 @@ class LLMClient:
         self.base_url = base_url
         self.model_name = model_name
         self.provider = model_name
-        timeout_fallback = os.getenv("LLM_REQUEST_TIMEOUT") or os.getenv("MEDIA_ENGINE_REQUEST_TIMEOUT") or "1800"
+
+        if project_root not in sys.path:
+            sys.path.append(project_root)
         try:
-            self.timeout = float(timeout_fallback)
-        except ValueError:
-            self.timeout = 1800.0
+            from config import settings
+            from utils.llm_timeout import resolve_llm_timeouts, resolve_stream_idle_timeout
+
+            self.short_timeout, self.long_timeout = resolve_llm_timeouts(
+                settings, "MEDIA_ENGINE_REQUEST_TIMEOUT"
+            )
+            self.stream_idle_timeout = resolve_stream_idle_timeout(settings)
+        except Exception:
+            self.short_timeout, self.long_timeout = 120.0, 600.0
+            self.stream_idle_timeout = 240.0
+        self.timeout = self.long_timeout
 
         client_kwargs: Dict[str, Any] = {
             "api_key": api_key,
@@ -57,7 +68,7 @@ class LLMClient:
             client_kwargs["base_url"] = base_url
         self.client = OpenAI(**client_kwargs)
 
-    @with_retry(LLM_RETRY_CONFIG)
+    @with_retry(LLM_SHORT_RETRY_CONFIG)
     def invoke(self, system_prompt: str, user_prompt: str, **kwargs) -> str:
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
         time_prefix = f"Today's actual time is {current_time}"
@@ -73,7 +84,7 @@ class LLMClient:
         allowed_keys = {"temperature", "top_p", "presence_penalty", "frequency_penalty", "stream"}
         extra_params = {key: value for key, value in kwargs.items() if key in allowed_keys and value is not None}
 
-        timeout = kwargs.pop("timeout", self.timeout)
+        timeout = kwargs.pop("timeout", self.short_timeout)
 
         response = self.client.chat.completions.create(
             model=self.model_name,
@@ -114,17 +125,24 @@ class LLMClient:
         # Force streaming mode
         extra_params["stream"] = True
 
-        timeout = kwargs.pop("timeout", self.timeout)
+        timeout = kwargs.pop("timeout", self.long_timeout)
+        idle_timeout = kwargs.pop("idle_timeout", self.stream_idle_timeout)
 
         try:
+            from utils.stream_idle import iter_with_idle_timeout
+
             stream = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,
                 timeout=timeout,
                 **extra_params,
             )
-            
-            for chunk in stream:
+
+            for chunk in iter_with_idle_timeout(
+                stream,
+                idle_timeout=idle_timeout,
+                total_timeout=timeout,
+            ):
                 if chunk.choices and len(chunk.choices) > 0:
                     delta = chunk.choices[0].delta
                     if delta and delta.content:
@@ -133,7 +151,7 @@ class LLMClient:
             logger.error(f"Stream request failed: {str(e)}")
             raise e
     
-    @with_retry(LLM_RETRY_CONFIG)
+    @with_retry(LLM_LONG_RETRY_CONFIG)
     def stream_invoke_to_string(self, system_prompt: str, user_prompt: str, **kwargs) -> str:
         """
         Stream invoke LLM and safely concatenate to complete string (avoid UTF-8 multi-byte character truncation)

@@ -30,7 +30,7 @@ import '@fontsource/inter/500.css';
 import '@fontsource/instrument-serif/400.css';
 
 import { THEME_TOKENS, NAV_ITEMS } from './utils/constants';
-import { apiJson, displayText, reportSeedHtml, clampPct, compactNumber, isSensitiveInputError, showSensitiveInputModal } from './utils/helpers';
+import { apiJson, displayText, reportSeedHtml, clampPct, compactNumber, isSensitiveInputError, showSensitiveInputModal, readLastQuery, persistLastQuery } from './utils/helpers';
 import { useLoadLatest, useLoadStatus, useObservabilityTrace } from './hooks/useApi';
 import usePolling from './hooks/usePolling';
 import useSSE from './hooks/useSSE';
@@ -53,7 +53,8 @@ export default function App() {
   const [reportEvents, setReportEvents] = useState([]);
   const [reportHtml, setReportHtml] = useState('');
   const [annotations, setAnnotations] = useState([]);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() => readLastQuery());
+  const queryHydratedFromServer = useRef(false);
   const [configOpen, setConfigOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [readoutOpen, setReadoutOpen] = useState(false);
@@ -90,14 +91,45 @@ export default function App() {
   };
 
   useEffect(() => {
-    loadLatest(true);
+    let cancelled = false;
+    (async () => {
+      const data = await loadLatest(true);
+      if (cancelled) return;
+      const serverQuery = displayText(data?.output?.query, '').trim();
+      if (!serverQuery) return;
+      setQuery((current) => {
+        const next = current.trim() || serverQuery;
+        persistLastQuery(next);
+        return next;
+      });
+      queryHydratedFromServer.current = true;
+    })();
     loadStatus();
     loadObservabilityTrace(true);
     return () => {
+      cancelled = true;
       clearPoll();
       clearStream();
     };
   }, []);
+
+  useEffect(() => {
+    if (queryHydratedFromServer.current) return;
+    const serverQuery = displayText(output.query, '').trim();
+    if (!serverQuery) return;
+    setQuery((current) => {
+      const next = current.trim() || serverQuery;
+      persistLastQuery(next);
+      return next;
+    });
+    queryHydratedFromServer.current = true;
+  }, [output.query]);
+
+  const handleQueryChange = (event) => {
+    const value = event.target.value;
+    setQuery(value);
+    persistLastQuery(value);
+  };
 
   const runAnalysis = async (extraFeedback = '') => {
     const analysisQuery = query.trim() || displayText(output.query, '');
@@ -105,6 +137,7 @@ export default function App() {
       message.warning('Enter an analysis brief first');
       return;
     }
+    persistLastQuery(analysisQuery);
     try {
       const data = await apiJson('/api/coordinator/run', {
         method: 'POST',
@@ -117,7 +150,14 @@ export default function App() {
       startPoll(data.task.task_id, async (task) => {
         setCoordinatorTask(task);
         if (['completed', 'error'].includes(task.status)) {
-          if (task.status === 'completed') await loadLatest(true);
+          if (task.status === 'completed') {
+            const data = await loadLatest(true);
+            const completedQuery = displayText(data?.output?.query, '').trim();
+            if (completedQuery) {
+              setQuery(completedQuery);
+              persistLastQuery(completedQuery);
+            }
+          }
         }
       });
     } catch (error) {
@@ -168,6 +208,15 @@ export default function App() {
       const data = await apiJson('/api/system/start', { method: 'POST' });
       message.success(data.message || 'System startup requested');
       loadStatus();
+      const latestData = await loadLatest(true);
+      const serverQuery = displayText(latestData?.output?.query, '').trim();
+      if (serverQuery) {
+        setQuery((current) => {
+          const next = current.trim() || serverQuery;
+          persistLastQuery(next);
+          return next;
+        });
+      }
     } catch (error) {
       message.error(error.message || 'System startup failed');
     }
@@ -231,7 +280,7 @@ export default function App() {
 
           <section className="brief-panel minimal-brief">
             <SearchOutlined />
-            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Topic" />
+            <Input value={query} onChange={handleQueryChange} placeholder="Topic" />
             <CommandDock latest={latest} task={coordinatorTask} onRun={() => runAnalysis()} onReport={generateReport} onFeedback={() => setFeedbackOpen(true)} onOpen={() => setActive(latest ? 'intelligence' : 'control')} />
           </section>
 

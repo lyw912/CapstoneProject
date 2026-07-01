@@ -1,4 +1,4 @@
-import { MICRO_STEPS, FLOW_STEPS } from './constants';
+import { MICRO_STEPS, FLOW_STEPS, LAST_QUERY_STORAGE_KEY } from './constants';
 
 export function isObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value);
@@ -225,4 +225,20 @@ export function traceChildrenByType(children = []) {
     counts[key] = (counts[key] || 0) + 1;
   });
   return Object.entries(counts).map(([name, value]) => ({ name, value }));
+}
+
+export function readLastQuery() {
+  try {
+    return window.localStorage.getItem(LAST_QUERY_STORAGE_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+export function persistLastQuery(value) {
+  try {
+    window.localStorage.setItem(LAST_QUERY_STORAGE_KEY, String(value ?? ''));
+  } catch {
+    return undefined;
+  }
 }

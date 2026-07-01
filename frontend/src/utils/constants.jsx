@@ -108,3 +108,5 @@ export const STANCE_COLORS = {
   background: '#8bb9a8',
   unknown: '#8a978f'
 };
+
+export const LAST_QUERY_STORAGE_KEY = 'signal-studio-last-query';

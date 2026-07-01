@@ -21,15 +21,36 @@ def finalize_report_node(agent: DeepSearchAgent, state: MediaAgentState) -> dict
 
     report_data = []
     for paragraph in ps.paragraphs:
+        summary = paragraph.research.latest_summary
+        if not summary:
+            continue
         report_data.append({
             "title": paragraph.title,
-            "paragraph_latest_state": paragraph.research.latest_summary,
+            "paragraph_latest_state": summary,
         })
 
-    try:
-        final_report = agent.report_formatting_node.run(report_data)
-    except Exception as e:
-        logger.error(f"LLM formatting failed, using fallback method: {str(e)}")
+    if not report_data:
+        raise RuntimeError("[FinalizeReport] No paragraph summaries available for final report")
+
+    completed = len(report_data)
+    total = len(ps.paragraphs)
+    if completed < total:
+        logger.warning(
+            f"[FinalizeReport] Building partial report from {completed}/{total} paragraphs"
+        )
+
+    use_llm_format = bool(getattr(agent.config, "MEDIA_USE_LLM_REPORT_FORMAT", False))
+
+    if use_llm_format:
+        try:
+            final_report = agent.report_formatting_node.run(report_data)
+        except Exception as e:
+            logger.error(f"LLM formatting failed, using fallback method: {str(e)}")
+            final_report = agent.report_formatting_node.format_report_manually(
+                report_data, ps.report_title
+            )
+    else:
+        logger.info("Assembling final report without LLM (MEDIA_USE_LLM_REPORT_FORMAT=false)")
         final_report = agent.report_formatting_node.format_report_manually(
             report_data, ps.report_title
         )
