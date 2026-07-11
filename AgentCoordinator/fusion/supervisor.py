@@ -117,7 +117,10 @@ class FusionCoordinator:
                 source_scope=["web", "mindspider_db"],
                 budget=RunBudget(
                     max_rounds=state["max_research_rounds"],
-                    max_sources=80,
+                    max_sources=max(
+                        1,
+                        int(getattr(self.settings, "COORDINATOR_QUERY_MAX_SOURCES", 120)),
+                    ),
                     deadline_sec=self._task_timeout("query_agent"),
                 ),
             ),

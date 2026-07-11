@@ -131,6 +131,7 @@ No semantic key -> deterministic hash/rule route remains active and diagnostics 
 | `COORDINATOR_ENABLE_MINDSPIDER_DB` | `False` | Enables read-only QueryEngine searches over existing MindSpider crawl tables. |
 | `COORDINATOR_ENABLE_MEDIA_AGENT` | `True` | Runs MediaEngine; disable only for an explicit Query/MindSpider-only run. |
 | `COORDINATOR_ALLOW_MINDSPIDER_CRAWL_TRIGGER` | `False` | Separately permits stale/missing-data enrichment to start a crawl subprocess. Keep false for analysis-only servers. |
+| `COORDINATOR_QUERY_MAX_SOURCES` | `120` | Caps the combined web and MindSpider evidence accepted from the primary QueryAgent task. |
 
 ## MediaEngine Cache And Performance
 

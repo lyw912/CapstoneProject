@@ -100,7 +100,8 @@ def build_query_contribution(output: Dict[str, Any], task: ResearchTask) -> Quer
             )
 
     social_sentiment = output.get("social_sentiment") or {}
-    for rank, voice in enumerate(social_sentiment.get("top_social_voices") or [], start=1):
+    social_rows = social_sentiment.get("evidence_posts") or social_sentiment.get("top_social_voices") or []
+    for rank, voice in enumerate(social_rows, start=1):
         if len(sources) >= max(0, task.budget.max_sources):
             break
         text = str(voice.get("content") or "").strip()

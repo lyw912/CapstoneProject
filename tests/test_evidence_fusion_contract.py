@@ -162,7 +162,7 @@ class EvidenceBlackboardContractTestCase(unittest.TestCase):
                 "coverage_score": 0.5,
                 "social_sentiment": {
                     "mode": "available",
-                    "top_social_voices": [
+                    "evidence_posts": [
                         {
                             "platform": "weibo",
                             "content": "Users are comparing the new API price with competitors.",

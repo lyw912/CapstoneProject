@@ -233,6 +233,10 @@ class Settings(BaseSettings):
         1,
         description="Maximum claim-driven follow-up retrieval rounds inside the Coordinator research path",
     )
+    COORDINATOR_QUERY_MAX_SOURCES: int = Field(
+        120,
+        description="Maximum combined web and MindSpider sources accepted from the primary QueryAgent task",
+    )
     COORDINATOR_MAX_EMBEDDING_ITEMS: int = Field(
         120,
         description="Maximum evidence items sent to Jina embeddings per Coordinator run",

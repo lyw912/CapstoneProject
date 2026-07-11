@@ -611,6 +611,9 @@ async def social_enrichment_node(state: QueryAgentState) -> dict:
         "divergence_summary": divergence_summary,
         "freshness_hours": round(freshness_hours or 0, 1),
         "top_social_voices": top_voices,
+        # Full source-bound sample for EvidenceCore; top_social_voices remains
+        # the compact presentation subset.
+        "evidence_posts": classified_posts,
         "comment_sentiment": comment_sentiment,
         "sentiment_trend": sentiment_trend,
         "crawl_triggered": crawl_triggered,
