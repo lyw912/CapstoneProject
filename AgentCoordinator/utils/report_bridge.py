@@ -213,8 +213,8 @@ def _build_query_engine_report(coordinator_output: Dict[str, Any]) -> str:
         "## Retrieval Metrics",
         f"- Total retained sources: {qa.get('total_sources', 0)}",
         f"- Stance coverage score: {qa.get('coverage_score', 0)}",
-        f"- CSSD pair count: {len(divergence.get('pairs', {}) or {})}",
-        f"- Maximum CSSD: {(divergence.get('max_divergence') or {}).get('pair', 'N/A')} = {(divergence.get('max_divergence') or {}).get('value', 0)}",
+        f"- Channel-divergence pair count: {len(divergence.get('pairs', {}) or {})}",
+        f"- Maximum channel divergence (TVD): {(divergence.get('max_divergence') or {}).get('pair', 'N/A')} = {(divergence.get('max_divergence') or {}).get('value', 0)}",
         "",
     ]
 

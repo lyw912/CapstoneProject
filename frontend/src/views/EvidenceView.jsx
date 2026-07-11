@@ -281,16 +281,14 @@ export default function EvidenceView({ output, theme }) {
       if (platformOrder.includes(a.key) && platformOrder.includes(b.key) && orderDelta) return orderDelta;
       return a.label.localeCompare(b.label);
     });
-  const divergencePlatformCounts = {};
-  (graph.evidence_items || []).forEach((item) => {
-    const key = platformCountKey(item.platform || urlDomain(item.url));
-    if (!key) return;
-    divergencePlatformCounts[key] = (divergencePlatformCounts[key] || 0) + 1;
-  });
-  Object.entries(socialSentiment.per_platform || {}).forEach(([key, value]) => {
-    const platformKey = platformCountKey(key);
-    divergencePlatformCounts[platformKey] = Math.max(Number(divergencePlatformCounts[platformKey] || 0), Number(value?.count || 0));
-  });
+  const divergencePlatformCounts = { ...(output.divergence_matrix?.group_counts || {}) };
+  if (!Object.keys(divergencePlatformCounts).length) {
+    (graph.evidence_items || []).forEach((item) => {
+      const key = platformCountKey(item.platform || urlDomain(item.url));
+      if (!key) return;
+      divergencePlatformCounts[key] = (divergencePlatformCounts[key] || 0) + 1;
+    });
+  }
   const mergedClaims = buildClaimRows(claims, decisionsByClaim);
   const visibleClaims = mergedClaims.filter(isMainClaimRow);
   const sortedClusters = [...clusters].sort((a, b) => {
@@ -394,7 +392,11 @@ export default function EvidenceView({ output, theme }) {
       </div>
       <div className="span-7 studio-card">
         <SectionTitle eyebrow="Divergence" title="Where signals disagree" />
-        <Heatmap pairs={output.divergence_matrix?.pairs} platformCounts={divergencePlatformCounts} />
+        <Heatmap
+          pairs={output.divergence_matrix?.pairs}
+          platformCounts={divergencePlatformCounts}
+          groupDistributions={output.divergence_matrix?.group_distributions}
+        />
       </div>
       <div className="span-8 studio-card source-card">
         <SectionTitle eyebrow="Grounding" title="Top evidence" />

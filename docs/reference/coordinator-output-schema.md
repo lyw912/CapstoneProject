@@ -28,7 +28,7 @@ Timestamped artifacts are runtime outputs. Keep only intentional sample fixtures
 | `pipeline_duration_seconds` | number | Coordinator runtime duration. |
 | `artifact_derivation` | object | Declares `coordinator_intelligence` as the primary record and compatibility fields as derived views. |
 | `coordinator_intelligence` | object | Internal EvidenceGraph ledger, provider diagnostics, trace, quality summaries, audit decisions, insights, and source coverage. |
-| `divergence_matrix` | object | CSSD-style pairwise stance divergence over evidence groups. |
+| `divergence_matrix` | object | Pairwise TVD over eligible channel-level content-stance distributions. |
 | `deliberation` | object | Compatibility view over claim-level audit, contradiction edges, consensus, and dissents. |
 | `gap_filling` | object | Adaptive follow-up retrieval tasks and results. |
 | `platform_interpretations` | object | Platform-aware interpretation only when observable platform samples exist. |
@@ -70,7 +70,7 @@ The following top-level fields exist so older UI/report consumers do not need to
 | `source_data.media_agent` | Additive Media view | Reports actual specialist run status, dossier/source/asset counts, section summaries, unresolved questions, and errors. |
 | `synthesis` | Audited insights | Includes citation span ids and wording policy. |
 | `deliberation` | Audit decisions and contradiction edges | Replaces the historical multi-perspective graph output with claim-level audit evidence. |
-| `divergence_matrix` | Canonical cluster stance labels by platform/domain | Computes CSSD-like divergence over available evidence groups. |
+| `divergence_matrix` | Canonical clusters and content-stance labels by channel | Groups web evidence into official/institutional or web/media channels, keeps native social platforms, excludes groups below three canonical clusters, and computes TVD over Laplace-smoothed support/neutral/oppose distributions. |
 | `gap_filling` | Retrieval tasks/results | Shows adaptive follow-up work triggered by weak or one-sided claims. |
 | `fact_opinion_separation` | Supported claims and evidence items | Preserves source span ids for traceability. |
 | `platform_interpretations` | Social-platform samples | Empty for web-only runs. |

@@ -575,7 +575,12 @@ a:hover { color: var(--hku-2); text-decoration: underline; }
   background: rgba(248,250,252,.86);
 }
 .heatmap-detail span { color: var(--muted); font-size: 12px; }
-.heatmap-detail strong { color: var(--ink); }
+.heatmap-detail strong {
+  max-width: 68%;
+  color: var(--ink);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
 .heatmap-detail p { margin: 2px 0 0; color: var(--muted); line-height: 1.5; }
 .claim-cell,
 .pattern-cell,

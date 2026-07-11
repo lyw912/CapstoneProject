@@ -257,6 +257,8 @@ const WORDING_POLICY_LABELS = {
 export function platformLabel(value, socialMode = false) {
   const raw = displayText(value, socialMode ? 'Platform' : 'Source').trim();
   const key = canonicalSocialPlatform(raw) || raw.toLowerCase().replace(/^www\./, '');
+  if (key === 'official_web') return 'Official & Institutional Web';
+  if (key === 'web_media') return 'Web & Media';
   if (socialMode && SOCIAL_PLATFORM_LABELS[key]) return SOCIAL_PLATFORM_LABELS[key];
   if (SOCIAL_PLATFORM_LABELS[key]) return SOCIAL_PLATFORM_LABELS[key];
   return raw;

@@ -53,26 +53,42 @@ COORDINATOR_OUTPUT_SCHEMA: Dict[str, Any] = {
     # -------------------------------------------------------------------
     "divergence_matrix": {
         "type": "dict",
-        "description": "Cross-Source Sentiment Divergence (CSSD) results.",
+        "description": "Cross-channel stance-distribution divergence results.",
         "fields": {
             "pairs": {
                 "type": "dict[str, float]",
                 "description": (
-                    "Map of 'source_a|source_b' to CSSD delta value (0.0-1.0). "
-                    "Larger values indicate stronger divergence between those sources."
+                    "Map of 'group_a|group_b' to total-variation distance (0.0-1.0). "
+                    "Larger values indicate stronger divergence between channel distributions."
                 ),
+            },
+            "group_counts": {
+                "type": "dict[str, int]",
+                "description": "Canonical-cluster sample count for each compared channel/platform group.",
+            },
+            "group_distributions": {
+                "type": "dict[str, dict[str, float]]",
+                "description": "Laplace-smoothed support/neutral/oppose distribution for each eligible group.",
+            },
+            "excluded_low_sample_groups": {
+                "type": "dict[str, int]",
+                "description": "Groups omitted from pairwise comparison because their canonical-cluster count is too low.",
+            },
+            "min_group_samples": {
+                "type": "int",
+                "description": "Minimum canonical-cluster count required for a group to enter the matrix.",
             },
             "hotspots": {
                 "type": "list[str]",
-                "description": "Human-readable descriptions of pairs with CSSD > 0.3.",
+                "description": "Human-readable descriptions of pairs with divergence above 0.3.",
             },
             "max_divergence": {
                 "type": "dict[str, Any]",
-                "description": "Pair with highest CSSD: {'pair': str, 'value': float}.",
+                "description": "Pair with highest channel divergence: {'pair': str, 'value': float}.",
             },
             "min_divergence": {
                 "type": "dict[str, Any]",
-                "description": "Pair with lowest CSSD: {'pair': str, 'value': float}.",
+                "description": "Pair with lowest channel divergence: {'pair': str, 'value': float}.",
             },
         },
     },

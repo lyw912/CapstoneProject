@@ -16,7 +16,20 @@ function heatStyle(value) {
   };
 }
 
-export default function Heatmap({ pairs, platformCounts = {}, lowSampleThreshold = DEFAULT_LOW_SAMPLE_THRESHOLD }) {
+function distributionText(distribution = {}) {
+  const entries = Object.entries(distribution).sort((a, b) => Number(b[1]) - Number(a[1]));
+  if (!entries.length) return 'Not available';
+  return entries
+    .map(([stance, value]) => `${displayText(stance, 'Other')} ${Math.round(Number(value) * 100)}%`)
+    .join(' · ');
+}
+
+export default function Heatmap({
+  pairs,
+  platformCounts = {},
+  groupDistributions = {},
+  lowSampleThreshold = DEFAULT_LOW_SAMPLE_THRESHOLD
+}) {
   const [selected, setSelected] = useState(null);
   const entries = Object.entries(pairs || {}).map(([pair, value]) => {
     const [aRaw, bRaw] = pair.split('|');
@@ -34,6 +47,8 @@ export default function Heatmap({ pairs, platformCounts = {}, lowSampleThreshold
       bLabel: platformLabel(b, true),
       aCount,
       bCount,
+      aDistribution: groupDistributions[a] || groupDistributions[aKey] || {},
+      bDistribution: groupDistributions[b] || groupDistributions[bKey] || {},
       value: Number(value) || 0,
       lowSample: aCount < lowSampleThreshold || bCount < lowSampleThreshold
     };
@@ -53,9 +68,9 @@ export default function Heatmap({ pairs, platformCounts = {}, lowSampleThreshold
               style={heatStyle(entry.value)}
               onClick={() => setSelected(entry)}
             >
-              <span>{entry.aLabel}</span>
+              <span>{`${entry.aLabel} · n=${compactNumber(entry.aCount)}`}</span>
               <strong>{score}</strong>
-              <small>{entry.bLabel}</small>
+              <small>{`${entry.bLabel} · n=${compactNumber(entry.bCount)}`}</small>
             </motion.button>
           );
         })}
@@ -74,14 +89,22 @@ export default function Heatmap({ pairs, platformCounts = {}, lowSampleThreshold
             </div>
             <div>
               <span>{selected.aLabel}</span>
-              <strong>{`${compactNumber(selected.aCount)} samples`}</strong>
+              <strong>{`${compactNumber(selected.aCount)} canonical clusters`}</strong>
             </div>
             <div>
               <span>{selected.bLabel}</span>
-              <strong>{`${compactNumber(selected.bCount)} samples`}</strong>
+              <strong>{`${compactNumber(selected.bCount)} canonical clusters`}</strong>
+            </div>
+            <div>
+              <span>{`${selected.aLabel} stance mix`}</span>
+              <strong>{distributionText(selected.aDistribution)}</strong>
+            </div>
+            <div>
+              <span>{`${selected.bLabel} stance mix`}</span>
+              <strong>{distributionText(selected.bDistribution)}</strong>
             </div>
             {selected.lowSample && <Tag color="gold">Low sample size</Tag>}
-            <p>Higher values mean the sampled platforms have more different support / neutral / oppose distributions. Low-sample pairs should be read as diagnostics, not population-level conclusions.</p>
+            <p>Higher values mean the sampled channels have more different Laplace-smoothed stance-label distributions. This is evidence-sample diagnostics, not a population-level conclusion.</p>
           </div>
         )}
       </Modal>

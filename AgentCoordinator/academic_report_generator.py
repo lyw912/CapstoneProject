@@ -103,7 +103,7 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
     write("")
     write("1. **Cross-source triangulation:** compares web/media evidence with available social discussion.")
     write("2. **Evidence-bound specialist review:** separates breadth, narrative depth, methodology, skepticism, and claim judging.")
-    write("3. **Cross-Source Sentiment Difference (CSSD):** quantifies stance divergence among sources.")
+    write("3. **Channel stance divergence (TVD):** quantifies content-stance differences among evidence channels.")
     write("4. **Fact-opinion separation:** distinguishes verifiable claims from interpretations and sentiment.")
     write("5. **Bias and echo-chamber review:** flags unusually narrow or coordinated evidence patterns.")
     write("")
@@ -122,11 +122,11 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
     write("")
     write("### 2.2 Core Metrics")
     write("")
-    write("**Cross-source stance divergence (CSSD compatibility field).** The runtime uses total-variation distance between two normalized stance distributions. A higher value indicates stronger divergence.")
+    write("**Channel content-stance divergence.** The runtime uses total-variation distance between Laplace-smoothed support/neutral/oppose distributions. Each canonical cluster contributes at most once to a channel. A higher value indicates stronger divergence.")
     write("")
     write("`divergence(A, B) = 0.5 * sum_i |A_i - B_i|`")
     write("")
-    write("| CSSD Range | Interpretation |")
+    write("| TVD Range | Interpretation |")
     write("|---|---|")
     write("| 0.0-0.1 | Nearly identical |")
     write("| 0.1-0.3 | Low divergence |")
@@ -238,13 +238,13 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
     max_div = divergence.get("max_divergence", {}) or {}
     min_div = divergence.get("min_divergence", {}) or {}
     write(
-        f"The Coordinator calculated CSSD for **{len(divergence.get('pairs', {}) or {})}** "
-        f"source pairs. The highest divergence is **{max_div.get('pair', '')}** "
+        f"The Coordinator calculated TVD for **{len(divergence.get('pairs', {}) or {})}** "
+        f"channel pairs. The highest divergence is **{max_div.get('pair', '')}** "
         f"at **{float(max_div.get('value', 0) or 0):.3f}**; the lowest is "
         f"**{min_div.get('pair', '')}** at **{float(min_div.get('value', 0) or 0):.3f}**."
     )
     write("")
-    write("`[VISUALIZATION PLACEHOLDER: Cross-source CSSD heatmap]`")
+    write("`[VISUALIZATION PLACEHOLDER: Channel TVD heatmap]`")
     write("")
 
     hotspots = divergence.get("hotspots", []) or []
@@ -477,12 +477,12 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
 
     pairs_data = divergence.get("pairs", {}) or {}
     if pairs_data:
-        write("### Appendix B: CSSD Matrix Raw Data")
+        write("### Appendix B: Channel TVD Matrix Raw Data")
         write("")
         write("<details>")
-        write("<summary>Show all CSSD values</summary>")
+        write("<summary>Show all TVD values</summary>")
         write("")
-        write("| Source Pair | CSSD | Level |")
+        write("| Channel Pair | TVD | Level |")
         write("|---|---:|---|")
         for pair, value in sorted(pairs_data.items(), key=lambda item: -float(item[1])):
             write(f"| {str(pair).replace('|', ' <-> ')} | {float(value):.4f} | {_cssd_label(float(value))} |")
@@ -506,7 +506,7 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
 
     write("### Appendix D: Planned ReportEngine Enhancements")
     write("")
-    write("- Render the CSSD matrix as an interactive heatmap.")
+    write("- Render the channel TVD matrix as an interactive heatmap.")
     write("- Render claim-audit decisions and follow-up rounds as collapsible timeline sections.")
     write("- Surface confidence annotations at chapter level.")
     write("")

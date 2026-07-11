@@ -10,6 +10,8 @@ from AgentCoordinator.utils.platform_profiles import PLATFORM_PROFILES, SOCIAL_P
 from ..contracts import EvidenceGraph, QualityFeatures, CoordinatorIntelligenceArtifact
 
 SOCIAL_PLATFORMS = SOCIAL_PLATFORM_KEYS
+_DIVERGENCE_MIN_GROUP_SAMPLES = 3
+_DIVERGENCE_SMOOTHING_ALPHA = 0.5
 
 
 def build_coordinator_output_from_artifact(artifact: CoordinatorIntelligenceArtifact, duration_seconds: float) -> Dict[str, Any]:
@@ -375,25 +377,49 @@ def _sentiment_distribution_for_items(items: List[Any], quality_by_item: Dict[st
 
 
 def _divergence_matrix(graph: EvidenceGraph, quality_by_item: Dict[str, QualityFeatures]) -> Dict[str, Any]:
-    platform_stance: Dict[str, Dict[str, float]] = {}
+    item_by_id = graph.item_index()
+    group_stance: Dict[str, Dict[str, float]] = {}
+    group_counts: Dict[str, int] = {}
     for cluster in graph.canonical_clusters:
-        quality = quality_by_item.get(cluster.representative_item_id)
-        if not quality:
-            continue
-        for platform in cluster.platforms:
-            bucket = platform_stance.setdefault(platform, {})
-            bucket[quality.stance] = bucket.get(quality.stance, 0.0) + 1.0
-    normalized = {}
-    for platform, dist in platform_stance.items():
-        total = sum(dist.values()) or 1.0
-        normalized[platform] = {stance: value / total for stance, value in dist.items()}
+        stances_by_group: Dict[str, set[str]] = {}
+        for item_id in cluster.member_item_ids:
+            item = item_by_id.get(item_id)
+            quality = quality_by_item.get(item_id)
+            if item is None or quality is None:
+                continue
+            group = _divergence_group(item)
+            stances_by_group.setdefault(group, set()).add(_content_stance(quality))
+
+        for group, stances in stances_by_group.items():
+            group_counts[group] = group_counts.get(group, 0) + 1
+            bucket = group_stance.setdefault(group, {})
+            cluster_weight = 1.0 / len(stances)
+            for stance in stances:
+                bucket[stance] = bucket.get(stance, 0.0) + cluster_weight
+
+    eligible = {
+        group: dist
+        for group, dist in group_stance.items()
+        if group_counts[group] >= _DIVERGENCE_MIN_GROUP_SAMPLES
+    }
+    stance_labels = sorted({stance for dist in eligible.values() for stance in dist})
+    normalized: Dict[str, Dict[str, float]] = {}
+    for group, dist in eligible.items():
+        denominator = sum(dist.values()) + _DIVERGENCE_SMOOTHING_ALPHA * len(stance_labels)
+        normalized[group] = {
+            stance: round((dist.get(stance, 0.0) + _DIVERGENCE_SMOOTHING_ALPHA) / denominator, 4)
+            for stance in stance_labels
+        }
     pairs = {}
-    platforms = sorted(normalized)
-    for idx, left in enumerate(platforms):
-        for right in platforms[idx + 1 :]:
+    groups = sorted(normalized)
+    for idx, left in enumerate(groups):
+        for right in groups[idx + 1 :]:
             pairs[f"{left}|{right}"] = round(_distribution_distance(normalized[left], normalized[right]), 4)
     hotspots = [
-        f"{pair} shows stance-distribution divergence of {value:.2f}"
+        (
+            f"{pair} shows stance-distribution divergence of {value:.2f} "
+            f"(n={group_counts[pair.split('|')[0]]}/{group_counts[pair.split('|')[1]]})"
+        )
         for pair, value in pairs.items()
         if value >= 0.30
     ]
@@ -404,8 +430,41 @@ def _divergence_matrix(graph: EvidenceGraph, quality_by_item: Dict[str, QualityF
         "hotspots": hotspots,
         "max_divergence": {"pair": max_pair[0], "value": max_pair[1]},
         "min_divergence": {"pair": min_pair[0], "value": min_pair[1]},
-        "method": "CSSD over stance distributions derived from Coordinator evidence clusters",
+        "group_counts": {group: group_counts[group] for group in sorted(eligible)},
+        "group_distributions": normalized,
+        "excluded_low_sample_groups": {
+            group: count
+            for group, count in sorted(group_counts.items())
+            if count < _DIVERGENCE_MIN_GROUP_SAMPLES
+        },
+        "min_group_samples": _DIVERGENCE_MIN_GROUP_SAMPLES,
+        "method": (
+            "Total-variation distance over Laplace-smoothed content-stance distributions "
+            "(support/neutral/oppose), grouped by social platform or official/web channel and "
+            "counted once per canonical cluster per group"
+        ),
     }
+
+
+def _divergence_group(item: Any) -> str:
+    social = canonical_social_platform(getattr(item, "platform", ""))
+    if social:
+        return social
+    if str(getattr(item, "source_type", "")).lower() == "official":
+        return "official_web"
+    return "web_media"
+
+
+def _content_stance(quality: Any) -> str:
+    stance = str(getattr(quality, "stance", "neutral")).lower()
+    if stance in {"support", "neutral", "oppose"}:
+        return stance
+    sentiment = str(getattr(quality, "sentiment", "neutral")).lower()
+    if sentiment == "positive":
+        return "support"
+    if sentiment == "negative":
+        return "oppose"
+    return "neutral"
 
 
 def _divergence_summary(divergence: Dict[str, Any]) -> str:
@@ -414,7 +473,7 @@ def _divergence_summary(divergence: Dict[str, Any]) -> str:
     value = max_div.get("value", 0)
     if not pair or pair == "N/A":
         return "No cross-source divergence could be computed from the available evidence groups."
-    return f"The largest evidence-derived stance divergence is {pair} at CSSD={float(value):.2f}."
+    return f"The largest evidence-derived stance divergence is {pair} at TVD={float(value):.2f}."
 
 
 def _distribution_distance(left: Dict[str, float], right: Dict[str, float]) -> float:

@@ -17,6 +17,7 @@ from AgentCoordinator.intelligence.contracts import (
 )
 from AgentCoordinator.intelligence.evidence_core import EvidenceBlackboard, EvidenceCorePipeline
 from AgentCoordinator.intelligence.projection import build_coordinator_output_from_artifact
+from AgentCoordinator.intelligence.projection.report_engine_contract import _divergence_matrix
 from AgentCoordinator.utils.report_bridge import coordinator_output_to_report_engine_inputs
 from QueryEngine.contribution import build_query_contribution
 
@@ -146,6 +147,55 @@ def fake_media(task):
 
 
 class EvidenceBlackboardContractTestCase(unittest.TestCase):
+    def test_divergence_uses_channel_groups_and_excludes_tiny_samples(self):
+        items = []
+        clusters = []
+        quality = {}
+
+        def add(item_id, platform, source_type, stance):
+            items.append(SimpleNamespace(item_id=item_id, platform=platform, source_type=source_type))
+            clusters.append(
+                SimpleNamespace(
+                    representative_item_id=item_id,
+                    member_item_ids=[item_id],
+                )
+            )
+            sentiment = "positive" if stance == "support" else "negative" if stance == "oppose" else "neutral"
+            quality[item_id] = SimpleNamespace(stance=stance, sentiment=sentiment)
+
+        add("official_1", "agency-a.gov", "official", "official")
+        add("official_2", "agency-b.gov", "official", "official")
+        add("official_3", "agency-c.gov", "official", "neutral")
+        add("web_1", "news-a.example", "search_result", "support")
+        add("web_2", "news-b.example", "search_result", "neutral")
+        add("web_3", "news-c.example", "search_result", "oppose")
+        items.append(SimpleNamespace(item_id="web_1_counter", platform="news-a.example", source_type="search_result"))
+        clusters[3].member_item_ids.append("web_1_counter")
+        quality["web_1_counter"] = SimpleNamespace(stance="oppose", sentiment="negative")
+        add("weibo_1", "weibo", "ugc", "support")
+        add("weibo_2", "weibo", "ugc", "support")
+        add("weibo_3", "weibo", "ugc", "oppose")
+        add("twitter_1", "twitter", "ugc", "oppose")
+
+        graph = SimpleNamespace(canonical_clusters=clusters, item_index=lambda: {item.item_id: item for item in items})
+        result = _divergence_matrix(graph, quality)
+
+        self.assertEqual(result["group_counts"], {"official_web": 3, "web_media": 3, "weibo": 3})
+        self.assertEqual(result["excluded_low_sample_groups"], {"twitter": 1})
+        self.assertNotIn("agency-a.gov", " ".join(result["pairs"]))
+        self.assertTrue(result["pairs"])
+        self.assertTrue(all(0.0 <= value < 1.0 for value in result["pairs"].values()))
+        self.assertEqual(
+            result["group_distributions"]["web_media"],
+            {"neutral": 0.3333, "oppose": 0.4444, "support": 0.2222},
+        )
+        self.assertTrue(
+            all(
+                set(distribution) <= {"support", "neutral", "oppose"}
+                for distribution in result["group_distributions"].values()
+            )
+        )
+
     def test_query_contribution_promotes_mindspider_voices_to_evidence(self):
         task = ResearchTask(
             task_id="query_social",
