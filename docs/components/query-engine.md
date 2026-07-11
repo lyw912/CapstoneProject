@@ -1,71 +1,63 @@
 # QueryEngine
 
-QueryEngine is the evidence retrieval and stance analysis engine. Its structured mode is used by AgentCoordinator.
+QueryEngine remains the evidence and stance component in the project architecture. The current `/api/coordinator/run` endpoint does not instantiate the QueryEngine LangGraph directly; AgentCoordinator carries the active query-layer responsibilities through `AgentCoordinator/intelligence/` and keeps QueryAgent-shaped compatibility fields in the Coordinator artifact. The QueryEngine graph, tools, evaluation utilities, provider connectors, MindSpider integration ideas, stance/coverage concepts, and output contract remain part of the codebase and design reference.
 
-![QueryAgent graph](../assets/diagrams/exported/query-agent-graph.png)
+The current Coordinator endpoint runs these query-layer responsibilities inside the Coordinator intelligence layer:
 
-The graph shows how a topic becomes stance-aware subqueries, searched sources, deduplicated evidence, trust scores, stance labels, coverage checks, and a structured output. Full-size diagram: [`docs/assets/diagrams/exported/query-agent-graph.png`](../assets/diagrams/exported/query-agent-graph.png).
+```text
+query_understanding
+-> retrieval_planner
+-> source_acquisition
+-> quality_pipeline
+-> claim_miner
+-> adaptive_research_loop
+-> evidence_audit
+-> citation_grounded_synthesis
+```
 
-## Implementation
+## Runtime Mapping
 
-| Path | Purpose |
+| Former QueryEngine Responsibility | Active Runtime Location |
 | --- | --- |
-| `QueryEngine/agent.py` | Agent entry points, legacy deep research, structured research. |
-| `QueryEngine/graph/builder.py` | LangGraph topology. |
-| `QueryEngine/graph/state.py` | TypedDict state and output contracts. |
-| `QueryEngine/graph/nodes/` | Planner, search, dedup, trust, stance, enrichment, coverage, gap filling, output assembly. |
-| `QueryEngine/tools/` | Search dispatching and provider integrations. |
-| `QueryEngine/fusion/` | Result fusion and deduplication utilities. |
-| `QueryEngine/classifiers/` | Trust and stance classifier utilities. |
-| `QueryEngine/evaluation/` | QueryAgent evaluation scripts and results. |
+| Query planning | `AgentCoordinator/intelligence/reasoning/planner.py` |
+| Search provider dispatch | `AgentCoordinator/intelligence/acquisition/source_gateway.py` |
+| Deduplication | `AgentCoordinator/intelligence/quality/pipeline.py` canonical clustering |
+| Trust scoring | `QualityFeatures.source_authority_score` and `persuasiveness_score` |
+| Stance classification | `QualityFeatures.stance`, `sentiment`, and `aspect` |
+| Gap filling | `AgentCoordinator/intelligence/reasoning/adaptive_loop.py` |
+| Output assembly | `CoordinatorIntelligenceArtifact` plus ReportEngine projection |
 
-## Structured Research Flow
+## Existing QueryEngine Implementation
 
-| Node | Responsibility |
+| Path | Status |
 | --- | --- |
-| `query_planner` | Generate stance-aware subqueries. |
-| `unified_search` | Search across configured providers and social sources. |
-| `dedup_filter` | Remove duplicate URLs/content. |
-| `trust_scorer` | Score source reliability. |
-| `stance_classify` | Classify sources by support/oppose/neutral/official/background/unknown. |
-| `social_enrichment` | Add social sentiment/divergence information when available. |
-| `coverage_check` | Determine whether stance coverage is sufficient. |
-| `gap_filler` | Generate supplementary queries when coverage is weak. |
-| `output_assemble` | Produce structured QueryAgent output. |
+| `QueryEngine/agent.py` | QueryAgent entry points and standalone structured research path. |
+| `QueryEngine/graph/builder.py` | QueryEngine LangGraph topology. |
+| `QueryEngine/graph/nodes/` | Planner/search/dedup/trust/stance/enrichment nodes. |
+| `QueryEngine/evaluation/` | Existing evaluation utilities. Evaluation is not part of the current refactor acceptance gate. |
 
-## Public Entry Points
+## Active Query Quality Contract
 
-| Method | Usage |
-| --- | --- |
-| `research_structured(query)` | Async structured output used by AgentCoordinator. |
-| `research_structured_sync(query)` | Sync wrapper for non-async contexts. |
-| `research(query, save_report=True)` | Legacy report-style deep research path. |
-| `create_agent()` | Factory used by integration code. |
-
-## Structured Output Highlights
+The active runtime emits these fields inside `coordinator_intelligence`:
 
 | Field | Purpose |
 | --- | --- |
-| `stance_distribution` | Ratio or counts by stance class. |
-| `sources` | Sorted source list with trust and stance metadata. |
-| `coverage_score` | Stance/source coverage metric. |
-| `knowledge_gaps` | Underrepresented perspectives. |
-| `social_sentiment` | Social signal summary when enrichment is configured. |
-| `trace_log`, `error_log` | Local diagnostics. |
+| `evidence_graph.normalized_items` | Provider-normalized source items. |
+| `evidence_graph.quality_features` | Relevance, informativeness, authority, freshness, stance, sentiment, aspect, coordination, and persuasiveness features. |
+| `evidence_graph.canonical_clusters` | Internal distinct source groups and repeated-coverage counts. |
+| `quality_summary` | Raw source counts, distinct evidence counts, duplicate ratios, low-quality ratios, and quality warnings. |
+| `freshness_summary` | Newest/oldest published timestamps, median age, and stale-source ratio. |
+| `source_coverage` | Web domain counts, observable social-platform counts, MindSpider sample availability, replay fixture counts, and the active coverage mode. |
+| `source_coverage_limitations` | Explicit limits such as query-time search, no firehose, and local replay usage. |
 
 ## Provider Dependencies
 
-| Setting | Purpose |
+| Layer | Providers |
 | --- | --- |
-| `QUERY_ENGINE_API_KEY` / `BASE_URL` / `MODEL_NAME` | LLM used for QueryEngine reasoning. |
-| `SEARCH_TOOL_TYPE` | Selects `AnspireAPI` or `BochaAPI`. |
-| `TAVILY_API_KEY` | Tavily web search when selected. |
-| `BOCHA_WEB_SEARCH_API_KEY` | Bocha search. |
-| `ANSPIRE_API_KEY` | Anspire search. |
-| `MINDSPIDER_*` | Social enrichment profile. |
+| Source acquisition | Tavily, Bocha, or Anspire for web sources; optional MindSpiderDB for platform samples; optional local replay fixture. |
+| Semantic quality | Jina embeddings and rerank, with deterministic rules when Jina is not configured. |
+| Structured reasoning | Existing QueryEngine LLM settings: `QUERY_ENGINE_API_KEY`, `QUERY_ENGINE_BASE_URL`, and `QUERY_ENGINE_MODEL_NAME`. |
 
-## Related Documents
+MindSpiderDB is not a presentation-only feature. When `COORDINATOR_ENABLE_MINDSPIDER_DB=true`, the planner emits a `target_source=mindspider_db` retrieval task. Returned platform samples are normalized, clustered, scored, audited, and cited through the same `QualityPipeline` as web search results. External social-platform hits from web search, such as Reddit or X/Twitter, are also normalized to platform keys, but provider diagnostics still distinguish them from MindSpiderDB samples. The Coordinator artifact then exposes the platform view through `source_data.query_agent.social_sentiment`, `platform_interpretations`, `divergence_matrix`, and `bias_analysis`.
 
-- [AgentCoordinator](agent-coordinator.md)
-- [Configuration](../reference/configuration.md)
-- [API Evaluation](../quality/api-evaluation.md)
+See [Configuration](../reference/configuration.md) and [AgentCoordinator](agent-coordinator.md).

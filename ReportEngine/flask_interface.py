@@ -47,6 +47,19 @@ log_stream_handler_id: Optional[int] = None
 
 EXCLUDED_ENGINE_PATH_KEYWORDS = ("ForumEngine", "MediaEngine", "QueryEngine")
 
+def _load_task_document_ir(task) -> Optional[Dict[str, Any]]:
+    if not task or not task.ir_file_path:
+        return None
+    try:
+        ir_path = Path(task.ir_file_path)
+        if not ir_path.exists():
+            return None
+        data = json.loads(ir_path.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else None
+    except Exception as exc:
+        logger.warning(f"Unable to load report Document IR: {exc}")
+        return None
+
 def _is_excluded_engine_log(record: Dict[str, Any]) -> bool:
     """
     Determine if the log originates from other engines (Media/Query/Forum), used for filtering mixed logs.
@@ -415,6 +428,77 @@ class ReportTask:
             return [evt for evt in self.event_history if evt['id'] > last_event_id]
 
 
+
+def _guess_report_query_from_suffix(suffix: str) -> str:
+    """Build a readable topic from final_report_<topic>_<date>_<time>.html."""
+    parts = suffix.rsplit("_", 2)
+    raw = parts[0] if len(parts) == 3 and parts[1].isdigit() and parts[2].isdigit() else suffix
+    return raw.replace("_", " ").strip() or "Generated report"
+
+
+def _latest_report_file_task() -> Optional['ReportTask']:
+    """Restore the newest saved HTML report as an in-memory completed task."""
+    output_dir = Path(settings.OUTPUT_DIR)
+    if not output_dir.exists():
+        return None
+
+    candidates = [path for path in output_dir.glob("final_report_*.html") if path.is_file()]
+    if not candidates:
+        return None
+
+    html_path = max(candidates, key=lambda path: path.stat().st_mtime)
+    stat = html_path.stat()
+    task_id = f"report_file_{int(stat.st_mtime)}"
+    with task_lock:
+        existing = tasks_registry.get(task_id)
+        if existing and existing.html_content:
+            return existing
+
+    suffix = html_path.stem[len("final_report_"):] if html_path.stem.startswith("final_report_") else html_path.stem
+    state_path = output_dir / f"report_state_{suffix}.json"
+    ir_path = output_dir / "document_ir" / f"report_ir_{suffix}.json"
+    query = _guess_report_query_from_suffix(suffix)
+
+    if ir_path.exists():
+        try:
+            document_ir = json.loads(ir_path.read_text(encoding="utf-8"))
+            metadata = document_ir.get("metadata") if isinstance(document_ir, dict) else {}
+            query = (metadata or {}).get("topic") or (metadata or {}).get("title") or (metadata or {}).get("query") or query
+        except Exception as exc:
+            logger.debug(f"Unable to read latest report IR metadata: {exc}")
+
+    task = ReportTask(str(query), task_id)
+    task.status = "completed"
+    task.progress = 100
+    task.created_at = datetime.fromtimestamp(stat.st_mtime)
+    task.updated_at = datetime.fromtimestamp(stat.st_mtime)
+    task.html_content = html_path.read_text(encoding="utf-8", errors="replace")
+    task.report_file_path = str(html_path.resolve())
+    task.report_file_relative_path = os.path.relpath(task.report_file_path, os.getcwd())
+    task.report_file_name = html_path.name
+
+    if state_path.exists():
+        task.state_file_path = str(state_path.resolve())
+        task.state_file_relative_path = os.path.relpath(task.state_file_path, os.getcwd())
+    if ir_path.exists():
+        task.ir_file_path = str(ir_path.resolve())
+        task.ir_file_relative_path = os.path.relpath(task.ir_file_path, os.getcwd())
+
+    with task_lock:
+        tasks_registry[task_id] = task
+        _prune_task_history_locked()
+    return task
+
+
+def _is_report_stale(task: 'ReportTask') -> bool:
+    """Return whether Coordinator output is newer than the restored report file."""
+    try:
+        coordinator_path = Path("AgentCoordinator/cache/coordinator_output_latest.json")
+        report_path = Path(task.report_file_path) if task.report_file_path else None
+        return bool(coordinator_path.exists() and report_path and report_path.exists() and report_path.stat().st_mtime < coordinator_path.stat().st_mtime)
+    except Exception:
+        return False
+
 def check_engines_ready() -> Dict[str, Any]:
     """
     Check if both Media/Query sub-engines have new files.
@@ -691,6 +775,43 @@ def run_report_generation(task: ReportTask, query: str, custom_template: str = "
         with task_lock:
             if current_task_thread is not None and not current_task_thread.is_alive():
                 current_task_thread = None
+
+
+@report_bp.route('/latest', methods=['GET'])
+def get_latest_report():
+    """Return the newest completed report, including reports restored from disk after restart."""
+    try:
+        with task_lock:
+            task = current_task if current_task and current_task.status == "completed" and current_task.html_content else None
+
+        if not task:
+            task = _latest_report_file_task()
+
+        if not task:
+            return jsonify({
+                'success': True,
+                'has_report': False,
+                'html_content': '',
+                'document_ir': None,
+                'task': None,
+                'stale': False
+            })
+
+        document_ir = _load_task_document_ir(task)
+        return jsonify({
+            'success': True,
+            'has_report': True,
+            'html_content': task.html_content,
+            'document_ir': document_ir,
+            'task': task.to_dict(),
+            'stale': _is_report_stale(task)
+        })
+    except Exception as e:
+        logger.exception(f"Failed to load latest report: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @report_bp.route('/status', methods=['GET'])
@@ -1095,10 +1216,12 @@ def get_result_json(task_id: str):
                 'task': task.to_dict()
             }), 400
 
+        document_ir = _load_task_document_ir(task)
         return jsonify({
             'success': True,
             'task': task.to_dict(),
-            'html_content': task.html_content
+            'html_content': task.html_content,
+            'document_ir': document_ir
         })
 
     except Exception as e:
@@ -1402,6 +1525,41 @@ def clear_log():
         }), 500
 
 
+@report_bp.route('/render-ir', methods=['POST'])
+def render_report_ir():
+    """Render an edited Document IR into final HTML without persisting a task file."""
+    try:
+        data = request.get_json() or {}
+        if not isinstance(data, dict):
+            return jsonify({
+                'success': False,
+                'error': 'Request body must be a JSON object'
+            }), 400
+
+        document_ir = data.get('document_ir')
+        if not isinstance(document_ir, dict):
+            return jsonify({
+                'success': False,
+                'error': 'Missing document_ir object'
+            }), 400
+
+        from .renderers import HTMLRenderer
+        renderer = HTMLRenderer()
+        html_content = renderer.render(document_ir)
+
+        return jsonify({
+            'success': True,
+            'html_content': html_content,
+            'document_ir': document_ir
+        })
+    except Exception as e:
+        logger.exception(f"IR render failed: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'IR render failed: {str(e)}'
+        }), 500
+
+
 @report_bp.route('/export/md/<task_id>', methods=['GET'])
 def export_markdown(task_id: str):
     """
@@ -1466,6 +1624,47 @@ def export_markdown(task_id: str):
         return jsonify({
             'success': False,
             'error': f'Markdown export failed: {str(e)}'
+        }), 500
+
+
+@report_bp.route('/export/md-from-ir', methods=['POST'])
+def export_markdown_from_ir():
+    """Export Markdown directly from a Document IR payload."""
+    try:
+        data = request.get_json() or {}
+        if not isinstance(data, dict):
+            return jsonify({
+                'success': False,
+                'error': 'Request body must be a JSON object'
+            }), 400
+
+        document_ir = data.get('document_ir')
+        if not isinstance(document_ir, dict):
+            return jsonify({
+                'success': False,
+                'error': 'Missing document_ir object'
+            }), 400
+
+        from .renderers import MarkdownRenderer
+        renderer = MarkdownRenderer()
+        markdown_text = renderer.render(document_ir)
+        topic = document_ir.get('metadata', {}).get('topic') or document_ir.get('metadata', {}).get('title') or 'report'
+        safe_topic = _safe_filename_segment(topic or 'report')
+        filename = f"report_{safe_topic}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+
+        return Response(
+            markdown_text,
+            mimetype='text/markdown',
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"',
+                'Content-Type': 'text/markdown; charset=utf-8'
+            }
+        )
+    except Exception as e:
+        logger.exception(f"Markdown export from IR failed: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Markdown export from IR failed: {str(e)}'
         }), 500
 
 

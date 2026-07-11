@@ -50,7 +50,7 @@ This walkthrough presents the final Signal Studio workflow for defense review an
 | --- | --- | --- |
 | Coordinator artifact | `AgentCoordinator/cache/coordinator_output_latest.json` | Analysis output is stable and reusable. |
 | Media cache | `AgentCoordinator/cache/media_agent_<hash>.md` | MediaEngine output can be reused for matching topics. |
-| Report outputs | `output/` and `static/v2_report_example/` | Generated reports have inspectable rendered artifacts. |
+| Report outputs | `output/` and curated static report examples | Generated reports have inspectable rendered artifacts. |
 | OpenAPI contract | `docs/reference/openapi.yaml` | Runtime API surface is machine-readable. |
 | Provider benchmark | `api_evaluation/results_full_r3/summary.csv` | Provider profile is evidence-based. |
 

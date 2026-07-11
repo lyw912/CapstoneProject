@@ -1,16 +1,9 @@
-"""
-AgentCoordinator: Unified entry point.
+"""AgentCoordinator entry point.
 
-Usage:
-    from AgentCoordinator.coordinator import AgentCoordinator
-
-    coordinator = AgentCoordinator()
-
-    # Async
-    result = await coordinator.run("DeepSeek发布新模型 各方舆论")
-
-    # Sync
-    result = coordinator.run_sync("DeepSeek发布新模型 各方舆论")
+External callers still import ``AgentCoordinator`` and still receive a
+coordinator_output_latest.json artifact. Internally, the active path uses the
+Coordinator intelligence layer as shared evidence state, then exports the
+legacy Coordinator fields as views over that state.
 """
 
 from __future__ import annotations
@@ -26,224 +19,128 @@ from loguru import logger
 
 
 class AgentCoordinator:
-    """Main coordinator class that runs the full multi-agent analysis pipeline."""
+    """Main coordinator class for the active evidence-audited analysis path."""
 
     def __init__(self, use_checkpointing: bool = True):
-        """
-        Initialize the AgentCoordinator.
-
-        Args:
-            use_checkpointing: If True (default), compile the LangGraph with a
-                MemorySaver checkpointer so each run can be resumed on failure
-                using its unique thread_id.
-        """
         self.use_checkpointing = use_checkpointing
-        self._graph = None  # Lazy-initialized
+        self._graph = None
 
     @property
     def graph(self):
-        if self._graph is None:
-            from .graph.builder import build_coordinator_graph
-            self._graph = build_coordinator_graph(use_checkpointing=self.use_checkpointing)
-            logger.info("[AgentCoordinator] LangGraph compiled successfully")
-        return self._graph
+        raise RuntimeError(
+            "The active AgentCoordinator path uses the internal intelligence layer. "
+            "The legacy LangGraph nodes remain in AgentCoordinator/graph for compatibility and reference."
+        )
 
-    def _build_initial_state(self, query: str) -> Dict:
-        return {
-            "query": query,
-            "analysis_type": "general",       # May be overwritten by query_agent_node
-            "query_run": None,
-            "media_run": None,
-            "agent_errors": [],
-            "bridged_propositions": None,
-            "divergence_matrix": None,
-            "divergence_hotspots": None,
-            "perspectives": None,
-            "deliberation_rounds": None,
-            "deliberation_consensus": None,
-            "deliberation_dissents": None,
-            "search_gaps": None,
-            "supplementary_results": None,
-            "search_rounds": 0,
-            "echo_warnings": None,
-            "silent_majority_hypothesis": None,
-            "verified_facts": None,
-            "opinions_sentiments": None,
-            "analytical_frameworks": None,
-            "platform_interpretations": None,
-            "synthesis_context": None,
-            "synthesis_confidence": 0.0,
-            "report_output": None,
-            "coordinator_trace": [],
-        }
-
-    async def run(self, query: str, thread_id: Optional[str] = None, progress_callback: Optional[Callable[[str, Dict[str, Any], Dict[str, Any], float], None]] = None) -> Dict[str, Any]:
-        """
-        Execute the full coordinator pipeline asynchronously.
-
-        Args:
-            query: The analysis query string.
-            thread_id: Optional checkpoint thread identifier. If None, a random
-                UUID is generated so each run gets an isolated checkpoint scope.
-                Pass the same thread_id to resume a failed run from its last
-                successful node.
-
-        Returns a dict with:
-          - report_output: Final report (HTML or Markdown)
-          - synthesis_context: Structured synthesis data
-          - coordinator_trace: Full execution trace
-          - duration_seconds: Total elapsed time
-          - coordinator_output_path: Path to the saved coordinator_output.json
-        """
+    async def run(
+        self,
+        query: str,
+        thread_id: Optional[str] = None,
+        progress_callback: Optional[Callable[[str, Dict[str, Any], Dict[str, Any], float], None]] = None,
+    ) -> Dict[str, Any]:
+        """Execute the Coordinator intelligence layer asynchronously."""
         if thread_id is None:
             thread_id = str(uuid.uuid4())
 
-        logger.info(f"[AgentCoordinator] Starting pipeline for: {query!r}  (thread_id={thread_id})")
-        t0 = time.time()
+        from .intelligence import CoordinatorIntelligenceLayer, CoordinatorIntelligenceRequest
 
-        initial_state = self._build_initial_state(query)
-
-        # Build invoke config — only pass configurable if checkpointing is on
-        invoke_config: Dict[str, Any] = {}
-        if self.use_checkpointing:
-            invoke_config = {"configurable": {"thread_id": thread_id}}
-
-        try:
-            if progress_callback is None:
-                final_state = await self.graph.ainvoke(initial_state, config=invoke_config if invoke_config else None)
-            else:
-                final_state = dict(initial_state)
-                async for chunk in self.graph.astream(
-                    initial_state,
-                    config=invoke_config if invoke_config else None,
-                    stream_mode="updates",
-                ):
-                    if not isinstance(chunk, dict):
-                        continue
-                    for node_name, update in chunk.items():
-                        if not isinstance(update, dict):
-                            continue
-                        self._merge_state_update(final_state, update)
-                        try:
-                            progress_callback(node_name, update, dict(final_state), time.time() - t0)
-                        except Exception as callback_exc:  # pragma: no cover - progress reporting only
-                            logger.warning(f"[AgentCoordinator] Progress callback failed: {callback_exc}")
-        except Exception as exc:
-            logger.error(f"[AgentCoordinator] Pipeline failed: {exc}")
-            raise
-
-        duration = time.time() - t0
-        logger.info(f"[AgentCoordinator] Pipeline complete in {duration:.1f}s")
-
+        logger.info("[AgentCoordinator] Starting intelligence layer for: {!r} (thread_id={})", query, thread_id)
+        started = time.time()
+        layer = CoordinatorIntelligenceLayer()
+        artifact = layer.run(
+            CoordinatorIntelligenceRequest(query=query, thread_id=thread_id),
+            progress_callback=progress_callback,
+        )
+        duration = time.time() - started
+        output = self._export_coordinator_output(artifact, duration_seconds=duration)
+        synthesis = output.get("synthesis") or {}
         result = {
-            "query": query,
+            "query": artifact.query,
             "thread_id": thread_id,
-            "report_output": final_state.get("report_output", ""),
-            "synthesis_context": final_state.get("synthesis_context", {}),
-            "synthesis_confidence": final_state.get("synthesis_confidence", 0.0),
-            "divergence_matrix": final_state.get("divergence_matrix", {}),
-            "divergence_hotspots": final_state.get("divergence_hotspots", []),
-            "deliberation_consensus": final_state.get("deliberation_consensus", []),
-            "deliberation_dissents": final_state.get("deliberation_dissents", []),
-            "echo_warnings": final_state.get("echo_warnings", []),
-            "verified_facts": final_state.get("verified_facts", []),
-            "platform_interpretations": final_state.get("platform_interpretations", {}),
-            "coordinator_trace": final_state.get("coordinator_trace", []),
-            "agent_errors": final_state.get("agent_errors", []),
+            "report_output": artifact.synthesis_markdown,
+            "coordinator_intelligence": artifact.to_dict(),
+            "synthesis_context": {
+                "coordinator_intelligence": artifact.to_dict(),
+                "top_insights": synthesis.get("top_insights", []),
+                "key_tensions": synthesis.get("key_tensions", []),
+                "overall_confidence": synthesis.get("overall_confidence", 0.0),
+                "synthesis_summary": synthesis.get("summary", ""),
+            },
+            "synthesis_confidence": synthesis.get("overall_confidence", 0.0),
+            "divergence_matrix": output.get("divergence_matrix", {}),
+            "divergence_hotspots": (output.get("divergence_matrix") or {}).get("hotspots", []),
+            "deliberation_consensus": (output.get("deliberation") or {}).get("final_consensus", []),
+            "deliberation_dissents": (output.get("deliberation") or {}).get("final_dissents", []),
+            "echo_warnings": (output.get("bias_analysis") or {}).get("echo_warnings", []),
+            "verified_facts": (output.get("fact_opinion_separation") or {}).get("verified_facts", []),
+            "platform_interpretations": output.get("platform_interpretations", {}),
+            "coordinator_trace": output.get("coordinator_trace", []),
+            "agent_errors": output.get("agent_errors", []),
             "duration_seconds": duration,
+            "coordinator_output_path": output.get("_coordinator_output_path", ""),
         }
-
-        # Export clean coordinator_output.json for ReportAgent consumption
-        coordinator_output_path = self._export_coordinator_output(result, query)
-        result["coordinator_output_path"] = coordinator_output_path
-
+        logger.info("[AgentCoordinator] intelligence layer complete in {:.1f}s", duration)
         return result
 
-    @staticmethod
-    def _merge_state_update(state: Dict[str, Any], update: Dict[str, Any]) -> None:
-        """Merge LangGraph streamed node updates into an approximate final state."""
-        for key, value in update.items():
-            if key in {"coordinator_trace", "agent_errors"}:
-                existing = state.get(key) or []
-                if isinstance(value, list):
-                    state[key] = list(existing) + value
-                elif value:
-                    state[key] = list(existing) + [value]
-            else:
-                state[key] = value
-
-    def _export_coordinator_output(self, result: Dict[str, Any], query: str) -> str:
-        """
-        Build and save the clean coordinator_output.json artifact.
-
-        Saves two files:
-          - coordinator_output_{YYYYMMDD_HHMMSS}.json  (timestamped archive)
-          - coordinator_output_latest.json              (always overwritten, for ReportAgent)
-
-        Returns the path to the timestamped file.
-        """
-        from .coordinator_output_schema import build_coordinator_output
+    def _export_coordinator_output(self, artifact, duration_seconds: float) -> Dict[str, Any]:
+        from .intelligence.projection import build_coordinator_output_from_artifact
 
         ts = time.strftime("%Y%m%d_%H%M%S")
         cache_dir = Path(__file__).parent / "cache"
         cache_dir.mkdir(exist_ok=True)
 
-        structured = build_coordinator_output(
-            result=result,
-            query=query,
-            duration_seconds=result.get("duration_seconds", 0.0),
-        )
+        structured = build_coordinator_output_from_artifact(artifact, duration_seconds=duration_seconds)
 
-        # Timestamped archive
         timestamped_path = cache_dir / f"coordinator_output_{ts}.json"
-        with open(timestamped_path, "w", encoding="utf-8") as f:
-            json.dump(structured, f, ensure_ascii=False, indent=2)
+        with open(timestamped_path, "w", encoding="utf-8") as handle:
+            json.dump(structured, handle, ensure_ascii=False, indent=2)
 
-        # Fixed "latest" path for ReportAgent
         latest_path = cache_dir / "coordinator_output_latest.json"
-        with open(latest_path, "w", encoding="utf-8") as f:
-            json.dump(structured, f, ensure_ascii=False, indent=2)
+        with open(latest_path, "w", encoding="utf-8") as handle:
+            json.dump(structured, handle, ensure_ascii=False, indent=2)
 
-        logger.info(f"[AgentCoordinator] coordinator_output saved → {timestamped_path}")
-        logger.info(f"[AgentCoordinator] coordinator_output_latest.json updated → {latest_path}")
+        structured["_coordinator_output_path"] = str(timestamped_path)
+        logger.info("[AgentCoordinator] coordinator_output saved -> {}", timestamped_path)
+        logger.info("[AgentCoordinator] coordinator_output_latest.json updated -> {}", latest_path)
+        return structured
 
-        return str(timestamped_path)
-
-    def run_sync(self, query: str, thread_id: Optional[str] = None, progress_callback: Optional[Callable[[str, Dict[str, Any], Dict[str, Any], float], None]] = None) -> Dict[str, Any]:
+    def run_sync(
+        self,
+        query: str,
+        thread_id: Optional[str] = None,
+        progress_callback: Optional[Callable[[str, Dict[str, Any], Dict[str, Any], float], None]] = None,
+    ) -> Dict[str, Any]:
         """Synchronous wrapper for run()."""
         try:
             loop = asyncio.get_event_loop()
             if loop.is_running():
                 import concurrent.futures
+
                 with concurrent.futures.ThreadPoolExecutor() as pool:
-                    future = pool.submit(asyncio.run, self.run(query, thread_id=thread_id, progress_callback=progress_callback))
+                    future = pool.submit(
+                        asyncio.run,
+                        self.run(query, thread_id=thread_id, progress_callback=progress_callback),
+                    )
                     return future.result()
-            else:
-                return loop.run_until_complete(self.run(query, thread_id=thread_id, progress_callback=progress_callback))
+            return loop.run_until_complete(self.run(query, thread_id=thread_id, progress_callback=progress_callback))
         except RuntimeError:
             return asyncio.run(self.run(query, thread_id=thread_id, progress_callback=progress_callback))
 
-    def save_result(self, result: Dict, output_path: Optional[str] = None) -> str:
-        """Save coordinator result to a JSON log file and report file."""
+    def save_result(self, result: Dict[str, Any], output_path: Optional[str] = None) -> str:
+        """Save a coordinator result to disk for manual inspection."""
         ts = time.strftime("%Y%m%d_%H%M%S")
         base = Path(__file__).parent / "cache"
         base.mkdir(exist_ok=True)
-
         if output_path is None:
             output_path = str(base / f"coordinator_result_{ts}.json")
-
-        # Save JSON (excluding the full report text for cleanliness)
-        json_data = {k: v for k, v in result.items() if k != "report_output"}
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(json_data, f, ensure_ascii=False, indent=2)
-
-        # Save report separately
+        json_data = {key: value for key, value in result.items() if key != "report_output"}
+        with open(output_path, "w", encoding="utf-8") as handle:
+            json.dump(json_data, handle, ensure_ascii=False, indent=2)
         report = result.get("report_output", "")
         if report:
             report_path = output_path.replace(".json", "_report.md")
-            with open(report_path, "w", encoding="utf-8") as f:
-                f.write(report)
-            logger.info(f"[AgentCoordinator] Report saved → {report_path}")
-
-        logger.info(f"[AgentCoordinator] Result saved → {output_path}")
+            with open(report_path, "w", encoding="utf-8") as handle:
+                handle.write(report)
+            logger.info("[AgentCoordinator] Report saved -> {}", report_path)
+        logger.info("[AgentCoordinator] Result saved -> {}", output_path)
         return output_path

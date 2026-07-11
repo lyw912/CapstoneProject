@@ -11,10 +11,10 @@ The repository contains sentiment, topic-detection, cached-analysis, and generat
 | `SentimentAnalysisModel/WeiboSentiment_Finetuned/` | Fine-tuning experiments for BERT/GPT-style sentiment models. | Research asset. |
 | `SentimentAnalysisModel/WeiboMultilingualSentiment/` | Multilingual sentiment prediction utility. | Research asset. |
 | `SentimentAnalysisModel/BertTopicDetection_Finetuned/` | Topic detection experiment data and scripts. | Research asset. |
-| `static/v2_report_example/` | Generated report examples. | Review artifact. |
+| `static/v2_report_example/` | Curated generated report examples. | Review artifact. |
 | `AgentCoordinator/cache/coordinator_output_latest.json` | Cached analysis artifact for UI/report handoff. | Review and runtime artifact. |
 
-The final live path uses external LLM/search providers plus QueryEngine, MediaEngine, AgentCoordinator, ReportEngine, Flask, and Signal Studio. Local sentiment/model assets are research assets unless an adapter explicitly integrates them into the current runtime.
+The final live path uses external search, semantic, and LLM providers through the Coordinator runtime, then exports a Coordinator-compatible artifact for Signal Studio and ReportEngine. QueryEngine and MediaEngine assets remain part of the project architecture and can be used directly or through Coordinator adapters.
 
 ## Clone And Storage Impact
 

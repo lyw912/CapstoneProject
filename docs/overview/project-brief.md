@@ -7,11 +7,11 @@ CapstoneProject is a multi-agent public-opinion intelligence system for turning 
 Given a topic or issue, the system should:
 
 1. Collect public evidence from search providers and social data sources.
-2. Score and deduplicate evidence.
-3. Classify stance, sentiment, and platform context.
-4. Compare source groups and identify divergence.
-5. Run structured deliberation to separate consensus, dissent, coverage gaps, and tensions.
-6. Persist a structured Coordinator artifact.
+2. Normalize evidence into source items, quality features, distinct source groups, and cited source excerpts.
+3. Separate stance, sentiment, aspect, repeated coverage, freshness, and provider diagnostics.
+4. Mine claims from representative evidence and route weak claims through adaptive follow-up search.
+5. Audit claims before synthesis so unsupported strong statements are weakened or rejected.
+6. Persist a structured Coordinator artifact with an internal evidence ledger and compatibility views.
 7. Generate an editable report and export it as HTML, Markdown, or PDF.
 
 ## Primary Users
@@ -28,11 +28,11 @@ Given a topic or issue, the system should:
 | Capability | Description | Implemented By |
 | --- | --- | --- |
 | Integrated analysis run | Launches a full Coordinator pipeline from a topic. | `POST /api/coordinator/run`, `AgentCoordinator/` |
-| Evidence acquisition | Generates subqueries, calls external search, deduplicates sources, scores trust. | `QueryEngine/graph/` |
-| Media deep research | Builds paragraph plans and produces media-oriented synthesis. | `MediaEngine/graph/` |
-| Divergence reasoning | Compares source positions and identifies hotspots. | `AgentCoordinator/graph/nodes/divergence_matrix_node.py` |
-| Structured deliberation | Uses multiple perspectives and conditional gap filling. | `deliberation_engine.py`, `targeted_search_node.py` |
-| Bias and fact separation | Flags echo-chamber signals and separates facts, opinions, and frameworks. | `echo_chamber_detector.py`, `fact_opinion_separator.py` |
+| Evidence acquisition | Generates retrieval tasks, calls configured search providers, and normalizes results. | `AgentCoordinator/intelligence/acquisition/` |
+| Quality modeling | Builds distinct source groups, repeated-coverage counts, cited source excerpts, freshness, and quality summaries. | `AgentCoordinator/intelligence/quality/` |
+| Adaptive research | Routes weak, one-sided, stale, or UGC-only claims through follow-up retrieval. | `AgentCoordinator/intelligence/reasoning/adaptive_loop.py` |
+| Evidence audit | Produces claim-level accept/weaken/reject decisions before synthesis. | `AgentCoordinator/intelligence/reasoning/audit.py` |
+| Citation synthesis | Generates final insights only from audited claims and cited sources. | `AgentCoordinator/intelligence/reasoning/synthesis.py` |
 | Report generation | Converts structured analysis into Document IR and rendered output. | `ReportEngine/` |
 | Monitoring | Shows local replay, quality metrics, LangSmith traces, feedback history. | Signal Studio Monitor, `/api/observability/langsmith` |
 
@@ -43,7 +43,7 @@ The final runtime path is Signal Studio plus Flask APIs:
 | Runtime Element | Final Runtime Behavior |
 | --- | --- |
 | Signal Studio | Primary UI. Served by Flask using `templates/index.html` and `static/signal-studio/`. |
-| AgentCoordinator | Main analysis orchestrator. Calls QueryEngine and MediaEngine internally. |
+| AgentCoordinator | Public analysis boundary. Calls `AgentCoordinator/intelligence/` internally and writes the Coordinator artifact. |
 | ReportEngine | Initialized by `/api/system/start`; generates reports from Coordinator artifacts. |
 | Legacy Streamlit apps | Explicitly stopped in `initialize_system_components()` for final Signal Studio mode. |
 | Forum monitor | Managed as a compatibility surface while Signal Studio remains the primary path. |
@@ -53,7 +53,7 @@ The final runtime path is Signal Studio plus Flask APIs:
 | Area | Impact |
 | --- | --- |
 | External APIs | LLM and search keys configure live analysis. |
-| Search latency can dominate runtime | Coordinator timeouts default to one hour for QueryEngine and MediaEngine. |
+| Search latency can dominate runtime | Source acquisition and semantic provider timeouts are explicit in configuration and diagnostics. |
 | PDF export stack | WeasyPrint/Pango runtime path is documented for workstation and Docker use. |
 | Generated artifacts | `AgentCoordinator/cache/` and `output/` are runtime state. |
 | Sensitive input filter is enabled by default | Requests containing blocked terms are rejected before analysis/report generation. |

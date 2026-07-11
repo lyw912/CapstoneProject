@@ -110,7 +110,7 @@ Example:
 
 ```json
 {
-  "SEARCH_TOOL_TYPE": "BochaAPI",
+  "SEARCH_TOOL_TYPE": "TavilyAPI",
   "QUERY_ENGINE_MODEL_NAME": "deepseek-chat",
   "LANGSMITH_TRACING": "True"
 }
@@ -128,7 +128,8 @@ Common configuration example:
 
 ```json
 {
-  "SEARCH_TOOL_TYPE": "BochaAPI",
+  "SEARCH_TOOL_TYPE": "TavilyAPI",
+  "TAVILY_API_KEY": "your_tavily_key",
   "QUERY_ENGINE_BASE_URL": "https://api.deepseek.com",
   "QUERY_ENGINE_MODEL_NAME": "deepseek-chat",
   "MEDIA_ENGINE_BASE_URL": "https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -205,7 +206,15 @@ Minimal successful shape:
 {
   "success": true,
   "output": {
-    "schema_version": "1.0",
+    "schema_version": "2.1-coordinator-intelligence",
+    "artifact_derivation": {
+      "primary_record": "coordinator_intelligence"
+    },
+    "coordinator_intelligence": {
+      "schema_version": "coordinator_intelligence_v1",
+      "provider_diagnostics": [],
+      "evidence_graph": {}
+    },
     "query": "Public reaction to a new AI policy",
     "synthesis": {
       "summary": "...",
@@ -222,7 +231,7 @@ Minimal successful shape:
   },
   "metadata": {
     "path": "AgentCoordinator/cache/coordinator_output_latest.json",
-    "schema_version": "1.0"
+    "schema_version": "2.1-coordinator-intelligence"
   }
 }
 ```
@@ -260,6 +269,7 @@ All report endpoints are mounted under `/api/report`.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
+| `GET` | `/api/report/latest` | Load the newest completed report, including HTML and Document IR when available. |
 | `GET` | `/api/report/status` | ReportEngine readiness, input mode, current task. |
 | `POST` | `/api/report/generate` | Start report generation. |
 | `GET` | `/api/report/progress/{task_id}` | Get task progress. |
@@ -271,7 +281,9 @@ All report endpoints are mounted under `/api/report`.
 | `GET` | `/api/report/templates` | Available report templates. |
 | `GET` | `/api/report/log` | Report log lines. |
 | `POST` | `/api/report/log/clear` | Clear report log. |
+| `POST` | `/api/report/render-ir` | Render supplied Document IR to report HTML for preview. |
 | `GET` | `/api/report/export/md/{task_id}` | Export Markdown. |
+| `POST` | `/api/report/export/md-from-ir` | Export Markdown from supplied Document IR. |
 | `GET` | `/api/report/export/pdf/{task_id}` | Export PDF. |
 | `POST` | `/api/report/export/pdf-from-ir` | Export PDF from supplied Document IR. |
 
@@ -347,6 +359,7 @@ Clients should handle reconnects with `Last-Event-ID`; the backend replays cache
 | --- | --- | --- |
 | `/api/report/download/{task_id}` | `text/html` attachment | Completed task with saved HTML file. |
 | `/api/report/export/md/{task_id}` | `text/markdown` attachment | Completed task with saved IR. |
+| `/api/report/export/md-from-ir` | `text/markdown` attachment | Request body contains `document_ir`. |
 | `/api/report/export/pdf/{task_id}` | `application/pdf` | Completed task with saved IR and configured PDF runtime stack. |
 | `/api/report/export/pdf-from-ir` | `application/pdf` | Request body contains `document_ir`. |
 

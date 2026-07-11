@@ -24,7 +24,7 @@ export default function TraceDetailDrawer({ run, open, onClose }) {
                 <span style={{ background: TRACE_COLORS[child.type] || TRACE_COLORS.unknown }} />
                 <div>
                   <strong>{displayText(child.name, 'Step')}</strong>
-                  <small>{displayText(child.type, 'unknown')} · {msText(child.duration_ms)} · {compactNumber(child.total_tokens)} tokens</small>
+                  <small>{displayText(child.type, 'unknown')} | {msText(child.duration_ms)} | {compactNumber(child.total_tokens)} tokens</small>
                 </div>
                 {traceStatus(child) === 'error' && <WarningOutlined />}
               </a>

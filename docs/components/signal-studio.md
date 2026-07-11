@@ -25,8 +25,8 @@ The flow connects the five operator views to the runtime APIs they use. Open the
 | --- | --- | --- |
 | Home | Topic entry, analysis launch, high-level quality metrics | Coordinator task, latest output, confidence, source count, runtime, tension count |
 | Readout | Executive synthesis, top insight, tensions, recommendations | `output.synthesis` |
-| Proof | Stance mix, divergence heatmap, evidence table, platform readings | `output.source_data`, `output.divergence_matrix`, `output.platform_interpretations` |
-| Edit | Report generation, rich-text editing, annotations, exports | Report task, report HTML, report SSE events |
+| Proof | Stance mix, divergence heatmap, evidence table, coverage context, and platform signals when social-platform samples exist | `output.source_data`, `output.divergence_matrix`, `output.platform_interpretations`, `coordinator_intelligence.source_coverage` |
+| Edit | Report generation, Document IR editing, rendered preview, collapsible outline, citation binding, annotations, and exports | Report task, report HTML, Document IR, citation sources, report SSE events |
 | Monitor | Runtime controls, local trace replay, LangSmith traces, feedback, artifact metadata | System status, observability, feedback, metadata |
 
 Screenshots: [Signal Studio Screenshots](../overview/screenshots.md).
@@ -44,10 +44,12 @@ Screenshots: [Signal Studio Screenshots](../overview/screenshots.md).
 | Shutdown runtime | `POST /api/system/shutdown` |
 | Load configuration | `GET /api/config` |
 | Save configuration | `POST /api/config` |
+| Load latest report | `GET /api/report/latest` |
 | Start report generation | `POST /api/report/generate` |
 | Stream report generation | `GET /api/report/stream/{task_id}` |
-| Load report HTML | `GET /api/report/result/{task_id}/json` |
-| Export report | `/api/report/download/{task_id}`, `/api/report/export/md/{task_id}`, `/api/report/export/pdf/{task_id}` |
+| Load report HTML and IR | `GET /api/report/result/{task_id}/json` |
+| Render edited IR preview | `POST /api/report/render-ir` |
+| Export report | `/api/report/download/{task_id}`, `/api/report/export/md/{task_id}`, `/api/report/export/md-from-ir`, `/api/report/export/pdf/{task_id}`, `/api/report/export/pdf-from-ir` |
 | Load traces | `GET /api/observability/langsmith` |
 
 ## Build And Serve
@@ -75,8 +77,10 @@ The Vite config uses:
 | Sensitive input handling | `isSensitiveInputError()` and `showSensitiveInputModal()` show a blocking modal. |
 | Coordinator progress | `usePolling()` checks task state every 1.8 seconds. |
 | Report progress | `useSSE()` subscribes to report events and fetches final HTML on `completed` or `html_ready`. |
+| Report editing | `ReviewEditor` maps Document IR into TipTap content, preserves complex blocks as locked previews, and sends edited IR back to ReportEngine for HTML/Markdown/PDF rendering. |
 | Runtime configuration | `ConfigDrawer` edits selected `CONFIG_KEYS` through `/api/config`. |
 | Revision loop | Feedback drawer saves target/action/priority/text and can immediately run refinement. |
+| Source wording | The Proof view labels web-only runs as `Coverage Context`; it labels observable social-platform samples as `Platform Signals`, with MindSpider called out only when MindSpiderDB returned data. |
 
 ## Related Documents
 

@@ -270,7 +270,7 @@ public/build/
 # !docs/static/images/*.jpeg
 # !UIexample/*.png
 
-# VitePress 缓存
+# VitePress cache
 docs/.vitepress/cache
 
 # ==== Logs and Temporary Files ====
@@ -360,8 +360,12 @@ task_plan.md
 
 # AgentCoordinator runtime cache (large JSON, regenerated on each run)
 AgentCoordinator/cache/query_agent_*.json
+AgentCoordinator/cache/media_agent_*.md
 AgentCoordinator/cache/test_results_*.json
 AgentCoordinator/cache/coordinator_output_2*.json
 
 # Cookie file (contains platform login secrets)
 cookie.txt
+
+# Local refactor design references; not part of the deliverable tree
+upgrade/

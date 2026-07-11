@@ -30,7 +30,8 @@ import '@fontsource/inter/500.css';
 import '@fontsource/instrument-serif/400.css';
 
 import { THEME_TOKENS, NAV_ITEMS } from './utils/constants';
-import { apiJson, displayText, reportSeedHtml, clampPct, compactNumber, isSensitiveInputError, showSensitiveInputModal, readLastQuery, persistLastQuery } from './utils/helpers';
+import { apiJson, displayText, reportSeedHtml, clampPct, compactNumber, isSensitiveInputError, showSensitiveInputModal, readLastQuery, persistLastQuery, signalArtifact, signalGraphSummary, signalQualitySummary } from './utils/helpers';
+import { buildExecutiveReadout } from "./utils/readout";
 import { useLoadLatest, useLoadStatus, useObservabilityTrace } from './hooks/useApi';
 import usePolling from './hooks/usePolling';
 import useSSE from './hooks/useSSE';
@@ -52,6 +53,7 @@ export default function App() {
   const [reportTask, setReportTask] = useState(null);
   const [reportEvents, setReportEvents] = useState([]);
   const [reportHtml, setReportHtml] = useState('');
+  const [reportIr, setReportIr] = useState(null);
   const [annotations, setAnnotations] = useState([]);
   const [query, setQuery] = useState(() => readLastQuery());
   const queryHydratedFromServer = useRef(false);
@@ -70,17 +72,35 @@ export default function App() {
 
   const output = latest || {};
   const synthesis = output.synthesis || {};
+  const readout = buildExecutiveReadout(output);
   const sourceData = output.source_data || {};
   const queryAgent = sourceData.query_agent || {};
-  const insights = synthesis.top_insights || [];
-  const risks = synthesis.key_tensions || [];
+  const signal = signalArtifact(output);
+  const graphSummary = signalGraphSummary(output);
+  const qualitySummary = signalQualitySummary(output);
+  const risks = readout.risks || synthesis.key_tensions || [];
 
   const healthScore = useMemo(() => {
     const confidence = clampPct(synthesis.overall_confidence || output.synthesis_confidence || 0);
-    const sources = Math.min(100, Number(queryAgent.total_sources || 0));
+    const sources = Math.min(100, Number(graphSummary.canonical_count || queryAgent.canonical_sources || queryAgent.total_sources || 0) * 10);
     const errors = Array.isArray(output.agent_errors) ? output.agent_errors.length : 0;
-    return Math.max(0, Math.round(confidence * 0.62 + sources * 0.28 - errors * 12));
-  }, [output, queryAgent.total_sources, synthesis.overall_confidence]);
+    const copyPenalty = qualitySummary.coordination_warning ? 8 : 0;
+    return Math.max(0, Math.round(confidence * 0.58 + sources * 0.30 - errors * 12 - copyPenalty + (signal?.final_report_ready ? 8 : 0)));
+  }, [output, graphSummary.canonical_count, queryAgent.canonical_sources, queryAgent.total_sources, qualitySummary.coordination_warning, signal?.final_report_ready, synthesis.overall_confidence]);
+
+
+  const loadLatestGeneratedReport = async () => {
+    try {
+      const data = await apiJson('/api/report/latest');
+      if (!data?.has_report || !data.html_content) return;
+      setReportTask(data.task || null);
+      setReportHtml(data.html_content);
+      setReportIr(data.document_ir || null);
+      setReportEvents([{ type: data.stale ? 'warning' : 'status', message: data.stale ? 'Loaded saved report; analysis data is newer' : 'Loaded latest saved report' }]);
+    } catch {
+      return undefined;
+    }
+  };
 
   const toggleVisualTheme = () => {
     setVisualTheme((current) => {
@@ -97,14 +117,14 @@ export default function App() {
       if (cancelled) return;
       const serverQuery = displayText(data?.output?.query, '').trim();
       if (!serverQuery) return;
-      setQuery((current) => {
-        const next = current.trim() || serverQuery;
-        persistLastQuery(next);
-        return next;
+      setQuery(() => {
+        persistLastQuery(serverQuery);
+        return serverQuery;
       });
       queryHydratedFromServer.current = true;
     })();
     loadStatus();
+    loadLatestGeneratedReport();
     loadObservabilityTrace(true);
     return () => {
       cancelled = true;
@@ -117,11 +137,10 @@ export default function App() {
     if (queryHydratedFromServer.current) return;
     const serverQuery = displayText(output.query, '').trim();
     if (!serverQuery) return;
-    setQuery((current) => {
-      const next = current.trim() || serverQuery;
-      persistLastQuery(next);
-      return next;
-    });
+    setQuery(() => {
+        persistLastQuery(serverQuery);
+        return serverQuery;
+      });
     queryHydratedFromServer.current = true;
   }, [output.query]);
 
@@ -170,7 +189,7 @@ export default function App() {
   };
 
   const generateReport = async () => {
-    const started = await startReportStream(query, output, setReportTask, setReportEvents, setReportHtml);
+    const started = await startReportStream(query, output, setReportTask, setReportEvents, setReportHtml, setReportIr);
     if (started) setActive('review');
   };
 
@@ -305,7 +324,7 @@ export default function App() {
 
             {active === 'review' && (
               <ErrorBoundary key="review-boundary">
-                <ReviewView output={output} reportTask={reportTask} reportHtml={reportHtml} setReportHtml={setReportHtml} annotations={annotations} setAnnotations={setAnnotations} theme={theme} reportEvents={reportEvents} generateReport={generateReport} />
+                <ReviewView output={output} reportTask={reportTask} reportHtml={reportHtml} setReportHtml={setReportHtml} documentIr={reportIr} setReportIr={setReportIr} annotations={annotations} setAnnotations={setAnnotations} theme={theme} reportEvents={reportEvents} generateReport={generateReport} />
               </ErrorBoundary>
             )}
 
@@ -333,9 +352,9 @@ export default function App() {
 
       <Modal open={readoutOpen} onCancel={() => setReadoutOpen(false)} footer={null} width={860} title="Readout Details">
         <div className="readout-modal">
-          <p>{displayText(synthesis.summary, 'Synthesis will appear after analysis.')}</p>
+          <p>{displayText(readout.headline, "Synthesis will appear after analysis.")}</p>
           <div className="modal-list">
-            {(synthesis.recommended_investigation || []).slice(0, 5).map((item, index) => <div key={index}><span>{(index + 1)}</span>{displayText(item, 'Follow-up')}</div>)}
+            {(readout.details || []).slice(0, 5).map((item, index) => <div key={index}><span>{(index + 1)}</span>{displayText(item, "Follow-up")}</div>)}
           </div>
         </div>
       </Modal>

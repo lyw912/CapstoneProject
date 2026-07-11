@@ -12,9 +12,14 @@ This module follows MindSpider\DeepSentimentCrawling\MediaCrawler\database\model
 
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Integer, String, BigInteger, Text, ForeignKey
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
 
 # Use Base from models_sa to ensure all tables are in the same metadata, allowing foreign key references to work properly
 from models_sa import Base
+
+
+def mysql_medium_text():
+    return Text().with_variant(MEDIUMTEXT(), "mysql")
 
 class BilibiliVideo(Base):
     __tablename__ = "bilibili_video"
@@ -405,7 +410,7 @@ class ZhihuContent(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     content_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     content_type: Mapped[str | None] = mapped_column(Text, nullable=True)
-    content_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    content_text: Mapped[str | None] = mapped_column(mysql_medium_text(), nullable=True)
     content_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     question_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     title: Mapped[str | None] = mapped_column(Text, nullable=True)

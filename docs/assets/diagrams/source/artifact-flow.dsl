@@ -2,9 +2,15 @@
 @spacing 80
 
 [User Query] -> [AgentCoordinator]
-[AgentCoordinator] -> [Coordinator Output\nschema_version 1.0]
-[Coordinator Output\nschema_version 1.0] -> [Signal Studio Readout]
-[Coordinator Output\nschema_version 1.0] -> [ReportEngine Adapter]
+[AgentCoordinator] -> [Coordinator Intelligence Layer
+EvidenceGraph]
+[Coordinator Intelligence Layer
+EvidenceGraph] -> [Coordinator Output
+schema_version 2.1]
+[Coordinator Output
+schema_version 2.1] -> [Signal Studio Readout / Proof / Monitor]
+[Coordinator Output
+schema_version 2.1] -> [ReportEngine Adapter]
 [ReportEngine Adapter] -> [Chapter JSON]
 [Chapter JSON] -> [Document IR]
 [Document IR] -> [HTML]

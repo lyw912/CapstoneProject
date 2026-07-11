@@ -7,8 +7,8 @@ This document records the main quality goals that shape the architecture.
 | Attribute | Design Mechanism | Current Evidence |
 | --- | --- | --- |
 | Traceability | Coordinator trace, task progress, latest artifact metadata, LangSmith integration | Signal Studio Monitor, `/api/observability/langsmith` |
-| Evidence grounding | Search results, trust scores, stance distribution, top-source tables | QueryEngine output and Proof page |
-| Modularity | Separate engines with LangGraph state contracts | `QueryEngine/`, `MediaEngine/`, `AgentCoordinator/`, `ReportEngine/` |
+| Evidence grounding | Cited source excerpts, audited claims, distinct evidence groups, quality summaries, source coverage, provider diagnostics | Coordinator artifact and Signal Studio Proof view |
+| Modularity | Coordinator boundary plus EvidenceGraph-centered internal layer and ReportEngine projection | `AgentCoordinator/`, `AgentCoordinator/intelligence/`, `ReportEngine/` |
 | Report reliability | Document IR schema, validation, repair, renderer recovery | `ReportEngine/ir/`, sanitization tests |
 | Operability | `/api/system/start`, `/api/system/shutdown`, config drawer, logs | Flask runtime APIs |
 | Provider portability | OpenAI-compatible LLM settings and provider benchmark harness | `config.py`, `api_evaluation/` |
@@ -21,15 +21,15 @@ This document records the main quality goals that shape the architecture.
 | Long-running analysis tasks block the UI | Coordinator and ReportEngine run in background threads; UI polls or listens via SSE. |
 | Report SSE connection drops | Report stream replays historical events after `Last-Event-ID` and sends heartbeats. |
 | Legacy process conflicts | Signal Studio startup stops legacy Streamlit and Forum monitor processes. |
-| Provider diagnostics | Task status captures diagnostic messages; Query/Media/Coordinator state has diagnostic fields. |
+| Provider diagnostics | Task status and artifact capture source acquisition, semantic provider, structured LLM, and replay diagnostics. |
 | Malformed report JSON | ReportEngine uses validation, repair attempts, and diagnostic logs. |
 
 ## Maintainability
 
 | Practice | Location |
 | --- | --- |
-| Graph topology is explicit | `*/graph/builder.py` |
-| State contracts are typed | `*/graph/state.py`, `ReportEngine/ir/schema.py` |
+| Runtime topology is explicit | `AgentCoordinator/intelligence/engine.py`, `AgentCoordinator/coordinator.py` |
+| State contracts are typed | `AgentCoordinator/intelligence/contracts/`, `ReportEngine/ir/schema.py` |
 | API surface is centralized | `app.py`, `ReportEngine/flask_interface.py` |
 | Frontend API usage is encapsulated | `frontend/src/hooks/`, `frontend/src/utils/helpers.js` |
 | Configuration is declared in one class | `config.py::Settings` |

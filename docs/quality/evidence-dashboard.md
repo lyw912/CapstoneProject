@@ -24,14 +24,15 @@ The current provider benchmark is stored under `api_evaluation/results_full_r3/s
 | `deepseek-chat` for QueryEngine | Highest QueryEngine LLM score with lower latency than reasoning models. | Default for evidence planning and stance work. |
 | `qwen-plus-compatible` for MediaEngine | Highest MediaEngine LLM score in the stored full run. | Default when media synthesis quality matters. |
 | `deepseek-chat` for ReportEngine | Highest ReportEngine score and lower latency than the alternatives in the stored run. | Default for report generation. |
-| `bocha` for search | Search score is strong for QueryEngine, MediaEngine, and MindSpider. | Default search provider in `.env.example`. |
+| `TavilyAPI` for the active Coordinator path | Current `.env.example` and Coordinator source gateway default to Tavily; Bocha remains benchmarked and selectable. | Default search provider in `.env.example`. |
 
 ## Regression Evidence
 
 | Area | Evidence | Extension Target |
 | --- | --- | --- |
 | Sensitive input safety | `tests/test_sensitive_input_filter.py` | Route-level checks around Coordinator and ReportEngine APIs. |
-| Coordinator-to-report bridge | `tests/test_coordinator_report_bridge.py` | Schema fixture compatibility checks. |
+| Coordinator intelligence layer | `tests/test_coordinator_intelligence_layer.py` | Provider routing, local replay, MindSpider samples, Jina semantic scoring, and EvidenceGraph projection. |
+| Coordinator-to-report bridge | `tests/test_coordinator_report_bridge.py` | Historical schema fixture compatibility checks. |
 | Report IR sanitization | `tests/test_report_engine_sanitization.py` | Full Document IR renderer fixtures. |
 | MediaAgent cache/config behavior | `tests/test_media_agent_node_optional.py` | Additional timeout and cache-path scenarios. |
 | Forum log parser | `tests/test_monitor.py` and fixtures | Compatibility coverage for ForumEngine log formats. |
@@ -41,14 +42,14 @@ The current provider benchmark is stored under `api_evaluation/results_full_r3/s
 | Evidence | Location | What It Proves |
 | --- | --- | --- |
 | Latest Coordinator artifact | `AgentCoordinator/cache/coordinator_output_latest.json` | Analysis output can be persisted in the stable schema consumed by UI and ReportEngine. |
-| Static report examples | `static/v2_report_example/` | HTML/PDF renderer output is available for artifact review. |
+| Static report examples | Curated generated report examples | HTML/PDF renderer output is available for artifact review. |
 | Signal Studio screenshots | `docs/assets/screenshots/` | Final UI workflow is implemented and documented. |
 | OpenAPI contract | `docs/reference/openapi.yaml` | Main REST surface is machine-readable. |
 | Diagram sources | `docs/assets/diagrams/source/` | Architecture diagrams can be maintained and regenerated. |
 
 ## Reviewer Interpretation
 
-The project is strongest where it combines architecture and implementation evidence: graph-based agent modules, a stable Coordinator artifact, a structured ReportEngine IR, provider evaluation, and a final React operator interface. The evidence set supports a defense review of scope, implementation, API contracts, generated artifacts, and quality controls.
+The project is strongest where it combines architecture and implementation evidence: the EvidenceGraph-centered Coordinator intelligence layer, a stable Coordinator artifact, a structured ReportEngine IR, provider evaluation, and a final React operator interface. The evidence set supports a defense review of scope, implementation, API contracts, generated artifacts, and quality controls.
 
 ## Rebuild Commands
 
@@ -69,6 +70,7 @@ Run the focused regression suite:
 
 ```powershell
 python -m unittest tests.test_sensitive_input_filter
+python -m unittest tests.test_coordinator_intelligence_layer
 python -m unittest tests.test_report_engine_sanitization
 python -m unittest tests.test_coordinator_report_bridge
 python -m unittest tests.test_media_agent_node_optional

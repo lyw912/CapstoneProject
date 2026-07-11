@@ -154,6 +154,12 @@ paths:
       responses:
         "200":
           description: ReportEngine status
+  /api/report/latest:
+    get:
+      summary: Get newest completed report
+      responses:
+        "200":
+          description: Latest report metadata, HTML, and Document IR when available
   /api/report/generate:
     post:
       summary: Start report generation
@@ -271,11 +277,45 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
+  /api/report/render-ir:
+    post:
+      summary: Render supplied Document IR to HTML
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - document_ir
+              properties:
+                document_ir:
+                  type: object
+      responses:
+        "200":
+          description: Rendered report HTML and normalized Document IR
   /api/report/export/md/{task_id}:
     get:
       summary: Export report Markdown
       parameters:
         - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Markdown attachment
+  /api/report/export/md-from-ir:
+    post:
+      summary: Export Markdown directly from Document IR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - document_ir
+              properties:
+                document_ir:
+                  type: object
       responses:
         "200":
           description: Markdown attachment

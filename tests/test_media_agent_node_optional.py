@@ -1,12 +1,20 @@
 import asyncio
 import importlib
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 module = importlib.import_module("AgentCoordinator.graph.nodes.media_agent_node")
 
 
 class MediaAgentNodeOptionalTests(unittest.TestCase):
+    def setUp(self):
+        self.cache_path = Path("AgentCoordinator/cache/media_agent_88073b10331d.md")
+        self.cache_path.unlink(missing_ok=True)
+
+    def tearDown(self):
+        self.cache_path.unlink(missing_ok=True)
+
     def test_skips_quietly_when_unconfigured(self):
         with patch.object(module, "_missing_media_config", return_value=["MEDIA_ENGINE_API_KEY"]):
             result = asyncio.run(module.media_agent_node({"query": "test topic"}))

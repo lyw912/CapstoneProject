@@ -85,7 +85,7 @@ class Settings(BaseSettings):
     # Our LLM model API sponsor: https://aihubmix.com/?aff=8Ds9, provides comprehensive model APIs
     
     # Insight Agent (recommended Kimi, apply at: https://platform.moonshot.cn/)
-    INSIGHT_ENGINE_API_KEY: Optional[str] = Field(None, description="Insight Agent (recommended kimi-k2, official apply: https://platform.moonshot.cn/) API key for main LLM. 🚩Please apply with recommended config first and get it running before adjusting KEY, BASE_URL, and MODEL_NAME.")
+    INSIGHT_ENGINE_API_KEY: Optional[str] = Field(None, description="Insight Agent (recommended kimi-k2, official apply: https://platform.moonshot.cn/) API key for main LLM. Please apply with recommended config first and get it running before adjusting KEY, BASE_URL, and MODEL_NAME.")
     INSIGHT_ENGINE_BASE_URL: Optional[str] = Field("https://api.moonshot.cn/v1", description="Insight Agent LLM BaseUrl, customizable by provider")
     INSIGHT_ENGINE_MODEL_NAME: str = Field("kimi-k2-0711-preview", description="Insight Agent LLM model name, e.g., kimi-k2-0711-preview")
     
@@ -98,6 +98,14 @@ class Settings(BaseSettings):
     QUERY_ENGINE_API_KEY: Optional[str] = Field(None, description="Query Agent (recommended deepseek, official apply: https://platform.deepseek.com/) API key")
     QUERY_ENGINE_BASE_URL: Optional[str] = Field("https://api.deepseek.com", description="Query Agent LLM BaseUrl")
     QUERY_ENGINE_MODEL_NAME: str = Field("deepseek-chat", description="Query Agent LLM model name, e.g., deepseek-reasoner")
+
+    # Coordinator semantic quality profile
+    JINA_API_KEY: Optional[str] = Field(None, description="Jina API key for optional multilingual embeddings and reranking")
+    JINA_EMBEDDING_BASE_URL: Optional[str] = Field("https://api.jina.ai/v1/embeddings", description="Jina embeddings endpoint")
+    JINA_EMBEDDING_MODEL: str = Field("jina-embeddings-v5-text-small", description="Jina embeddings model for semantic duplicate detection")
+    JINA_EMBEDDING_DIMENSIONS: Optional[str] = Field(None, description="Optional Jina embedding dimensions override")
+    JINA_RERANK_BASE_URL: Optional[str] = Field("https://api.jina.ai/v1/rerank", description="Jina rerank endpoint")
+    JINA_RERANK_MODEL: str = Field("jina-reranker-v3", description="Jina rerank model for relevance scoring")
     
     # Report Agent (recommended Gemini, proxy provider: https://aihubmix.com/?aff=8Ds9)
     REPORT_ENGINE_API_KEY: Optional[str] = Field(None, description="Report Agent (recommended gemini-2.5-pro, proxy apply: https://aihubmix.com/?aff=8Ds9) API key")
@@ -131,7 +139,7 @@ class Settings(BaseSettings):
     # Tavily API (apply at: https://www.tavily.com/)
     TAVILY_API_KEY: Optional[str] = Field(None, description="Tavily API (apply at: https://www.tavily.com/) API key for Tavily web search")
 
-    SEARCH_TOOL_TYPE: Literal["AnspireAPI", "BochaAPI"] = Field("AnspireAPI", description="Web search tool type, supports BochaAPI or AnspireAPI, default AnspireAPI")
+    SEARCH_TOOL_TYPE: Literal["TavilyAPI", "AnspireAPI", "BochaAPI"] = Field("TavilyAPI", description="Web search tool type, supports TavilyAPI, BochaAPI, or AnspireAPI")
     # Bocha API (apply at: https://open.bochaai.com/)
     BOCHA_BASE_URL: Optional[str] = Field("https://api.bocha.cn/v1/ai-search", description="Bocha AI Search BaseUrl or Bocha web search BaseUrl")
     BOCHA_WEB_SEARCH_API_KEY: Optional[str] = Field(None, description="Bocha API (apply at: https://open.bochaai.com/) API key for Bocha search")
@@ -204,6 +212,34 @@ class Settings(BaseSettings):
     COORDINATOR_QUERY_AGENT_TIMEOUT: int = Field(
         1800,
         description="Max seconds for QueryEngine structured research inside AgentCoordinator (default 30 min)",
+    )
+    COORDINATOR_ENABLE_MINDSPIDER_DB: bool = Field(
+        False,
+        description="Enable optional MindSpiderDB source acquisition inside the Coordinator research path",
+    )
+    COORDINATOR_ALLOW_REPLAY_FALLBACK: bool = Field(
+        False,
+        description="Allow explicit local replay fallback when configured source providers are unavailable; intended for demos/tests only",
+    )
+    COORDINATOR_MAX_RESEARCH_ROUNDS: int = Field(
+        1,
+        description="Maximum claim-driven follow-up retrieval rounds inside the Coordinator research path",
+    )
+    COORDINATOR_MAX_EMBEDDING_ITEMS: int = Field(
+        120,
+        description="Maximum evidence items sent to Jina embeddings per Coordinator run",
+    )
+    COORDINATOR_MAX_RERANK_DOCUMENTS: int = Field(
+        40,
+        description="Maximum evidence documents sent to Jina rerank per Coordinator run",
+    )
+    COORDINATOR_PROVIDER_TIMEOUT: int = Field(
+        30,
+        description="Timeout seconds for optional Coordinator provider calls",
+    )
+    COORDINATOR_SEMANTIC_DUPLICATE_THRESHOLD: float = Field(
+        0.92,
+        description="Cosine threshold for Jina-assisted semantic duplicate clustering",
     )
 
     # ================== User Input Sensitive Word Filter ====================

@@ -80,7 +80,7 @@ Minimum live-run settings:
 | QueryEngine LLM | `QUERY_ENGINE_API_KEY`, `QUERY_ENGINE_BASE_URL`, `QUERY_ENGINE_MODEL_NAME` |
 | MediaEngine LLM | `MEDIA_ENGINE_API_KEY`, `MEDIA_ENGINE_BASE_URL`, `MEDIA_ENGINE_MODEL_NAME` |
 | ReportEngine LLM | `REPORT_ENGINE_API_KEY`, `REPORT_ENGINE_BASE_URL`, `REPORT_ENGINE_MODEL_NAME` |
-| Search | `SEARCH_TOOL_TYPE` plus the matching search key, usually `BOCHA_WEB_SEARCH_API_KEY` or `ANSPIRE_API_KEY` |
+| Search | `SEARCH_TOOL_TYPE` plus the matching search key; default profile uses `TavilyAPI` with `TAVILY_API_KEY` |
 
 Recommended provider choices are in [API Evaluation](../quality/api-evaluation.md).
 

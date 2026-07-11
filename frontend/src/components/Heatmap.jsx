@@ -1,22 +1,90 @@
-import { Empty } from 'antd';
+import { useState } from 'react';
+import { Empty, Modal, Tag } from 'antd';
 import { motion } from 'framer-motion';
-import { displayText } from '../utils/helpers';
+import { compactNumber, displayText, platformLabel } from '../utils/helpers';
 
-export default function Heatmap({ pairs }) {
+const DEFAULT_LOW_SAMPLE_THRESHOLD = 3;
+
+function heatStyle(value) {
+  const bounded = Math.max(0, Math.min(1, Number(value) || 0));
+  const hue = 205 - Math.round(bounded * 195);
+  const alpha = 0.14 + bounded * 0.42;
+  return {
+    '--heat': bounded,
+    background: `linear-gradient(145deg, rgba(255,255,255,.90), hsla(${hue}, 78%, 58%, ${alpha}))`,
+    borderColor: `hsla(${hue}, 72%, 44%, ${0.18 + bounded * 0.38})`
+  };
+}
+
+export default function Heatmap({ pairs, platformCounts = {}, lowSampleThreshold = DEFAULT_LOW_SAMPLE_THRESHOLD }) {
+  const [selected, setSelected] = useState(null);
   const entries = Object.entries(pairs || {}).map(([pair, value]) => {
-    const [a, b] = pair.split('|');
-    return { pair, a: displayText(a, 'Source A'), b: displayText(b, 'Source B'), value: Number(value) || 0 };
+    const [aRaw, bRaw] = pair.split('|');
+    const a = displayText(aRaw, 'Source A');
+    const b = displayText(bRaw, 'Source B');
+    const aKey = a.toLowerCase();
+    const bKey = b.toLowerCase();
+    const aCount = Number(platformCounts[a] ?? platformCounts[aKey] ?? 0);
+    const bCount = Number(platformCounts[b] ?? platformCounts[bKey] ?? 0);
+    return {
+      pair,
+      a,
+      b,
+      aLabel: platformLabel(a, true),
+      bLabel: platformLabel(b, true),
+      aCount,
+      bCount,
+      value: Number(value) || 0,
+      lowSample: aCount < lowSampleThreshold || bCount < lowSampleThreshold
+    };
   }).sort((a, b) => b.value - a.value).slice(0, 9);
   if (!entries.length) return <Empty description="No divergence data" />;
   return (
-    <div className="heatmap-grid">
-      {entries.map((entry) => (
-        <motion.div className="heatmap-tile" key={entry.pair} whileHover={{ scale: 1.02 }} style={{ '--heat': entry.value }}>
-          <span>{entry.a}</span>
-          <strong>{Math.round(entry.value * 100)}</strong>
-          <small>{entry.b}</small>
-        </motion.div>
-      ))}
-    </div>
+    <>
+      <div className="heatmap-grid">
+        {entries.map((entry) => {
+          const score = Math.round(entry.value * 100);
+          return (
+            <motion.button
+              type="button"
+              className="heatmap-tile"
+              key={entry.pair}
+              whileHover={{ scale: 1.02 }}
+              style={heatStyle(entry.value)}
+              onClick={() => setSelected(entry)}
+            >
+              <span>{entry.aLabel}</span>
+              <strong>{score}</strong>
+              <small>{entry.bLabel}</small>
+            </motion.button>
+          );
+        })}
+      </div>
+      <Modal
+        open={Boolean(selected)}
+        onCancel={() => setSelected(null)}
+        footer={null}
+        title={selected ? `${selected.aLabel} vs ${selected.bLabel}` : 'Divergence details'}
+      >
+        {selected && (
+          <div className="heatmap-detail">
+            <div>
+              <span>Divergence score</span>
+              <strong>{`${Math.round(selected.value * 100)}/100`}</strong>
+            </div>
+            <div>
+              <span>{selected.aLabel}</span>
+              <strong>{`${compactNumber(selected.aCount)} samples`}</strong>
+            </div>
+            <div>
+              <span>{selected.bLabel}</span>
+              <strong>{`${compactNumber(selected.bCount)} samples`}</strong>
+            </div>
+            {selected.lowSample && <Tag color="gold">Low sample size</Tag>}
+            <p>Higher values mean the sampled platforms have more different support / neutral / oppose distributions. Low-sample pairs should be read as diagnostics, not population-level conclusions.</p>
+          </div>
+        )}
+      </Modal>
+    </>
   );
 }

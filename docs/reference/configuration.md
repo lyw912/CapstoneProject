@@ -60,9 +60,9 @@ Use one of these profiles before experimenting with other providers. The default
 
 | Profile | QueryEngine | MediaEngine | ReportEngine | MindSpider | Search |
 | --- | --- | --- | --- | --- | --- |
-| Evaluated default | `deepseek-chat` | `qwen-plus-compatible` / `qwen-plus` | `deepseek-chat` | `qwen-plus-compatible` / `qwen-plus` | `BochaAPI` |
-| Low-latency simplification | `deepseek-chat` | `deepseek-chat` | `deepseek-chat` | `deepseek-chat` | `BochaAPI` |
-| Strong-report profile | `deepseek-chat` | `qwen-plus` | A stronger OpenAI-compatible report model | `qwen-plus` | `BochaAPI` |
+| Evaluated default | `deepseek-chat` | `qwen-plus-compatible` / `qwen-plus` | `deepseek-chat` | `qwen-plus-compatible` / `qwen-plus` | `TavilyAPI` |
+| Low-latency simplification | `deepseek-chat` | `deepseek-chat` | `deepseek-chat` | `deepseek-chat` | `TavilyAPI` |
+| Strong-report profile | `deepseek-chat` | `qwen-plus` | A stronger OpenAI-compatible report model | `qwen-plus` | `TavilyAPI` |
 
 The report engine is sensitive to structured-output quality. If chart blocks, table blocks, or long-form report sections degrade, keep the same API shape but try a stronger report model and rerun the report task.
 
@@ -70,12 +70,37 @@ The report engine is sensitive to structured-output quality. If chart blocks, ta
 
 | Key | Default | Purpose |
 | --- | --- | --- |
-| `SEARCH_TOOL_TYPE` | `AnspireAPI` | Selects `AnspireAPI` or `BochaAPI`. |
+| `SEARCH_TOOL_TYPE` | `TavilyAPI` | Selects `TavilyAPI`, `BochaAPI`, or `AnspireAPI`. |
 | `TAVILY_API_KEY` | empty | Tavily search key when the Tavily path is selected. |
 | `ANSPIRE_BASE_URL` | `https://plugin.anspire.cn/api/ntsearch/search` | Anspire endpoint. |
 | `ANSPIRE_API_KEY` | empty | Anspire key. |
 | `BOCHA_BASE_URL` | `https://api.bocha.cn/v1/ai-search` | Bocha endpoint. |
 | `BOCHA_WEB_SEARCH_API_KEY` | empty | Bocha key. |
+
+Search providers acquire external evidence. They are separate from semantic quality providers. If the selected provider key is blank, the artifact records `not_configured` and the Coordinator continues. If a configured provider fails, the artifact records `provider:error`; it does not silently pretend search succeeded.
+
+## Coordinator Semantic Providers
+
+| Key | Default | Purpose |
+| --- | --- | --- |
+| `JINA_API_KEY` | empty | Primary semantic provider key. Enables Jina embeddings for semantic duplicate clustering and Jina rerank for relevance scoring. |
+| `JINA_EMBEDDING_BASE_URL` | `https://api.jina.ai/v1/embeddings` | Jina embeddings endpoint. |
+| `JINA_EMBEDDING_MODEL` | `jina-embeddings-v5-text-small` | Text embedding model for semantic duplicate detection. |
+| `JINA_EMBEDDING_DIMENSIONS` | empty | Optional dimensions override. Leave blank for provider default. |
+| `JINA_RERANK_BASE_URL` | `https://api.jina.ai/v1/rerank` | Jina rerank endpoint. |
+| `JINA_RERANK_MODEL` | `jina-reranker-v3` | Jina rerank model for relevance scoring. |
+| `COORDINATOR_MAX_EMBEDDING_ITEMS` | `120` | Max items sent to embedding per run. |
+| `COORDINATOR_MAX_RERANK_DOCUMENTS` | `40` | Max documents sent to rerank per run. |
+| `COORDINATOR_PROVIDER_TIMEOUT` | `30` | Timeout seconds for semantic provider calls. |
+| `COORDINATOR_SEMANTIC_DUPLICATE_THRESHOLD` | `0.92` | Cosine threshold for embedding-assisted duplicate clustering. |
+
+Provider routing:
+
+```text
+Jina configured -> use Jina embeddings + Jina rerank.
+Jina missing -> deterministic duplicate and relevance rules remain active.
+No semantic key -> deterministic hash/rule route remains active and diagnostics show not_configured.
+```
 
 ## Search And Coordinator Limits
 
@@ -91,17 +116,17 @@ The report engine is sensitive to structured-output quality. If chart blocks, ta
 | `MEDIA_PARAGRAPH_WORKERS` | `3` | Parallel MediaEngine paragraph workers. |
 | `MEDIA_PARAGRAPH_RETRY_PASSES` | `1` | Sequential recovery passes after parallel paragraph processing. |
 | `MEDIA_REFLECTION_STATE_MAX_CHARS` | `50000` | Reflection-summary context cap for MediaEngine prompts. |
-| `QUERY_MAX_SEARCH_ITERATIONS` | `2` | QueryEngine gap-fill search rounds. |
-| `SEARCH_TIMEOUT` | `60` | Single search timeout. |
+| `QUERY_MAX_SEARCH_ITERATIONS` | `2` | QueryEngine graph gap-fill search rounds. Active Coordinator follow-up rounds use `COORDINATOR_MAX_RESEARCH_ROUNDS`. |
+| `SEARCH_TIMEOUT` | `60` | Single search timeout for web source acquisition. |
 | `SEARCH_CONTENT_MAX_LENGTH` | `50000` | Snippet length passed to LLM prompts. |
-| `TAVILY_SEARCH_MAX_CONCURRENT` | `3` | Max parallel subqueries. |
+| `TAVILY_SEARCH_MAX_CONCURRENT` | `3` | QueryEngine graph Tavily concurrency. Active Coordinator source gateway uses bounded per-task query budgets. |
 | `LLM_SHORT_TASK_TIMEOUT` | `120` | Short LLM request timeout. |
 | `LLM_LONG_TASK_TIMEOUT` | `600` | Streaming/long LLM request timeout. |
 | `LLM_STREAM_IDLE_TIMEOUT` | `240` | Stream idle watchdog window. |
 | `MEDIA_USE_LLM_REPORT_FORMAT` | `False` | Uses direct MediaEngine report assembly for throughput. |
 | `MEDIA_SEARCH_HTTP_TIMEOUT` | `60` | MediaEngine search HTTP timeout. |
-| `COORDINATOR_MEDIA_AGENT_TIMEOUT` | `10800` | MediaEngine timeout inside Coordinator. |
-| `COORDINATOR_QUERY_AGENT_TIMEOUT` | `1800` | QueryEngine timeout inside Coordinator. |
+| `COORDINATOR_MEDIA_AGENT_TIMEOUT` | `10800` | Historical MediaEngine timeout for the legacy Coordinator graph. Not used by the active intelligence-layer path. |
+| `COORDINATOR_QUERY_AGENT_TIMEOUT` | `1800` | QueryEngine graph timeout for compatibility paths. The current Coordinator endpoint uses its internal provider budgets instead. |
 
 ## MediaEngine Cache And Performance
 
@@ -110,7 +135,7 @@ The report engine is sensitive to structured-output quality. If chart blocks, ta
 | `AgentCoordinator/cache/media_agent_<hash>.md` | Reuses MediaEngine Markdown output for matching Coordinator topics. |
 | Parallel paragraph processing | Processes MediaEngine report paragraphs concurrently when `MEDIA_PARAGRAPH_WORKERS > 1`. |
 | Stream-idle watchdog | Stops stalled streaming reads according to `LLM_STREAM_IDLE_TIMEOUT`. |
-| Timeout budgets | Keeps QueryEngine, MediaEngine, and ReportEngine request behavior explicit and tunable. |
+| Timeout budgets | Keeps legacy QueryEngine/MediaEngine and active ReportEngine request behavior explicit and tunable. |
 
 ## Observability
 
@@ -150,9 +175,15 @@ REPORT_ENGINE_API_KEY=your_report_key
 REPORT_ENGINE_BASE_URL=https://api.deepseek.com
 REPORT_ENGINE_MODEL_NAME=deepseek-chat
 
-SEARCH_TOOL_TYPE=BochaAPI
-BOCHA_WEB_SEARCH_API_KEY=your_bocha_key
-BOCHA_BASE_URL=https://api.bocha.cn/v1/ai-search
+JINA_API_KEY=your_jina_key
+JINA_EMBEDDING_BASE_URL=https://api.jina.ai/v1/embeddings
+JINA_EMBEDDING_MODEL=jina-embeddings-v5-text-small
+JINA_RERANK_BASE_URL=https://api.jina.ai/v1/rerank
+JINA_RERANK_MODEL=jina-reranker-v3
+COORDINATOR_ALLOW_REPLAY_FALLBACK=false
+
+SEARCH_TOOL_TYPE=TavilyAPI
+TAVILY_API_KEY=your_tavily_key
 
 REPORT_OUTPUT_LANGUAGE=en
 ```

@@ -85,7 +85,7 @@ class Settings(BaseSettings):
     # Tavily API (application address: https://www.tavily.com/)
     TAVILY_API_KEY: Optional[str] = Field(None, description="Tavily API (application address: https://www.tavily.com/) API key, used for Tavily web search")
 
-    SEARCH_TOOL_TYPE: Literal["AnspireAPI", "BochaAPI"] = Field("AnspireAPI", description="Network search tool type, supports BochaAPI or AnspireAPI, default is AnspireAPI")
+    SEARCH_TOOL_TYPE: Literal["TavilyAPI", "AnspireAPI", "BochaAPI"] = Field("TavilyAPI", description="Network search tool type, supports TavilyAPI, BochaAPI, or AnspireAPI")
     # Bocha API (application address: https://open.bochaai.com/)
     BOCHA_BASE_URL: Optional[str] = Field("https://api.bocha.cn/v1/ai-search", description="Bocha AI Search BaseUrl or Bocha Web Search BaseUrl")
     BOCHA_WEB_SEARCH_API_KEY: Optional[str] = Field(None, description="Bocha API (application address: https://open.bochaai.com/) API key, used for Bocha search")

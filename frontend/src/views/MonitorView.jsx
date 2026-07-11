@@ -30,7 +30,7 @@ import TraceTypeBars from '../components/TraceTypeBars';
 import TraceTimeline from '../components/TraceTimeline';
 import LocalTraceReplay from '../components/LocalTraceReplay';
 import TraceDetailDrawer from '../components/TraceDetailDrawer';
-import { apiJson, displayText, timeText, percentText, compactNumber, durationText, msText, langSmithProjectUrl, traceTimelineChartData } from '../utils/helpers';
+import { apiJson, displayText, timeText, percentText, compactNumber, durationText, msText, langSmithProjectUrl, traceTimelineChartData, signalGraphSummary, signalProviderDiagnostics } from '../utils/helpers';
 
 export default function MonitorView({
   output, theme, system, coordinatorTask,
@@ -40,6 +40,8 @@ export default function MonitorView({
   queryAgent, synthesis
 }) {
   const [selectedTrace, setSelectedTrace] = useState(null);
+  const graphSummary = signalGraphSummary(output);
+  const providerDiagnostics = signalProviderDiagnostics(output);
 
   return (
     <motion.section key="control" className="page-grid monitor-grid" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
@@ -62,17 +64,17 @@ export default function MonitorView({
         <div className="quality-orb">
           <Progress type="circle" percent={(() => {
             const confidence = (synthesis.overall_confidence || 0) * 100;
-            const sources = Math.min(100, Number(queryAgent.total_sources || 0));
+            const sources = Math.min(100, Number(graphSummary.canonical_count || queryAgent.canonical_sources || queryAgent.total_sources || 0) * 10);
             const errors = Array.isArray(output.agent_errors) ? output.agent_errors.length : 0;
             return Math.max(0, Math.round(confidence * 0.62 + sources * 0.28 - errors * 12));
           })()} size={132} strokeColor={theme.primary} trailColor={theme.trail} />
           <span>{output.synthesis ? 'Artifact loaded' : 'No run yet'}</span>
         </div>
         <div className="meta-list compact-meta">
-          <div><span>Sources</span><strong>{compactNumber(queryAgent.total_sources)}</strong></div>
+          <div><span>Distinct evidence</span><strong>{compactNumber(graphSummary.canonical_count || queryAgent.canonical_sources || queryAgent.total_sources)}</strong></div>
           <div><span>Confidence</span><strong>{percentText(synthesis.overall_confidence)}</strong></div>
           <div><span>Runtime</span><strong>{durationText(output.pipeline_duration_seconds)}</strong></div>
-          <div><span>Diagnostics</span><strong>{compactNumber(output.agent_errors?.length)}</strong></div>
+          <div><span>Diagnostics</span><strong>{compactNumber(providerDiagnostics.length || output.agent_errors?.length)}</strong></div>
         </div>
       </div>
 

@@ -377,6 +377,7 @@ class ChartReviewService:
         Consistent with HTMLRenderer._normalize_chart_block():
         - Ensure props exists
         - Merge top-level scales into props.options
+        - Expand full Chart.js config shaped as {type, data, options}
         - Ensure data exists
         - Try to use chapter-level data as fallback
         - Auto-generate labels
@@ -408,6 +409,20 @@ class ChartReviewService:
         if not isinstance(data, dict):
             data = {}
             block["data"] = data
+        else:
+            inline_options = data.get("options")
+            if isinstance(inline_options, dict):
+                options = props.get("options") if isinstance(props.get("options"), dict) else {}
+                props["options"] = self._merge_dicts(options, inline_options)
+
+            inline_type = data.get("type")
+            if isinstance(inline_type, str) and inline_type and not props.get("type"):
+                props["type"] = inline_type
+
+            normalized_data = self._coerce_chart_data_structure(data)
+            if normalized_data is not data:
+                data = normalized_data
+                block["data"] = data
 
         # If datasets is empty, try to fill with chapter-level data
         if chapter_context and self._is_chart_data_empty(data):
@@ -441,6 +456,31 @@ class ChartReviewService:
 
                     if labels_from_data:
                         data_ref["labels"] = labels_from_data
+
+    @staticmethod
+    def _looks_like_chart_dataset(candidate: Any) -> bool:
+        """Return true when a dict already contains Chart.js labels/datasets data."""
+        if not isinstance(candidate, dict):
+            return False
+        return isinstance(candidate.get("labels"), list) or isinstance(candidate.get("datasets"), list)
+
+    def _coerce_chart_data_structure(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Accept common LLM output forms and return the Chart.js data object.
+
+        LLMs often emit a full Chart.js config under block.data:
+        {"type": "bar", "data": {"labels": [...], "datasets": [...]}, "options": {...}}.
+        The validator expects only the inner data object, so normalize before validation.
+        """
+        if not isinstance(data, dict):
+            return {}
+        if self._looks_like_chart_dataset(data):
+            return data
+        for key in ("data", "chartData", "payload"):
+            nested = data.get(key)
+            if self._looks_like_chart_dataset(nested):
+                return copy.deepcopy(nested)
+        return data
 
     @staticmethod
     def _is_chart_data_empty(data: Dict[str, Any] | None) -> bool:
@@ -630,4 +670,3 @@ __all__ = [
     "get_chart_review_service",
     "review_document_charts",
 ]
-

@@ -176,7 +176,9 @@ def _classify_line(stripped: str, indent: int) -> Optional[dict]:
         payload = _strip_markup(bullet_match.group("title").strip())
         title_info = _split_number(payload)
         slug = _build_slug(title_info["number"], title_info["title"])
-        is_section = indent <= 1
+        is_section = indent <= 1 and (
+            bool(title_info["number"]) or _looks_like_unnumbered_section_title(title_info["title"])
+        )
         depth = 1 if indent <= 1 else 2
         return {
             "is_section": is_section,
@@ -214,6 +216,45 @@ def _strip_markup(text: str) -> str:
     if text.startswith(("**", "__")) and text.endswith(("**", "__")) and len(text) > 4:
         return text[2:-2].strip()
     return text
+
+
+def _looks_like_unnumbered_section_title(title: str) -> bool:
+    """
+    Distinguish real unnumbered section headings from instruction bullets.
+
+    Custom report templates often use top-level bullets as instructions under a
+    numbered chapter, for example "Summarize the overall finding...". Those
+    should become outline notes, not standalone chapters.
+    """
+    normalized = (title or "").strip()
+    if not normalized:
+        return False
+    lowered = normalized.lower()
+    if lowered in {"appendix", "references", "source list", "executive summary", "conclusion", "conclusions"}:
+        return True
+    if normalized.endswith((".", ";", ":")):
+        return False
+    first_word = re.split(r"\s+", lowered, maxsplit=1)[0]
+    imperative_verbs = {
+        "summarize",
+        "state",
+        "explain",
+        "include",
+        "present",
+        "preserve",
+        "distinguish",
+        "provide",
+        "describe",
+        "show",
+        "list",
+        "compare",
+        "analyze",
+        "note",
+    }
+    if first_word in imperative_verbs:
+        return False
+    words = re.findall(r"[A-Za-z0-9]+", normalized)
+    return 0 < len(words) <= 6
 
 
 def _split_number(payload: str) -> dict:

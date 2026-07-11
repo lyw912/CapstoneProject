@@ -9,7 +9,7 @@ Use this page to review the project through its checked-in evidence: UI screensh
 | Documentation review | `README.md`, `docs/` | Product scope, architecture, operations, quality evidence, and defense narrative. |
 | UI review | `docs/assets/screenshots/` | Signal Studio home, readout, proof, report editor, monitor, settings, and revision views. |
 | Artifact review | `AgentCoordinator/cache/coordinator_output_latest.json` | Stable analysis schema consumed by Signal Studio and ReportEngine. |
-| Report review | `static/v2_report_example/` and generated `output/` files | HTML, Markdown, and PDF report rendering quality. |
+| Report review | Curated static report examples and generated `output/` files | HTML, Markdown, and PDF report rendering quality. |
 | Contract review | `docs/reference/api.md`, `docs/reference/openapi.yaml` | Coordinator, ReportEngine, runtime, config, and observability APIs. |
 | Evaluation review | `api_evaluation/results_full_r3/summary.csv` | Provider score, success rate, latency, and recommended runtime profile. |
 
@@ -31,7 +31,7 @@ The Readout, Proof, and Monitor views use the same artifact shape documented in 
 
 ## Report Examples
 
-Generated report examples live under:
+Curated generated report examples live under:
 
 ```text
 static/v2_report_example/

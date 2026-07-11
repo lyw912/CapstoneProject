@@ -11,7 +11,7 @@ This is the authoritative documentation library for CapstoneProject: product ove
 | Role | First Documents | Outcome |
 | --- | --- | --- |
 | New reader | [Project Brief](overview/project-brief.md), [Capabilities](overview/capabilities.md), [Screenshots](overview/screenshots.md) | Understand what the system does and why it exists. |
-| Developer | [Repository Map](overview/repository-map.md), [System Architecture](architecture/system-architecture.md), [Runtime Flow](architecture/runtime-flow.md) | Locate the right subsystem and understand the execution path. |
+| Developer | [Repository Map](overview/repository-map.md), [System Architecture](architecture/system-architecture.md), [Runtime Flow](architecture/runtime-flow.md), [AgentCoordinator](components/agent-coordinator.md) | Locate the right subsystem and understand the execution path. |
 | API integrator | [API Reference](reference/api.md), [OpenAPI YAML](reference/openapi.yaml), [Coordinator Output Schema](reference/coordinator-output-schema.md) | Use the runtime contracts without reading implementation code first. |
 | Operator | [Setup](operations/setup.md), [Runbook](operations/runbook.md), [Troubleshooting](operations/troubleshooting.md) | Start, run, diagnose, and recover the system. |
 | Reviewer | [Artifact Review](operations/artifact-review.md), [Screenshots](overview/screenshots.md), [Defense Brief](presentation/defense-brief.md) | Review the UI, cached artifacts, report examples, and technical evidence. |
@@ -22,7 +22,7 @@ This is the authoritative documentation library for CapstoneProject: product ove
 | Area | Documents | Use When |
 | --- | --- | --- |
 | Overview | [Project Brief](overview/project-brief.md), [Capabilities](overview/capabilities.md), [Repository Map](overview/repository-map.md), [Screenshots](overview/screenshots.md) | You need the product scope, concepts, file layout, or UI visuals. |
-| Architecture | [System Architecture](architecture/system-architecture.md), [Runtime Flow](architecture/runtime-flow.md), [Data Artifacts](architecture/data-artifacts.md), [Quality Attributes](architecture/quality-attributes.md) | You need system design, graph flow, data movement, or architecture tradeoffs. |
+| Architecture | [System Architecture](architecture/system-architecture.md), [Runtime Flow](architecture/runtime-flow.md), [Data Artifacts](architecture/data-artifacts.md), [Quality Attributes](architecture/quality-attributes.md), [AgentCoordinator](components/agent-coordinator.md) | You need system design, graph flow, data movement, or architecture tradeoffs. |
 | Components | [Signal Studio](components/signal-studio.md), [Flask Orchestrator](components/flask-orchestrator.md), [QueryEngine](components/query-engine.md), [MediaEngine](components/media-engine.md), [AgentCoordinator](components/agent-coordinator.md), [ReportEngine](components/report-engine.md), [ForumEngine](components/forum-engine.md), [Sentiment Models](components/sentiment-models.md) | You are working on one subsystem. |
 | Reference | [API Reference](reference/api.md), [OpenAPI YAML](reference/openapi.yaml), [Configuration](reference/configuration.md), [Coordinator Output Schema](reference/coordinator-output-schema.md), [Report IR](reference/report-ir.md), [Runtime Assets](reference/runtime-assets.md), [Data And Model Assets](reference/data-and-model-assets.md) | You need exact contracts, settings, schemas, asset paths, or data/model publication rules. |
 | Operations | [Setup](operations/setup.md), [Artifact Review](operations/artifact-review.md), [Runbook](operations/runbook.md), [Deployment](operations/deployment.md), [Troubleshooting](operations/troubleshooting.md) | You need to run, deploy, review artifacts, or diagnose the system. |
@@ -36,8 +36,8 @@ This is the authoritative documentation library for CapstoneProject: product ove
 | --- | --- | --- |
 | Interface | Signal Studio analysis, evidence, report editing, monitoring, configuration | `frontend/`, `templates/index.html`, `static/signal-studio/` |
 | Orchestration | Flask API surface, runtime state, config editing, background tasks, Socket.IO | `app.py` |
-| Reasoning | Query/Media fan-out, divergence analysis, deliberation, synthesis | `AgentCoordinator/` |
-| Evidence | Search providers, trust scoring, stance classification, social enrichment | `QueryEngine/`, `MediaEngine/`, `MindSpider/` |
+| Reasoning | EvidenceGraph-centered claim mining, adaptive research, audit, and citation-grounded synthesis | `AgentCoordinator/intelligence/`, `AgentCoordinator/` |
+| Evidence | Source gateway, canonical clustering, quality features, stance and freshness modeling | `AgentCoordinator/intelligence/` plus legacy/direct-use `QueryEngine/`, `MediaEngine/`, `MindSpider/` |
 | Reporting | Coordinator bridge, report planning, Document IR, renderers | `ReportEngine/` |
 | Quality | Regression tests, API provider benchmark, output validation | `tests/`, `api_evaluation/`, `QueryEngine/evaluation/` |
 
@@ -45,8 +45,8 @@ This is the authoritative documentation library for CapstoneProject: product ove
 
 | Diagram | Purpose |
 | --- | --- |
-| <img src="assets/diagrams/exported/final-runtime.png" alt="Final runtime" width="320"> | Runtime path across Signal Studio, Flask, Coordinator, engines, and ReportEngine. |
-| <img src="assets/diagrams/exported/coordinator-graph.png" alt="Coordinator graph" width="320"> | AgentCoordinator graph from engine fan-out through synthesis and report handoff. |
+| <img src="assets/diagrams/exported/final-runtime.png" alt="Final runtime" width="320"> | Runtime path across Signal Studio, Flask, AgentCoordinator, internal intelligence layer, Coordinator artifact projection, and ReportEngine. |
+| <img src="assets/diagrams/exported/coordinator-graph.png" alt="Coordinator graph" width="320"> | Coordinator graph and current endpoint details are documented in [AgentCoordinator](components/agent-coordinator.md). |
 | <img src="assets/diagrams/exported/report-engine-pipeline.png" alt="ReportEngine pipeline" width="320"> | ReportEngine planning, chapter generation, finalization, and export pipeline. |
 
 All diagram sources are versioned under `docs/assets/diagrams/source/`; exported PNGs are under `docs/assets/diagrams/exported/`.

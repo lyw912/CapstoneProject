@@ -62,6 +62,25 @@ export const CONFIG_GROUPS = [
     ]
   },
   {
+    title: 'Coordinator Runtime',
+    description: 'Jina semantic quality and Coordinator replay controls.',
+    fields: [
+      ['JINA_API_KEY', 'Jina key', 'password'],
+      ['JINA_EMBEDDING_BASE_URL', 'Jina embedding URL', 'text'],
+      ['JINA_EMBEDDING_MODEL', 'Jina embedding model', 'text'],
+      ['JINA_EMBEDDING_DIMENSIONS', 'Jina dimensions', 'text'],
+      ['JINA_RERANK_BASE_URL', 'Jina rerank URL', 'text'],
+      ['JINA_RERANK_MODEL', 'Jina rerank model', 'text'],
+      ['COORDINATOR_ENABLE_MINDSPIDER_DB', 'MindSpider DB enabled', 'boolean'],
+      ['COORDINATOR_ALLOW_REPLAY_FALLBACK', 'Replay fallback enabled', 'boolean'],
+      ['COORDINATOR_MAX_RESEARCH_ROUNDS', 'Research rounds', 'text'],
+      ['COORDINATOR_MAX_EMBEDDING_ITEMS', 'Embedding item cap', 'text'],
+      ['COORDINATOR_MAX_RERANK_DOCUMENTS', 'Rerank document cap', 'text'],
+      ['COORDINATOR_PROVIDER_TIMEOUT', 'Provider timeout', 'text'],
+      ['COORDINATOR_SEMANTIC_DUPLICATE_THRESHOLD', 'Semantic duplicate threshold', 'text']
+    ]
+  },
+  {
     title: 'Trace Quality',
     description: 'LangSmith tracing for model calls, timing, diagnostics, and review quality.',
     fields: [
@@ -75,11 +94,11 @@ export const CONFIG_GROUPS = [
 
 export const FLOW_STEPS = [
   { id: 'brief', label: 'Brief', sub: 'Topic', micro: ['Intent', 'Scope', 'Context'] },
-  { id: 'collect', label: 'Collect', sub: 'Sources', micro: ['Search', 'Rank', 'Dedup', 'Trust'] },
-  { id: 'map', label: 'Map', sub: 'Patterns', micro: ['Stance', 'Sentiment', 'Coverage', 'Divergence'] },
-  { id: 'reason', label: 'Reason', sub: 'Tensions', micro: ['Debate', 'Consensus', 'Dissent'] },
-  { id: 'verify', label: 'Verify', sub: 'Claims', micro: ['Facts', 'Opinions', 'Bias'] },
-  { id: 'write', label: 'Write', sub: 'Report', micro: ['Outline', 'Draft', 'Review', 'Export'] }
+  { id: 'collect', label: 'Collect', sub: 'Evidence', micro: ['Search', 'Rank', 'Dedup', 'Follow-up'] },
+  { id: 'map', label: 'Map', sub: 'Graph', micro: ['Stance', 'Sentiment', 'Coverage', 'Divergence'] },
+  { id: 'reason', label: 'Reason', sub: 'Claims', micro: ['Claims', 'Sufficiency', 'Counterpoints'] },
+  { id: 'verify', label: 'Verify', sub: 'Audit', micro: ['Audit', 'Citations', 'Bias'] },
+  { id: 'write', label: 'Write', sub: 'Synthesis', micro: ['Synthesis', 'Draft', 'Review', 'Export'] }
 ];
 
 export const MICRO_STEPS = FLOW_STEPS.flatMap((step, stageIndex) => step.micro.map((name, microIndex) => ({

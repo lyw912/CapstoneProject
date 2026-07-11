@@ -143,6 +143,9 @@ ADD COLUMN `topic_id` varchar(64) DEFAULT NULL COMMENT '关联的话题ID',
 ADD COLUMN `crawling_task_id` varchar(64) DEFAULT NULL COMMENT '关联的爬取任务ID';
 
 -- 为知乎内容表添加话题关联字段
+ALTER TABLE `zhihu_content`
+MODIFY COLUMN `content_text` MEDIUMTEXT COMMENT '内容文本';
+
 ALTER TABLE `zhihu_content` 
 ADD COLUMN `topic_id` varchar(64) DEFAULT NULL COMMENT '关联的话题ID',
 ADD COLUMN `crawling_task_id` varchar(64) DEFAULT NULL COMMENT '关联的爬取任务ID';

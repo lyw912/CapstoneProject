@@ -23,7 +23,7 @@ export default function TraceTimeline({ traces, onSelect }) {
             <span className="trace-dot" />
             <div className="trace-run-main">
               <strong>{displayText(run.name, 'Trace')}</strong>
-              <small>{timeText(run.start_time)} · {msText(run.duration_ms)}</small>
+              <small>{timeText(run.start_time)} | {msText(run.duration_ms)}</small>
             </div>
             <div className="trace-run-meta">
               <Tag color={status === 'error' ? 'red' : status === 'running' ? 'processing' : 'blue'}>{status}</Tag>

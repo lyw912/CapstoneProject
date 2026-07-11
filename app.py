@@ -100,6 +100,12 @@ CONFIG_KEYS = [
     'REPORT_ENGINE_API_KEY',
     'REPORT_ENGINE_BASE_URL',
     'REPORT_ENGINE_MODEL_NAME',
+    'JINA_API_KEY',
+    'JINA_EMBEDDING_BASE_URL',
+    'JINA_EMBEDDING_MODEL',
+    'JINA_EMBEDDING_DIMENSIONS',
+    'JINA_RERANK_BASE_URL',
+    'JINA_RERANK_MODEL',
     'FORUM_HOST_API_KEY',
     'FORUM_HOST_BASE_URL',
     'FORUM_HOST_MODEL_NAME',
@@ -118,6 +124,13 @@ CONFIG_KEYS = [
     'ANSPIRE_API_KEY',
     'COORDINATOR_MEDIA_AGENT_TIMEOUT',
     'COORDINATOR_QUERY_AGENT_TIMEOUT',
+    'COORDINATOR_ENABLE_MINDSPIDER_DB',
+    'COORDINATOR_ALLOW_REPLAY_FALLBACK',
+    'COORDINATOR_MAX_RESEARCH_ROUNDS',
+    'COORDINATOR_MAX_EMBEDDING_ITEMS',
+    'COORDINATOR_MAX_RERANK_DOCUMENTS',
+    'COORDINATOR_PROVIDER_TIMEOUT',
+    'COORDINATOR_SEMANTIC_DUPLICATE_THRESHOLD',
 ]
 
 
@@ -279,9 +292,10 @@ def initialize_system_components():
     """Start the final Signal Studio runtime: Flask APIs, React static UI, Coordinator, and ReportEngine.
 
     Streamlit Media/Query apps are legacy operator surfaces. The final React
-    frontend calls QueryEngine/MediaEngine through AgentCoordinator and passes
-    the Coordinator artifact to ReportEngine, so the Streamlit processes are
-    deliberately kept stopped for the Signal Studio path.
+    frontend calls the AgentCoordinator path, which uses an internal
+    evidence-audited intelligence layer and passes the generated Coordinator artifact to
+    ReportEngine, so the Streamlit processes are deliberately kept stopped for
+    the Signal Studio path.
     """
     logs = []
     errors = []
@@ -1232,18 +1246,14 @@ def _set_coordinator_task(task_id, **updates):
         return task.copy()
 
 COORDINATOR_NODE_PROGRESS = {
-    'query_agent': (32, 'collect', 'Search'),
-    'media_agent': (36, 'collect', 'Search'),
-    'data_bridge': (46, 'collect', 'Trust'),
-    'divergence_compute': (54, 'map', 'Divergence'),
-    'perspective_gen': (60, 'reason', 'Debate'),
-    'deliberation': (68, 'reason', 'Consensus'),
-    'targeted_search': (72, 'collect', 'Search'),
-    'echo_chamber': (76, 'verify', 'Bias'),
-    'fact_opinion': (82, 'verify', 'Facts'),
-    'platform_interpret': (88, 'map', 'Sentiment'),
-    'synthesis': (94, 'write', 'Outline'),
-    'report_agent': (98, 'write', 'Draft'),
+    'query_understanding': (18, 'brief', 'Intent'),
+    'retrieval_planner': (24, 'brief', 'Scope'),
+    'source_acquisition': (36, 'collect', 'Search'),
+    'quality_pipeline': (50, 'collect', 'Rank'),
+    'claim_miner': (62, 'reason', 'Claims'),
+    'adaptive_research_loop': (72, 'collect', 'Follow-up'),
+    'evidence_audit': (86, 'verify', 'Audit'),
+    'citation_grounded_synthesis': (96, 'write', 'Synthesis'),
 }
 
 
@@ -1260,60 +1270,45 @@ def _pct_dict_text(values):
 
 
 def _coordinator_progress_detail(node_name, update, state):
-    if node_name == 'query_agent':
-        run = update.get('query_run') or {}
-        output = run.get('output') or {}
-        total = output.get('total_sources_kept') or output.get('total_sources') or len(output.get('sources') or [])
-        stance = _pct_dict_text(output.get('stance_distribution') or {})
-        top_sources = sorted(output.get('sources') or [], key=lambda item: item.get('trust_score', 0), reverse=True)[:3]
-        titles = [str(item.get('title') or item.get('url') or 'source')[:90] for item in top_sources]
-        message = f"Collected {total} sources" + (f"; stance mix {stance}" if stance else '')
-        return {'message': message, 'evidence': titles}
-    if node_name == 'media_agent':
-        run = update.get('media_run') or {}
-        text = run.get('text_output') or ''
-        if text:
-            return {'message': f"Media evidence package captured ({len(text)} chars)", 'evidence': [text[:140]]}
-        return {'message': 'Media evidence package will be added when media output is present', 'evidence': []}
-    if node_name == 'data_bridge':
-        props = update.get('bridged_propositions') or []
-        sample = [str(item.get('content') or '')[:120] for item in props[:3]]
-        return {'message': f"Bridged {len(props)} evidence propositions", 'evidence': sample}
-    if node_name == 'divergence_compute':
-        matrix = update.get('divergence_matrix') or {}
-        hotspots = update.get('divergence_hotspots') or []
-        if matrix:
-            max_pair, max_value = max(matrix.items(), key=lambda item: item[1])
-            return {'message': f"Computed {len(matrix)} divergence pairs; max {max_pair} = {float(max_value):.2f}", 'evidence': hotspots[:3]}
-        return {'message': 'No cross-source divergence pairs available', 'evidence': []}
-    if node_name == 'perspective_gen':
-        perspectives = update.get('perspectives') or []
-        return {'message': f"Selected {len(perspectives)} review perspectives", 'evidence': perspectives[:4]}
-    if node_name == 'deliberation':
-        consensus = update.get('deliberation_consensus') or []
-        dissents = update.get('deliberation_dissents') or []
-        return {'message': f"Deliberation produced {len(consensus)} consensus points and {len(dissents)} open dissents", 'evidence': (consensus[:2] + dissents[:2])}
-    if node_name == 'echo_chamber':
-        warnings = update.get('echo_warnings') or []
-        return {'message': f"Bias scan found {len(warnings)} watch item(s)", 'evidence': warnings[:3]}
-    if node_name == 'fact_opinion':
-        facts = update.get('verified_facts') or []
-        opinions = update.get('opinions_sentiments') or []
-        frameworks = update.get('analytical_frameworks') or []
-        evidence = [str(item.get('fact') or '')[:140] for item in facts[:3] if isinstance(item, dict)]
-        return {'message': f"Separated {len(facts)} facts, {len(opinions)} opinions, {len(frameworks)} frameworks", 'evidence': evidence}
-    if node_name == 'platform_interpret':
-        interps = update.get('platform_interpretations') or {}
-        return {'message': f"Generated {len(interps)} platform reading(s)", 'evidence': [f"{k}: {str(v)[:120]}" for k, v in list(interps.items())[:3]]}
-    if node_name == 'synthesis':
-        context = update.get('synthesis_context') or {}
-        insights = context.get('top_insights') or []
-        confidence = update.get('synthesis_confidence', 0)
-        evidence = [str(item.get('insight') or '')[:140] for item in insights[:3] if isinstance(item, dict)]
-        return {'message': f"Synthesized {len(insights)} insights at {float(confidence or 0):.0%} confidence", 'evidence': evidence}
-    if node_name == 'report_agent':
-        report = update.get('report_output') or ''
-        return {'message': f"Coordinator report draft prepared ({len(report)} chars)", 'evidence': []}
+    if node_name == 'query_understanding':
+        target = update.get('target_entity') or 'target'
+        analysis_type = update.get('analysis_type') or 'general'
+        terms = update.get('key_terms') or []
+        return {'message': f"Understood {analysis_type} brief for {target}", 'evidence': terms[:4]}
+    if node_name == 'retrieval_planner':
+        tasks = update.get('retrieval_tasks') or []
+        evidence = [str(item.get('query') or '')[:120] for item in tasks[:3] if isinstance(item, dict)]
+        return {'message': f"Planned {len(tasks)} budgeted retrieval task(s)", 'evidence': evidence}
+    if node_name == 'source_acquisition':
+        results = update.get('retrieval_results') or []
+        diagnostics = update.get('provider_diagnostics') or []
+        evidence = [f"{item.get('provider')}: {item.get('status')}" for item in diagnostics[:4] if isinstance(item, dict)]
+        return {'message': f"Normalized {update.get('raw_items') or 0} source item(s)", 'evidence': evidence or [str(item)[:120] for item in results[:3]]}
+    if node_name == 'quality_pipeline':
+        summary = update.get('quality_summary') or {}
+        graph_summary = update.get('evidence_graph_summary') or {}
+        evidence = [
+            f"raw={graph_summary.get('raw_count', 0)}",
+            f"canonical={graph_summary.get('canonical_count', 0)}",
+            f"amplification={summary.get('amplification_ratio', 0)}",
+        ]
+        return {'message': f"Built {graph_summary.get('canonical_count', 0)} canonical evidence cluster(s)", 'evidence': evidence}
+    if node_name == 'claim_miner':
+        claims = update.get('claims') or []
+        evidence = [str(item.get('claim_text') or '')[:140] for item in claims[:3] if isinstance(item, dict)]
+        return {'message': f"Mined {len(claims)} source-span claim(s)", 'evidence': evidence}
+    if node_name == 'adaptive_research_loop':
+        results = update.get('retrieval_results') or []
+        return {'message': f"Adaptive research trace has {len(results)} retrieval result record(s)", 'evidence': []}
+    if node_name == 'evidence_audit':
+        decisions = update.get('audit_decisions') or []
+        summary = update.get('audit_summary') or {}
+        evidence = [f"{key}: {value}" for key, value in summary.items()]
+        return {'message': f"Audited {len(decisions)} claim(s)", 'evidence': evidence}
+    if node_name == 'citation_grounded_synthesis':
+        insights = update.get('insights') or []
+        evidence = [str(item.get('title') or '')[:140] for item in insights[:3] if isinstance(item, dict)]
+        return {'message': f"Produced {len(insights)} cited insight(s)", 'evidence': evidence}
     return {'message': f"{node_name.replace('_', ' ').title()} completed", 'evidence': []}
 
 
@@ -1365,23 +1360,23 @@ def _run_coordinator_task(task_id, query, feedback=''):
         if feedback:
             run_query = f"{query}\n\nOperator refinement request:\n{feedback}"
             _set_coordinator_task(task_id, progress=16, stage='brief', micro_stage='Scope', message='Revision request attached')
-        _set_coordinator_task(task_id, progress=22, stage='brief', micro_stage='Scope', message='Compiling analysis graph')
+        _set_coordinator_task(task_id, progress=22, stage='brief', micro_stage='Scope', message='Preparing Signal Intelligence engine')
         from AgentCoordinator.coordinator import AgentCoordinator
         coordinator = AgentCoordinator(use_checkpointing=True)
-        _set_coordinator_task(task_id, progress=28, stage='collect', micro_stage='Search', message='Starting evidence collection')
+        _set_coordinator_task(task_id, progress=28, stage='collect', micro_stage='Search', message='Starting evidence acquisition')
 
         def progress_callback(node_name, update, state, elapsed):
             _update_coordinator_progress_from_node(task_id, node_name, update, state, elapsed)
 
         result = coordinator.run_sync(run_query, progress_callback=progress_callback)
-        _set_coordinator_task(task_id, progress=99, stage='write', micro_stage='Export', message='Coordinator artifact written')
+        _set_coordinator_task(task_id, progress=99, stage='write', micro_stage='Export', message='Signal intelligence artifact written')
         _set_coordinator_task(
             task_id,
             status='completed',
             progress=100,
             stage='write',
             micro_stage='Export',
-            message='Coordinator pipeline completed',
+            message='Signal intelligence pipeline completed',
             duration_seconds=round(time.time() - started, 2),
             coordinator_output_path=result.get('coordinator_output_path'),
             thread_id=result.get('thread_id'),
@@ -1393,7 +1388,7 @@ def _run_coordinator_task(task_id, query, feedback=''):
             task_id,
             status='error',
             progress=100,
-            message='Coordinator pipeline failed',
+            message='Signal intelligence pipeline failed',
             error=str(exc),
             duration_seconds=round(time.time() - started, 2),
         )

@@ -550,7 +550,7 @@ class MarkdownRenderer:
         items = block.get("items") or []
         if not items:
             return ""
-            header = ["Metric", "Value", "Change"]
+        header = ["Metric", "Value", "Change"]
         lines = [self._markdown_row(header), self._markdown_separator(len(header))]
         for item in items:
             label = item.get("label") or ""

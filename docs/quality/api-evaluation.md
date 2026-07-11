@@ -229,8 +229,8 @@ REPORT_ENGINE_MODEL_NAME=deepseek-chat
 MEDIA_ENGINE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 MEDIA_ENGINE_MODEL_NAME=qwen-plus
 
-SEARCH_TOOL_TYPE=BochaAPI
-BOCHA_BASE_URL=https://api.bocha.cn/v1/ai-search
+SEARCH_TOOL_TYPE=TavilyAPI
+TAVILY_API_KEY=your_tavily_key
 ```
 
 Quality-oriented profile:
@@ -251,8 +251,8 @@ FORUM_HOST_MODEL_NAME=deepseek-chat
 MINDSPIDER_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 MINDSPIDER_MODEL_NAME=qwen-plus
 
-SEARCH_TOOL_TYPE=BochaAPI
-BOCHA_BASE_URL=https://api.bocha.cn/v1/ai-search
+SEARCH_TOOL_TYPE=TavilyAPI
+TAVILY_API_KEY=your_tavily_key
 ```
 
 Simple low-latency profile:
@@ -273,8 +273,8 @@ FORUM_HOST_MODEL_NAME=deepseek-chat
 MINDSPIDER_BASE_URL=https://api.deepseek.com
 MINDSPIDER_MODEL_NAME=deepseek-chat
 
-SEARCH_TOOL_TYPE=BochaAPI
-BOCHA_BASE_URL=https://api.bocha.cn/v1/ai-search
+SEARCH_TOOL_TYPE=TavilyAPI
+TAVILY_API_KEY=your_tavily_key
 ```
 
 ## Extending The Evaluation
@@ -284,7 +284,7 @@ BOCHA_BASE_URL=https://api.bocha.cn/v1/ai-search
 | Add an LLM provider | Add it to `providers.local.json`, use an environment-variable key, set `enabled=true`, rerun the benchmark. |
 | Add a search provider | Add provider config, implement a `call_*` adapter in `run_evaluation.py`, normalize to `{answer, results, images, cards}`. |
 | Test stronger finalists | Enable `qwen-max-compatible`, Kimi, or Gemini-compatible profiles for targeted second-round runs. |
-| Compare search alternatives | Enable Anspire or Tavily and rerun Chinese retrieval cases against Bocha. |
+| Compare search alternatives | Enable Bocha or Anspire and rerun retrieval cases against the Tavily profile. |
 | Improve cost scoring | Add actual provider pricing to `providers.local.json`. |
 | Increase realism | Add real MediaEngine, QueryEngine, and ReportEngine artifacts as test cases. |
 

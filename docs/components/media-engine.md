@@ -1,6 +1,6 @@
 # MediaEngine
 
-MediaEngine produces media-oriented deep research. AgentCoordinator uses it as the second evidence stream alongside QueryEngine.
+MediaEngine produces media-oriented deep research when invoked directly or through legacy compatibility utilities. The final `/api/coordinator/run` path does not require MediaEngine; multimodal research is marked `not_configured` in the Coordinator artifact unless a future adapter explicitly connects it as an evidence source.
 
 ## Implementation
 
@@ -29,7 +29,7 @@ The paragraph router processes planned paragraphs sequentially or through `proce
 
 | Method | Usage |
 | --- | --- |
-| `research_async(query, save_report=True)` | Async entry point used by AgentCoordinator; internally runs graph work in a thread. |
+| `research_async(query, save_report=True)` | Async entry point for direct or legacy use; internally runs graph work in a thread. |
 | `research(query, save_report=True)` | Synchronous research flow. |
 | `create_agent(config_file=None)` | Factory function. |
 
@@ -50,16 +50,16 @@ MediaEngine also uses `MEDIA_ENGINE_API_KEY`, `MEDIA_ENGINE_BASE_URL`, and `MEDI
 | Sequential recovery pass | `MEDIA_PARAGRAPH_RETRY_PASSES` | Reprocesses paragraphs that need another pass after parallel execution. |
 | Reflection context cap | `MEDIA_REFLECTION_STATE_MAX_CHARS` | Keeps reflection prompts bounded. |
 | Search timeout | `MEDIA_SEARCH_HTTP_TIMEOUT` | Controls Bocha/Anspire search request duration. |
-| Coordinator budget | `COORDINATOR_MEDIA_AGENT_TIMEOUT` | Sets the MediaEngine wall-clock budget inside AgentCoordinator. |
+| Legacy Coordinator budget | `COORDINATOR_MEDIA_AGENT_TIMEOUT` | Historical timeout used by the legacy Coordinator path. |
 | Topic cache | `AgentCoordinator/cache/media_agent_<hash>.md` | Reuses MediaEngine Markdown output for matching topics. |
 
-## Coordinator Behavior
+## Runtime Boundary
 
 | Situation | Expected Behavior |
 | --- | --- |
-| Matching cache exists | Coordinator loads the cached MediaEngine Markdown output. |
-| Provider profile is configured | Coordinator runs MediaEngine live and saves the Markdown output to cache. |
-| Search or LLM diagnostic event occurs | Diagnostic detail is recorded in Coordinator state and trace logs. |
+| Final Coordinator path | Multimodal evidence is not required and is projected as `media_agent.available=false` unless configured later. |
+| Direct MediaEngine invocation | Runs the MediaEngine graph and writes its own output. |
+| Legacy cache files | `AgentCoordinator/cache/media_agent_<hash>.md` files are runtime cache artifacts and are ignored. |
 
 ## Related Documents
 

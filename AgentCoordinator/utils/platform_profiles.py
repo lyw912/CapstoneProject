@@ -5,7 +5,7 @@ Each profile contains demographic data, content characteristics, bias tendencies
 and interpretation guidance for the deliberation engine.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 PLATFORM_PROFILES: Dict[str, Dict[str, Any]] = {
     "weibo": {
@@ -93,7 +93,162 @@ PLATFORM_PROFILES: Dict[str, Dict[str, Any]] = {
             "(3) interest-specific threads may have very limited general representativeness."
         ),
     },
+    "kuaishou": {
+        "display_name": "Kuaishou (快手)",
+        "user_base": "Broad Chinese short-video audience with stronger lower-tier city coverage",
+        "content_style": "Short video, live-commerce, everyday-life sharing",
+        "bias_tendency": "Recommendation and creator-commerce incentives can amplify affective or promotional content",
+        "weight_factor": 0.78,
+        "demographic_note": "Can surface grassroots and lower-tier city reactions, but remains algorithmically filtered",
+        "interpretation_template": (
+            "Kuaishou's {stance} stance may reflect everyday-life and creator-community reactions. "
+            "Consider: (1) algorithmic feed selection; "
+            "(2) creator-commerce incentives; "
+            "(3) stronger but still partial lower-tier city representation."
+        ),
+    },
+    "reddit": {
+        "display_name": "Reddit",
+        "user_base": "Self-selected topic communities, heavily skewed by subreddit membership",
+        "content_style": "Threaded discussion, anecdotes, technical and enthusiast communities",
+        "bias_tendency": "Subreddit selection effects and voting dynamics can make visible comments unrepresentative",
+        "weight_factor": 0.72,
+        "demographic_note": "Represents English-language community discussion, not broad public opinion",
+        "interpretation_template": (
+            "Reddit's {stance} stance reflects self-selected community discussion. "
+            "Consider: (1) subreddit-specific norms; "
+            "(2) voting visibility effects; "
+            "(3) English-language and enthusiast-community skew."
+        ),
+    },
+    "twitter": {
+        "display_name": "X / Twitter",
+        "user_base": "Real-time public posters, journalists, creators, and highly active commentators",
+        "content_style": "Short posts, quote-posts, real-time reaction chains",
+        "bias_tendency": "High amplification, brigading, and elite-commentator effects; not population representative",
+        "weight_factor": 0.70,
+        "demographic_note": "Represents visible real-time discourse among active posters",
+        "interpretation_template": (
+            "X/Twitter's {stance} stance reflects visible real-time discourse. "
+            "Consider: (1) amplification and quote-post cascades; "
+            "(2) active-user and journalist/creator skew; "
+            "(3) possible coordinated attention."
+        ),
+    },
+    "youtube": {
+        "display_name": "YouTube",
+        "user_base": "Video viewers and creators, with strong topic-channel selection effects",
+        "content_style": "Video titles/descriptions, comments, creator-led narratives",
+        "bias_tendency": "Creator framing and recommendation effects can dominate visible reactions",
+        "weight_factor": 0.68,
+        "demographic_note": "Represents video-platform attention and creator/community framing",
+        "interpretation_template": (
+            "YouTube's {stance} stance reflects video-platform attention. "
+            "Consider: (1) creator framing; "
+            "(2) recommendation effects; "
+            "(3) comments and viewership are not equivalent to population opinion."
+        ),
+    },
+    "tiktok": {
+        "display_name": "TikTok",
+        "user_base": "Short-video audience with strong youth and algorithmic-feed effects",
+        "content_style": "Short video, comments, trends, remix formats",
+        "bias_tendency": "Highly algorithmic exposure; trend participation can overstate consensus",
+        "weight_factor": 0.66,
+        "demographic_note": "Represents algorithmically surfaced short-video reactions",
+        "interpretation_template": (
+            "TikTok's {stance} stance reflects algorithmically surfaced short-video reactions. "
+            "Consider: (1) youth and creator skew; "
+            "(2) trend mechanics; "
+            "(3) personalized feed selection."
+        ),
+    },
+    "instagram": {
+        "display_name": "Instagram",
+        "user_base": "Visual social network users, creators, brands, and lifestyle communities",
+        "content_style": "Images, reels, stories, creator and brand posts",
+        "bias_tendency": "Creator/brand incentives and visual presentation can distort issue salience",
+        "weight_factor": 0.64,
+        "demographic_note": "Represents visual-platform and creator-community reactions",
+        "interpretation_template": (
+            "Instagram's {stance} stance reflects visual-platform reactions. "
+            "Consider: (1) creator/brand incentives; "
+            "(2) lifestyle-community skew; "
+            "(3) visibility is shaped by recommendation and follower networks."
+        ),
+    },
+    "facebook": {
+        "display_name": "Facebook",
+        "user_base": "Broad but network/community-group mediated public and semi-public discussion",
+        "content_style": "Posts, group discussion, pages, comments",
+        "bias_tendency": "Group selection and page/community moderation affect visible sentiment",
+        "weight_factor": 0.66,
+        "demographic_note": "Represents visible page/group discussion rather than full population opinion",
+        "interpretation_template": (
+            "Facebook's {stance} stance reflects page and group-visible discussion. "
+            "Consider: (1) group selection; "
+            "(2) moderation and sharing dynamics; "
+            "(3) private/networked discussion remains unobserved."
+        ),
+    },
 }
+
+SOCIAL_PLATFORM_ALIASES: Dict[str, str] = {
+    "bilibili": "bilibili",
+    "bilibili.com": "bilibili",
+    "douyin": "douyin",
+    "douyin.com": "douyin",
+    "iesdouyin.com": "douyin",
+    "kuaishou": "kuaishou",
+    "kuaishou.com": "kuaishou",
+    "xhs": "xhs",
+    "xiaohongshu": "xhs",
+    "xiaohongshu.com": "xhs",
+    "xiaohongshu.cn": "xhs",
+    "tieba": "tieba",
+    "tieba.baidu.com": "tieba",
+    "weibo": "weibo",
+    "weibo.com": "weibo",
+    "m.weibo.cn": "weibo",
+    "zhihu": "zhihu",
+    "zhihu.com": "zhihu",
+    "reddit": "reddit",
+    "reddit.com": "reddit",
+    "old.reddit.com": "reddit",
+    "x": "twitter",
+    "x.com": "twitter",
+    "twitter": "twitter",
+    "twitter.com": "twitter",
+    "t.co": "twitter",
+    "youtube": "youtube",
+    "youtube.com": "youtube",
+    "youtu.be": "youtube",
+    "tiktok": "tiktok",
+    "tiktok.com": "tiktok",
+    "instagram": "instagram",
+    "instagram.com": "instagram",
+    "facebook": "facebook",
+    "facebook.com": "facebook",
+    "fb.com": "facebook",
+}
+
+SOCIAL_PLATFORM_KEYS = set(PLATFORM_PROFILES.keys())
+
+
+def canonical_social_platform(value: str) -> Optional[str]:
+    """Return a canonical platform key for known social domains/platform names."""
+    key = str(value or "").strip().lower().replace("www.", "")
+    if not key:
+        return None
+    if key in SOCIAL_PLATFORM_ALIASES:
+        return SOCIAL_PLATFORM_ALIASES[key]
+    parts = key.split(".")
+    for index in range(len(parts)):
+        candidate = ".".join(parts[index:])
+        if candidate in SOCIAL_PLATFORM_ALIASES:
+            return SOCIAL_PLATFORM_ALIASES[candidate]
+    return None
+
 
 # Source-level weight factors for divergence matrix computation
 SOURCE_WEIGHTS = {
@@ -105,4 +260,11 @@ SOURCE_WEIGHTS = {
     "douyin": 0.75,
     "xhs": 0.85,
     "tieba": 0.8,
+    "kuaishou": 0.78,
+    "reddit": 0.72,
+    "twitter": 0.70,
+    "youtube": 0.68,
+    "tiktok": 0.66,
+    "instagram": 0.64,
+    "facebook": 0.66,
 }

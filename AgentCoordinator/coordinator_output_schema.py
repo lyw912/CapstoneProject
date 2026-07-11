@@ -1,11 +1,17 @@
 """
-CoordinatorOutputSchema: Defines the clean JSON artifact handed to ReportAgent.
+CoordinatorOutputSchema: compatibility JSON artifact documentation.
 
 This module specifies the exact structure of coordinator_output.json so that
 ReportAgent knows precisely what fields to consume. Every field is documented
 with its type and semantics.
 
-Schema version: 1.0
+Active runtime note:
+    /api/coordinator/run now uses AgentCoordinator's internal intelligence layer.
+    The active artifact schema is "2.1-coordinator-intelligence" and includes the
+    top-level "coordinator_intelligence" evidence ledger. Compatibility fields
+    such as source_data, synthesis, divergence_matrix, and deliberation are views
+    over that ledger. The builder below remains for compatibility graph/report bridge
+    tests and older call sites.
 """
 
 from __future__ import annotations
@@ -39,6 +45,10 @@ COORDINATOR_OUTPUT_SCHEMA: Dict[str, Any] = {
         "type": "float",
         "description": "Total wall-clock time for the full coordinator pipeline.",
     },
+    "coordinator_intelligence": {
+        "type": "dict | optional",
+        "description": "Internal CoordinatorIntelligenceArtifact ledger when schema_version is 2.1-coordinator-intelligence.",
+    },
     # -------------------------------------------------------------------
     "divergence_matrix": {
         "type": "dict",
@@ -47,7 +57,7 @@ COORDINATOR_OUTPUT_SCHEMA: Dict[str, Any] = {
             "pairs": {
                 "type": "dict[str, float]",
                 "description": (
-                    "Map of 'source_a|source_b' to CSSD delta value (0.0–1.0). "
+                    "Map of 'source_a|source_b' to CSSD delta value (0.0-1.0). "
                     "Larger values indicate stronger divergence between those sources."
                 ),
             },
@@ -91,7 +101,7 @@ COORDINATOR_OUTPUT_SCHEMA: Dict[str, Any] = {
                 "description": "Persisting disagreements that were not resolved.",
             },
             "confidence": {
-                "type": "float (0–1)",
+                "type": "float (0-1)",
                 "description": "Deliberation confidence level aggregated from all phases.",
             },
         },
@@ -187,7 +197,7 @@ COORDINATOR_OUTPUT_SCHEMA: Dict[str, Any] = {
                 ),
             },
             "overall_confidence": {
-                "type": "float (0–1)",
+                "type": "float (0-1)",
                 "description": "Pipeline-level confidence in the synthesis conclusions.",
             },
             "recommended_investigation": {
@@ -211,7 +221,7 @@ COORDINATOR_OUTPUT_SCHEMA: Dict[str, Any] = {
                         "description": "Fraction of sources per stance label.",
                     },
                     "coverage_score": {
-                        "type": "float (0–1)",
+                        "type": "float (0-1)",
                         "description": "Estimated topic coverage score.",
                     },
                     "top_sources": {
@@ -278,11 +288,11 @@ def build_coordinator_output(
     """
     now = datetime.now(timezone.utc).isoformat()
 
-    # ── Divergence matrix ────────────────────────────────────────────────
+    # Divergence matrix
     raw_matrix = result.get("divergence_matrix") or {}
     hotspots = result.get("divergence_hotspots") or []
 
-    # raw_matrix may be {(a,b): float} or {"a|b": float} — normalize to str keys
+    # raw_matrix may be {(a,b): float} or {"a|b": float}; normalize to str keys.
     pairs: Dict[str, float] = {}
     for k, v in raw_matrix.items():
         if isinstance(k, tuple):
@@ -308,7 +318,7 @@ def build_coordinator_output(
         "min_divergence": min_pair,
     }
 
-    # ── Deliberation ─────────────────────────────────────────────────────
+    # Deliberation
     synthesis_ctx = result.get("synthesis_context") or {}
     delib_rounds_raw = synthesis_ctx.get("deliberation_rounds") or []
 
@@ -344,7 +354,7 @@ def build_coordinator_output(
         "confidence": result.get("synthesis_confidence") or synthesis_ctx.get("overall_confidence", 0.5),
     }
 
-    # ── Gap filling ───────────────────────────────────────────────────────
+    # Gap filling
     search_gaps = synthesis_ctx.get("search_gaps") or result.get("search_gaps") or []
     supplementary = synthesis_ctx.get("supplementary_results") or result.get("supplementary_results") or []
     search_rounds = synthesis_ctx.get("search_rounds") or result.get("search_rounds") or 0
@@ -364,12 +374,12 @@ def build_coordinator_output(
         "results_found": len(supplementary),
     }
 
-    # ── Platform interpretations ──────────────────────────────────────────
+    # Platform interpretations
     platform_interps = result.get("platform_interpretations") or synthesis_ctx.get("platform_interpretations") or {}
     # Ensure None values are preserved as None (not absent)
     platform_interps_out: Dict[str, Optional[str]] = dict(platform_interps)
 
-    # ── Bias analysis ─────────────────────────────────────────────────────
+    # Bias analysis
     echo_warnings = result.get("echo_warnings") or synthesis_ctx.get("echo_warnings") or []
     silent_majority = synthesis_ctx.get("silent_majority_hypothesis")
 
@@ -378,7 +388,7 @@ def build_coordinator_output(
         "silent_majority_hypothesis": silent_majority,
     }
 
-    # ── Fact-opinion separation ───────────────────────────────────────────
+    # Fact-opinion separation
     verified_facts = result.get("verified_facts") or synthesis_ctx.get("verified_facts") or []
     opinions_sentiments = synthesis_ctx.get("opinions_sentiments") or []
     analytical_frameworks = synthesis_ctx.get("analytical_frameworks") or []
@@ -389,7 +399,7 @@ def build_coordinator_output(
         "analytical_frameworks": analytical_frameworks,
     }
 
-    # ── Synthesis ─────────────────────────────────────────────────────────
+    # Synthesis
     synthesis_out = {
         "summary": synthesis_ctx.get("synthesis_summary", ""),
         "top_insights": synthesis_ctx.get("top_insights") or [],
@@ -398,7 +408,7 @@ def build_coordinator_output(
         "recommended_investigation": synthesis_ctx.get("recommended_investigation") or [],
     }
 
-    # ── Source data ───────────────────────────────────────────────────────
+    # Source data
     qa_output = synthesis_ctx.get("query_agent_output") or {}
     top_sources_raw = synthesis_ctx.get("top_sources") or []
     top_sources_out = []
@@ -447,7 +457,7 @@ def build_coordinator_output(
         },
     }
 
-    # ── Assemble final output ─────────────────────────────────────────────
+    # Assemble final output
     output = {
         "schema_version": "1.0",
         "query": query,

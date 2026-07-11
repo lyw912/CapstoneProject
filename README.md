@@ -24,7 +24,7 @@
 
 </div>
 
-CapstoneProject is an end-to-end system for public-opinion analysis. It gathers web, media, and social evidence; compares stance and trust signals; detects divergence, blind spots, and echo-chamber signals; then turns the analysis into editable, exportable reports through **Signal Studio**.
+CapstoneProject is an end-to-end system for public-opinion analysis. It keeps separate evidence, coordination, reporting, and UI components; the current Coordinator implementation uses an EvidenceGraph-centered intelligence layer to gather observable public evidence, model quality and repeated coverage, audit claims against cited excerpts, and turn cited insights into editable, exportable reports through **Signal Studio**.
 
 <p align="center">
   <img src="docs/assets/screenshots/signal-studio-home.png" alt="Signal Studio Home" width="920">
@@ -47,8 +47,8 @@ Core strengths: multi-agent evidence analysis, inspectable reasoning, structured
 | Stage | User Experience | Main System Path |
 | --- | --- | --- |
 | Brief | Enter a topic and start analysis. | Signal Studio -> Flask -> AgentCoordinator |
-| Evidence | Inspect source mix, stance, trust, divergence, and platform readings. | QueryEngine, MediaEngine, MindSpider |
-| Reasoning | Review synthesis, tensions, confidence, and recommended follow-up. | Coordinator graph |
+| Evidence | Inspect source mix, stance, trust, distinct evidence groups, repeated coverage, and provider diagnostics. | AgentCoordinator internal layer -> EvidenceGraph |
+| Reasoning | Review audited claims, cited sources, tensions, confidence, and recommended follow-up. | Claim-driven adaptive research loop and evidence audit |
 | Report | Generate, edit, annotate, and export a polished report. | ReportEngine -> Document IR -> renderers |
 | Operate | Adjust providers, start runtime, inspect traces, and send feedback. | Flask runtime APIs, configurable LangSmith traces |
 
@@ -62,8 +62,9 @@ Core strengths: multi-agent evidence analysis, inspectable reasoning, structured
 | --- | --- | --- |
 | Interface | Signal Studio views, report editor, evidence review, runtime controls | `frontend/`, `templates/index.html`, `static/signal-studio/` |
 | API gateway | Flask routes, background tasks, config editing, static shell, observability | `app.py` |
-| Coordination | Parallel agent execution, divergence, deliberation, synthesis, artifact export | `AgentCoordinator/` |
-| Evidence engines | Query planning, search, stance, trust, social enrichment, media research | `QueryEngine/`, `MediaEngine/`, `MindSpider/` |
+| Coordination | Public entry point, progress reporting, and Coordinator artifact export | `AgentCoordinator/` |
+| Internal intelligence | Source acquisition, semantic quality routing, canonical clustering, quality features, claim mining, audit, synthesis | `AgentCoordinator/intelligence/` |
+| Evidence engines | QueryEngine, MediaEngine, and MindSpider evidence/search utilities used directly or through Coordinator integration points | `QueryEngine/`, `MediaEngine/`, `MindSpider/` |
 | Reporting | Template selection, chapter generation, Document IR, HTML/MD/PDF export | `ReportEngine/` |
 | Quality | Regression tests, provider evaluation, sanitization, schema validation | `tests/`, `api_evaluation/` |
 
@@ -138,6 +139,16 @@ References:
 - [Coordinator Output Schema](docs/reference/coordinator-output-schema.md)
 - [Report IR](docs/reference/report-ir.md)
 
+### Coordinator Intelligence Runtime
+
+`POST /api/coordinator/run` keeps the public endpoint name for compatibility and executes `AgentCoordinator.run()`. Internally, the Coordinator uses its intelligence layer, then writes one fused `coordinator_output_latest.json` artifact with schema `2.1-coordinator-intelligence`:
+
+- `coordinator_intelligence`: the internal evidence ledger with `EvidenceGraph`, `quality_summary`, `freshness_summary`, `provider_diagnostics`, `audit_summary`, and cited `insights`.
+- Compatibility fields such as `synthesis`, `source_data`, `divergence_matrix`, `fact_opinion_separation`, and `coordinator_trace`; these are evidence-derived views, not a separate second artifact.
+- Explicit provider diagnostics for missing or failing Jina semantic quality, QueryEngine LLM routing, source acquisition providers (Tavily, Bocha, Anspire), and local replay fallback routes.
+
+If optional external search or rerank providers are not configured, the engine records `not_configured` diagnostics and continues the Coordinator flow. Local replay is disabled by default; it is intended for demos/tests only and is used only when `COORDINATOR_ALLOW_REPLAY_FALLBACK=true`, with `local_fixture:used` recorded in the artifact.
+
 ## Documentation
 
 | Start Here | Use It For |
@@ -162,9 +173,10 @@ References:
 CapstoneProject/
 |-- app.py                    # Flask orchestrator and final runtime API gateway
 |-- frontend/                 # Signal Studio React/Vite source
-|-- AgentCoordinator/         # Integrated multi-agent reasoning graph
+|-- AgentCoordinator/         # Coordinator entry point, internal intelligence layer, artifact cache
+|   `-- intelligence/         # EvidenceGraph contracts, source gateway, quality pipeline, audit, synthesis
 |-- QueryEngine/              # Search, trust, stance, social enrichment
-|-- MediaEngine/              # Media-side research and report contribution
+|-- MediaEngine/              # Media-side research
 |-- ReportEngine/             # Report generation graph, IR, renderers, exports
 |-- ForumEngine/              # Forum-style coordination utilities
 |-- SentimentAnalysisModel/   # Sentiment and topic model assets

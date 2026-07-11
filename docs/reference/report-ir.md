@@ -78,6 +78,10 @@ Tests under `tests/test_report_engine_sanitization.py` validate these rules and 
 | PDF | `ReportEngine/renderers/pdf_renderer.py` | PDF bytes/files. |
 | Chart/Math helpers | `ReportEngine/renderers/chart_to_svg.py`, `math_to_svg.py` | Embedded visual rendering support. |
 
+## Editing Model
+
+Signal Studio does not edit raw Markdown or raw report HTML as the source of truth. The Edit view maps editable Document IR blocks into TipTap content, keeps complex blocks such as charts and specialized tables as locked previews, then re-renders the updated IR through ReportEngine. HTML, Markdown, and PDF exports are generated from Document IR.
+
 ## Error Handling
 
 | Issue | Handling |

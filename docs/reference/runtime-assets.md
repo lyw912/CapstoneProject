@@ -19,7 +19,7 @@ Not every Markdown or static file is documentation. Some files are runtime asset
 | `ReportEngine/renderers/libs/` | Bundled JS libraries for report rendering. |
 | `static/signal-studio/` | Generated frontend build output. |
 | `templates/index.html` | Flask runtime HTML shell. |
-| `static/v2_report_example/` | Example/generated report output. |
+| `static/v2_report_example/` | Curated generated report examples. |
 | `AgentCoordinator/cache/` | Runtime Coordinator artifacts and feedback log. |
 | `output/`, `logs/` | Runtime-generated outputs and logs. |
 | `SentimentAnalysisModel/**/README.md` | Model-family notes colocated with datasets/code. |

@@ -36,6 +36,7 @@ Read this pipeline from template selection through chapter generation to Documen
 
 | Endpoint | Purpose |
 | --- | --- |
+| `GET /api/report/latest` | Newest completed report, including HTML and Document IR when available. |
 | `GET /api/report/status` | ReportEngine readiness and current task state. |
 | `POST /api/report/generate` | Start report generation. |
 | `GET /api/report/progress/{task_id}` | Poll task state. |
@@ -47,7 +48,9 @@ Read this pipeline from template selection through chapter generation to Documen
 | `GET /api/report/templates` | Available Markdown templates. |
 | `GET /api/report/log` | Report log lines. |
 | `POST /api/report/log/clear` | Clear report log. |
+| `POST /api/report/render-ir` | Render supplied Document IR to HTML for the editor preview. |
 | `GET /api/report/export/md/{task_id}` | Markdown export from Document IR. |
+| `POST /api/report/export/md-from-ir` | Markdown export from supplied Document IR JSON. |
 | `GET /api/report/export/pdf/{task_id}` | PDF export from Document IR. |
 | `POST /api/report/export/pdf-from-ir` | PDF export from supplied Document IR JSON. |
 
@@ -94,6 +97,7 @@ ReportEngine renders from an intermediate representation rather than directly fr
 | Block types | Supports rich report layout: tables, callouts, KPIs, widgets, figures, math. |
 | Engine quotes | Preserves evidence from QueryAgent and MediaAgent with controlled titles. |
 | Renderers | HTML, Markdown, and PDF use the same IR source. |
+| Editor bridge | Signal Studio maps editable IR blocks into TipTap content and re-renders through `/api/report/render-ir`. |
 
 See [Report IR](../reference/report-ir.md).
 

@@ -4,7 +4,7 @@ The final runtime path starts with Signal Studio and uses Flask as the unified o
 
 ![Final runtime](../assets/diagrams/exported/final-runtime.png)
 
-Read this diagram vertically: startup prepares the final React/Flask runtime, analysis writes the Coordinator artifact, and report generation consumes that artifact through the ReportEngine Blueprint. Open the full-size image at [`docs/assets/diagrams/exported/final-runtime.png`](../assets/diagrams/exported/final-runtime.png) for node-level labels.
+Read this diagram vertically with one update: analysis now runs through AgentCoordinator's internal intelligence layer before writing the Coordinator artifact. Open the full-size image at [`docs/assets/diagrams/exported/final-runtime.png`](../assets/diagrams/exported/final-runtime.png) for node-level labels.
 
 ## Startup Flow
 
@@ -26,8 +26,8 @@ Read this diagram vertically: startup prepares the final React/Flask runtime, an
 | 1 | `POST /api/coordinator/run` | Body contains `query` and reviewer feedback when refinement is requested. |
 | 2 | Flask task registry | Creates `coord_<timestamp>_<suffix>` task with queued/running/completed/error state. |
 | 3 | `_run_coordinator_task()` | Runs `AgentCoordinator.run_sync()` in a background thread. |
-| 4 | AgentCoordinator graph | Runs QueryEngine and MediaEngine, then reasoning nodes and report node. |
-| 5 | Progress callback | Updates task progress by node name using `COORDINATOR_NODE_PROGRESS`. |
+| 4 | AgentCoordinator | Calls the internal intelligence layer. |
+| 5 | Progress callback | Updates task progress for internal intelligence-layer nodes. |
 | 6 | Artifact export | Writes timestamped and latest Coordinator JSON files. |
 | 7 | `GET /api/coordinator/task/{task_id}` | UI polls until `completed` or `error`. |
 | 8 | `GET /api/coordinator/latest` | UI loads output, metadata, feedback, and observability settings. |
@@ -43,7 +43,7 @@ Read this diagram vertically: startup prepares the final React/Flask runtime, an
 | 5 | ReportEngine graph | Selects template, slices chapters, plans layout and word budget, processes chapters, finalizes report. |
 | 6 | Document IR | Saved under output paths configured by `config.py`. |
 | 7 | Renderers | Produce HTML, Markdown, and PDF exports. |
-| 8 | UI editor | Fetches `/api/report/result/{task_id}/json` and loads HTML into the review editor. |
+| 8 | UI editor | Fetches `/api/report/result/{task_id}/json`, loads HTML and Document IR, and re-renders edited IR through ReportEngine. |
 
 ## Feedback Flow
 
@@ -58,7 +58,7 @@ Read this diagram vertically: startup prepares the final React/Flask runtime, an
 
 | Source | Behavior |
 | --- | --- |
-| Local Coordinator trace | Stored in the Coordinator artifact and replayed in Monitor. |
+| Local intelligence-layer trace | Stored in the Coordinator artifact and replayed in Monitor. |
 | LangSmith configured | `/api/observability/langsmith` loads recent root runs and child runs. |
 | Local trace mode | API returns local Coordinator trace data for Monitor replay. |
 

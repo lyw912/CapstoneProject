@@ -10,7 +10,7 @@ The key point is that `coordinator_output_latest.json` is both a UI contract and
 
 | Artifact | Path | Producer | Consumer | Purpose |
 | --- | --- | --- | --- | --- |
-| Latest Coordinator output | `AgentCoordinator/cache/coordinator_output_latest.json` | `AgentCoordinator._export_coordinator_output()` | Signal Studio, ReportEngine bridge | Stable latest analysis contract. |
+| Latest Coordinator output | `AgentCoordinator/cache/coordinator_output_latest.json` | `AgentCoordinator._export_coordinator_output()` | Signal Studio, ReportEngine bridge | Stable latest `2.1-coordinator-intelligence` analysis contract. |
 | Timestamped Coordinator output | `AgentCoordinator/cache/coordinator_output_<timestamp>.json` | AgentCoordinator | Archive/review | Preserves run history. |
 | Frontend feedback log | `AgentCoordinator/cache/frontend_feedback.jsonl` | `/api/coordinator/feedback` | Signal Studio Monitor | Stores review/revision requests. |
 | Report HTML | `output/` | ReportEngine | Browser/download | Final rendered report. |
@@ -26,21 +26,23 @@ The Coordinator artifact is the main system boundary between analysis and presen
 
 | Field | Description |
 | --- | --- |
-| `schema_version` | Current artifact schema version, currently `1.0`. |
-| `query` | Original analysis query. |
-| `analysis_type` | Analysis classification, usually `general`. |
+| `schema_version` | Current artifact schema version, currently `2.1-coordinator-intelligence`. |
+| `artifact_derivation` | Identifies `coordinator_intelligence` as the primary record and compatibility sections as derived views. |
+| `coordinator_intelligence` | EvidenceGraph ledger with normalized items, quality features, clusters, claims, audit decisions, cited insights, provider diagnostics, source coverage, and trace. |
+| `query` | Analysis query after request normalization. |
+| `analysis_type` | Planner-derived analysis type. |
 | `generated_at` | UTC timestamp. |
 | `pipeline_duration_seconds` | End-to-end Coordinator runtime. |
-| `divergence_matrix` | Pairwise disagreement values, hotspots, max/min divergence. |
-| `deliberation` | Perspectives, phases, consensus, dissent, confidence. |
-| `gap_filling` | Gap descriptions, target source, result count, search rounds. |
-| `platform_interpretations` | Platform-specific reading text. |
-| `bias_analysis` | Echo warnings and silent-majority hypothesis. |
-| `fact_opinion_separation` | Facts, opinions/sentiments, analytical frameworks. |
-| `synthesis` | Summary, top insights, key tensions, confidence, follow-up. |
-| `source_data` | QueryAgent and MediaAgent source summaries. |
+| `divergence_matrix` | Pairwise disagreement values, hotspots, max/min divergence derived from evidence groups. |
+| `deliberation` | Compatibility view over claim-level audit, contradiction edges, consensus, dissent, and confidence. |
+| `gap_filling` | Adaptive follow-up retrieval tasks and result count. |
+| `platform_interpretations` | Platform-specific reading text when observable platform samples exist. |
+| `bias_analysis` | Echo warnings and silent-majority boundary statement. |
+| `fact_opinion_separation` | Facts, opinion observations, and analytical frameworks. |
+| `synthesis` | Cited insights, key tensions, confidence, and follow-up. |
+| `source_data` | QueryAgent/MediaAgent compatibility summary derived from the EvidenceGraph. |
 | `coordinator_trace` | Local trace messages for Monitor replay. |
-| `agent_errors` | Diagnostic messages captured during agent execution. |
+| `agent_errors` | Diagnostic messages captured during provider/runtime execution. |
 
 Full details: [Coordinator Output Schema](../reference/coordinator-output-schema.md).
 

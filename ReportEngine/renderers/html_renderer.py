@@ -101,6 +101,7 @@ class HTMLRenderer:
         self.heading_counter = 0
         self.metadata: Dict[str, Any] = {}
         self.chapters: List[Dict[str, Any]] = []
+        self.render_chapters: List[Dict[str, Any]] = []
         self.chapter_anchor_map: Dict[str, str] = {}
         self.heading_label_map: Dict[str, Dict[str, Any]] = {}
         self.primary_heading_index = 0
@@ -233,32 +234,32 @@ class HTMLRenderer:
             # Embed local library code and add fallback detection
             return f"""
   <script{defer_attr}>
-    // {lib_name} - 嵌入式版本
+    // {lib_name} - embedded build
     try {{
       {inline_code}
     }} catch (e) {{
-      console.error('{lib_name}嵌入式加载失败:', e);
+      console.error('{lib_name} embedded build failed to load:', e);
     }}
   </script>
   <script{defer_attr}>
-    // {lib_name} - CDN Fallback检测
+    // {lib_name} - CDN fallback check
     (function() {{
       var checkLib = function() {{
         if (!({check_expression})) {{
-          console.warn('{lib_name}本地版本加载失败，正在从CDN加载备用版本...');
+          console.warn('{lib_name} local build failed; loading CDN fallback...');
           var script = document.createElement('script');
           script.src = '{cdn_url}';
           script.onerror = function() {{
-            console.error('{lib_name} CDN备用加载也失败了');
+            console.error('{lib_name} CDN fallback also failed');
           }};
           script.onload = function() {{
-            console.log('{lib_name} CDN备用版本加载成功');
+            console.log('{lib_name} CDN fallback loaded');
           }};
           document.head.appendChild(script);
         }}
       }};
 
-      // 延迟检测，确保嵌入代码有时间执行
+      // Delay the check so embedded code has time to execute.
       if (document.readyState === 'loading') {{
         document.addEventListener('DOMContentLoaded', function() {{
           setTimeout(checkLib, 100);
@@ -313,13 +314,14 @@ class HTMLRenderer:
         raw_chapters = self.document.get("chapters", []) or []
         self.toc_rendered = False
         self.chapters = self._prepare_chapters(raw_chapters)
+        self.render_chapters = self._filter_render_chapters(self.chapters)
         self.chapter_anchor_map = {
             chapter.get("chapterId"): chapter.get("anchor")
-            for chapter in self.chapters
+            for chapter in self.render_chapters
             if chapter.get("chapterId") and chapter.get("anchor")
         }
-        self.heading_label_map = self._compute_heading_labels(self.chapters)
-        self.toc_entries = self._collect_toc_entries(self.chapters)
+        self.heading_label_map = self._compute_heading_labels(self.render_chapters)
+        self.toc_entries = []
 
         metadata = self.metadata
         theme_tokens = metadata.get("themeTokens") or self.document.get("themeTokens", {})
@@ -333,7 +335,38 @@ class HTMLRenderer:
         # Output chart validation statistics
         self._log_chart_validation_stats()
 
-        return f"<!DOCTYPE html>\n<html lang=\"en\" class=\"no-js\">\n{head}\n{body}\n</html>"
+        html_output = f"<!DOCTYPE html>\n<html lang=\"en\" class=\"no-js\">\n{head}\n{body}\n</html>"
+        return self._strip_cjk_comments(html_output)
+
+    @staticmethod
+    def _strip_cjk_comments(html_output: str) -> str:
+        """Remove CJK text introduced by generated comments or embedded dependencies."""
+        if not html_output:
+            return html_output
+        cjk = re.compile(r"[\u3400-\u9fff]")
+
+        def strip_if_cjk(match: re.Match[str]) -> str:
+            text = match.group(0)
+            return "" if cjk.search(text) else text
+
+        html_output = re.sub(r"<!--[\s\S]*?-->", strip_if_cjk, html_output)
+        html_output = re.sub(r"/\*[\s\S]*?\*/", strip_if_cjk, html_output)
+        html_output = re.sub(
+            r"(<script\b[\s\S]*?</script>)",
+            lambda match: cjk.sub("", match.group(0)),
+            html_output,
+            flags=re.IGNORECASE,
+        )
+        html_output = re.sub(
+            r"(<style\b[\s\S]*?</style>)",
+            lambda match: cjk.sub("", match.group(0)),
+            html_output,
+            flags=re.IGNORECASE,
+        )
+        if cjk.search(html_output):
+            logger.warning("Generated HTML still contains CJK text outside scripts/styles; enforcing English-only report output")
+            html_output = cjk.sub("", html_output)
+        return html_output
 
     # ====== Head / Body ======
 
@@ -492,8 +525,8 @@ class HTMLRenderer:
         header = self._render_header()
         # cover = self._render_cover()  # No longer render cover separately
         hero = self._render_hero()
-        toc_section = self._render_toc_section()
-        chapters = "".join(self._render_chapter(chapter) for chapter in self.chapters)
+        toc_section = ""
+        chapters = "".join(self._render_chapter(chapter) for chapter in self.render_chapters)
         widget_scripts = "\n".join(self.widget_scripts)
         hydration = self._hydration_script()
         overlay = """
@@ -524,59 +557,15 @@ class HTMLRenderer:
     # ====== Header / Metadata / TOC ======
 
     def _render_header(self) -> str:
-        """
-        渲染吸顶头部，包含标题、副标题与功能按钮。
-
-        Button/Control Instructions (IDs used for event binding in _hydration_script):
-        - <theme-button id="theme-toggle" value="light" size="1.5">: Custom Web Component,
-          `value` sets initial theme (light/dark), `size` controls overall scale; triggers `change` event with detail: 'light'/'dark'.
-        - <button id="print-btn">: Triggers window.print() when clicked, for export/printing.
-        - <button id="export-btn">: Hidden PDF export button, binds exportPdf() when shown.
-          Only displayed when dependencies are ready or business layer allows export.
-
-        Returns:
-            str: header HTML.
-        """
+        """Render the compact report identity bar for embedded and standalone HTML."""
         metadata = self.metadata
         title = metadata.get("title") or "Intelligent Public Opinion Analysis Report"
         subtitle = metadata.get("subtitle") or metadata.get("templateName") or "Auto-generated"
         return f"""
 <header class="report-header no-print">
-  <div>
+  <div class="report-header__identity">
     <h1>{self._escape_html(title)}</h1>
     <p class="subtitle">{self._escape_html(subtitle)}</p>
-    {self._render_tagline()}
-  </div>
-  <div class="header-actions">
-    <!-- 旧版日夜模式切换按钮（Web Component 风格）：
-    <theme-button value="light" id="theme-toggle" size="1.5"></theme-button>
-    -->
-    <button id="theme-toggle-btn" class="action-btn theme-toggle-btn" type="button">
-      <svg class="btn-icon sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="5"></circle>
-        <line x1="12" y1="1" x2="12" y2="3"></line>
-        <line x1="12" y1="21" x2="12" y2="23"></line>
-        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-        <line x1="1" y1="12" x2="3" y2="12"></line>
-        <line x1="21" y1="12" x2="23" y2="12"></line>
-        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-      </svg>
-      <svg class="btn-icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-      </svg>
-      <span class="theme-label">Toggle Theme</span>
-    </button>
-    <button id="print-btn" class="action-btn print-btn" type="button">
-      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 6 2 18 2 18 9"></polyline>
-        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-        <rect x="6" y="14" width="12" height="8"></rect>
-      </svg>
-      <span>Print Page</span>
-    </button>
-    <button id="export-btn" class="action-btn" type="button" style="display: none;">⬇️ Export PDF</button>
   </div>
 </header>
 """.strip()
@@ -628,16 +617,24 @@ class HTMLRenderer:
         subtitle = self.metadata.get("subtitle") or self.metadata.get("templateName") or ""
 
         summary = hero.get("summary")
-        summary_html = f'<p class="hero-summary">{self._escape_html(summary)}</p>' if summary else ""
+        summary_html = (
+            f'<div class="hero-overview-card"><span class="hero-overview-label">Report Overview</span>'
+            f'<p class="hero-summary">{self._escape_html(summary)}</p></div>'
+            if summary else ""
+        )
         highlights = hero.get("highlights") or []
         highlight_html = "".join(
             f'<li><span class="badge">{self._escape_html(text)}</span></li>'
             for text in highlights
         )
         actions = hero.get("actions") or []
-        actions_html = "".join(
-            f'<button class="ghost-btn" type="button">{self._escape_html(text)}</button>'
+        action_items = "".join(
+            f'<li>{self._escape_html(text)}</li>'
             for text in actions
+        )
+        actions_html = (
+            f'<div class="hero-actions"><span class="hero-actions-label">Recommended Follow-up</span><ul>{action_items}</ul></div>'
+            if action_items else ""
         )
         kpi_cards = ""
         for item in hero.get("kpis", []):
@@ -655,7 +652,7 @@ class HTMLRenderer:
         return f"""
 <section class="hero-section-combined">
   <div class="hero-header">
-    <p class="hero-hint">Article Overview</p>
+    <p class="hero-hint">Report Overview</p>
     <h1 class="hero-title">{self._escape_html(title)}</h1>
     <p class="hero-subtitle">{self._escape_html(subtitle)}</p>
   </div>
@@ -663,7 +660,7 @@ class HTMLRenderer:
     <div class="hero-content">
       {summary_html}
       <ul class="hero-highlights">{highlight_html}</ul>
-      <div class="hero-actions">{actions_html}</div>
+      {actions_html}
     </div>
     <div class="hero-side">
       {kpi_cards}
@@ -814,6 +811,39 @@ class HTMLRenderer:
             chapter_copy["blocks"] = self._expand_blocks_in_place(chapter_copy.get("blocks", []))
             prepared.append(chapter_copy)
         return prepared
+
+    def _filter_render_chapters(self, chapters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Skip a generated title-page overview chapter when the hero already carries it."""
+        return [
+            chapter
+            for index, chapter in enumerate(chapters or [])
+            if not self._is_duplicate_overview_chapter(chapter, index)
+        ]
+
+    def _is_duplicate_overview_chapter(self, chapter: Dict[str, Any], index: int) -> bool:
+        if index != 0 or not (self.metadata.get("hero") or {}):
+            return False
+        blocks = chapter.get("blocks") or []
+        if not blocks:
+            return False
+
+        def inline_text(block: Dict[str, Any]) -> str:
+            return "".join(str(run.get("text", "")) for run in block.get("inlines", []) if isinstance(run, dict))
+
+        headings = [str(block.get("text", "")).strip().lower() for block in blocks if block.get("type") == "heading"]
+        paragraphs = [inline_text(block).strip().lower() for block in blocks if block.get("type") == "paragraph"]
+        has_overview_text = any(text.startswith("report overview:") for text in paragraphs)
+        has_scaffold_heading = any(
+            "hero summary" in heading
+            or "key performance indicator" in heading
+            or "recommended actions" in heading
+            or heading in {"actions", "summary and highlights"}
+            for heading in headings
+        )
+        metadata_title = str(self.metadata.get("title") or "").strip().lower()
+        first_heading = headings[0] if headings else ""
+        title_matches = bool(metadata_title and (metadata_title in first_heading or first_heading in metadata_title))
+        return has_overview_text and (has_scaffold_heading or title_matches)
 
     def _expand_blocks_in_place(self, blocks: List[Dict[str, Any]] | None) -> List[Dict[str, Any]]:
         """Iterate block list,拆解 embedded JSON strings into independent blocks"""
@@ -1009,10 +1039,10 @@ class HTMLRenderer:
                 display_text = raw_text
 
                 if not chapter_heading_seen:
-                    if self.config.get("chapter_label_style") == "arabic":
-                        label = f"{chap_idx}."
-                    else:
+                    if self.config.get("chapter_label_style") == "chinese":
                         label = f"{self._to_chinese_numeral(chap_idx)}、"
+                    else:
+                        label = f"{chap_idx}."
                     display_text = f"{label} {clean_title}".strip()
                     chapter_heading_seen = True
                     section_idx = 0
@@ -1709,7 +1739,7 @@ class HTMLRenderer:
                 <span class="swot-pdf-label-text">{self._escape_html(label.split()[0])}</span>
               </td>
               <td class="swot-pdf-item-num">-</td>
-              <td colspan="3" class="swot-pdf-empty">暂无要点</td>
+              <td colspan="3" class="swot-pdf-empty">No key points</td>
             </tr>"""
             
             # Each quadrant as separate tbody for pagination control
@@ -1724,11 +1754,11 @@ class HTMLRenderer:
             <caption class="swot-pdf-caption">{self._escape_html(title)}</caption>
             <thead class="swot-pdf-thead">
               <tr>
-                <th class="swot-pdf-th-quadrant">象限</th>
-                <th class="swot-pdf-th-num">序号</th>
-                <th class="swot-pdf-th-title">要点</th>
-                <th class="swot-pdf-th-detail">详细说明</th>
-                <th class="swot-pdf-th-tags">影响</th>
+                <th class="swot-pdf-th-quadrant">Quadrant</th>
+                <th class="swot-pdf-th-num">No.</th>
+                <th class="swot-pdf-th-title">Key Point</th>
+                <th class="swot-pdf-th-detail">Details</th>
+                <th class="swot-pdf-th-tags">Impact</th>
               </tr>
               {summary_row}
             </thead>
@@ -2485,6 +2515,7 @@ class HTMLRenderer:
         补全图表block中的缺失字段（如scales、datasets），提升容错性。
 
         - 将错误挂在block顶层的scales合并进props.options。
+        - Expand full Chart.js configs written as {type, data, options}.
         - 当data缺失或datasets为空时，尝试使用章节级的data作为兜底。
         """
 
@@ -2515,6 +2546,20 @@ class HTMLRenderer:
         if not isinstance(data, dict):
             data = {}
             block["data"] = data
+        else:
+            inline_options = data.get("options")
+            if isinstance(inline_options, dict):
+                options = props.get("options") if isinstance(props.get("options"), dict) else {}
+                props["options"] = self._merge_dicts(options, inline_options)
+
+            inline_type = data.get("type")
+            if isinstance(inline_type, str) and inline_type and not props.get("type"):
+                props["type"] = inline_type
+
+            normalized_data = self._coerce_chart_data_structure(data)
+            if normalized_data is not data:
+                data = normalized_data
+                block["data"] = data
 
         # 如果datasets为空，尝试使用章节级data填充
         if chapter_context and self._is_chart_data_empty(data):
@@ -2823,7 +2868,7 @@ class HTMLRenderer:
         <div class="chart-fallback" data-prebuilt="true"{widget_attr}>
           <table>
             <thead>
-              <tr><th>类别</th>{header_cells}</tr>
+              <tr><th>Category</th>{header_cells}</tr>
             </thead>
             <tbody>
               {body_rows}
@@ -2934,7 +2979,7 @@ class HTMLRenderer:
         <div class="chart-fallback" data-prebuilt="true"{widget_attr}>
           <table>
             <thead>
-              <tr><th>关键词</th><th>权重</th><th>类别</th></tr>
+              <tr><th>Keyword</th><th>Weight</th><th>Category</th></tr>
             </thead>
             <tbody>
               {rows}
@@ -3621,9 +3666,111 @@ body {{ /* 含义：全局排版与背景设置；设置：在本块内调整相
 }} /* 结束 .report-header */
 .tagline {{ /* 含义：标题标语行；设置：在本块内调整相关属性 */
   margin: 4px 0 0; /* 含义：外边距，控制与周围元素的距离；设置：按需调整数值/颜色/变量 */
-  color: var(--secondary-color); /* 含义：文字颜色；设置：按需调整数值/颜色/变量 */
+  color: rgba(33,37,41,0.66); /* 含义：文字颜色；设置：按需调整数值/颜色/变量 */
   font-size: 0.95rem; /* 含义：字号；设置：按需调整数值/颜色/变量 */
 }} /* 结束 .tagline */
+.report-header__identity {{
+  min-width: 0;
+}}
+.hero-section-combined {{
+  display: grid;
+  gap: 22px;
+  padding: clamp(28px, 5vw, 52px);
+  margin-bottom: 34px;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  background: var(--card-bg);
+  box-shadow: 0 14px 34px rgba(0,0,0,0.06);
+}}
+.hero-header {{
+  display: grid;
+  gap: 8px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-color);
+}}
+.hero-hint {{
+  margin: 0;
+  color: rgba(33,37,41,0.62);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}}
+.hero-title {{
+  margin: 0;
+  color: var(--text-color);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.08;
+  letter-spacing: 0;
+}}
+.hero-subtitle {{
+  margin: 0;
+  max-width: 880px;
+  color: rgba(33,37,41,0.68);
+  font-size: 1.02rem;
+  line-height: 1.5;
+}}
+.hero-body {{
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.65fr);
+  gap: 22px;
+  align-items: start;
+}}
+.hero-section-combined .hero-content {{
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}}
+.hero-overview-card {{
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 14px;
+  background: rgba(0,0,0,0.018);
+}}
+.hero-overview-label,
+.hero-actions-label {{
+  color: rgba(33,37,41,0.62);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}}
+.hero-overview-card .hero-summary {{
+  margin: 0;
+  color: var(--text-color);
+  font-size: 1.02rem;
+  font-weight: 400;
+  line-height: 1.68;
+}}
+.hero-section-combined .hero-side {{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  min-width: 0;
+  margin-top: 0;
+}}
+.hero-section-combined .hero-actions {{
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 14px;
+  background: rgba(0,0,0,0.014);
+}}
+.hero-actions ul {{
+  margin: 0;
+  padding-left: 18px;
+}}
+.hero-actions li {{
+  margin: 4px 0;
+}}
+@media (max-width: 900px) {{
+  .hero-body {{
+    grid-template-columns: 1fr;
+  }}
+}}
 .hero-section {{ /* 含义：封面摘要主容器；设置：在本块内调整相关属性 */
   display: flex; /* 含义：布局展示方式；设置：按需调整数值/颜色/变量 */
   flex-wrap: wrap; /* 含义：换行策略；设置：按需调整数值/颜色/变量 */
@@ -3747,7 +3894,7 @@ body {{ /* 含义：全局排版与背景设置；设置：在本块内调整相
 }} /* 结束 .report-header h1 */
 .report-header .subtitle {{ /* 含义：页眉副标题；设置：在本块内调整相关属性 */
   margin: 4px 0 0; /* 含义：外边距，控制与周围元素的距离；设置：按需调整数值/颜色/变量 */
-  color: var(--secondary-color); /* 含义：文字颜色；设置：按需调整数值/颜色/变量 */
+  color: rgba(33,37,41,0.66); /* 含义：文字颜色；设置：按需调整数值/颜色/变量 */
 }} /* 结束 .report-header .subtitle */
 .header-actions {{ /* 含义：页眉按钮组；设置：在本块内调整相关属性 */
   display: flex; /* 含义：布局展示方式；设置：按需调整数值/颜色/变量 */
@@ -5317,19 +5464,19 @@ document.documentElement.classList.add('js-ready');
 */
 /* ========== End Theme Button Web Component ========== */
  
- const chartRegistry = [];
+const chartRegistry = [];
 const wordCloudRegistry = new Map();
 const STABLE_CHART_TYPES = ['line', 'bar'];
 const CHART_TYPE_LABELS = {
-  line: '折线图',
-  bar: '柱状图',
-  doughnut: '圆环图',
-  pie: '饼图',
-  radar: '雷达图',
-  polarArea: '极地区域图'
+  line: 'Line chart',
+  bar: 'Bar chart',
+  doughnut: 'Doughnut chart',
+  pie: 'Pie chart',
+  radar: 'Radar chart',
+  polarArea: 'Polar area chart'
 };
 
-// 与PDF矢量渲染保持一致的颜色替换/提亮规则
+// Color replacement and lightening rules stay aligned with PDF vector rendering.
 const DEFAULT_CHART_COLORS = [
   '#4A90E2', '#E85D75', '#50C878', '#FFB347',
   '#9B59B6', '#3498DB', '#E67E22', '#16A085',
@@ -5376,7 +5523,7 @@ function normalizeColorToken(color) {
   if (typeof color !== 'string') return color;
   const trimmed = color.trim();
   if (!trimmed) return null;
-  // 支持 var(--token, fallback) 形式，优先解析fallback
+  // Support var(--token, fallback) and prefer the fallback value when present.
   const varWithFallback = trimmed.match(/^var\(\s*--[^,)+]+,\s*([^)]+)\)/i);
   if (varWithFallback && varWithFallback[1]) {
     const fallback = varWithFallback[1].trim();
@@ -5545,7 +5692,7 @@ function normalizeDatasetColors(payload, chartType) {
   data.datasets.forEach((dataset, idx) => {
     if (!isPlainObject(dataset)) return;
     if (type === 'line') {
-      dataset.fill = true;  // 对折线图强制开启填充，便于区域对比
+      dataset.fill = true;  // Force filled line charts to improve area comparison.
     }
     const paletteColor = normalizeColorToken(DEFAULT_CHART_COLORS[idx % DEFAULT_CHART_COLORS.length]);
     const borderInput = dataset.borderColor;
@@ -5581,15 +5728,15 @@ function normalizeDatasetColors(payload, chartType) {
       dataset.backgroundColor = normalizedColors;
       dataset.borderColor = normalizedColors.map(col => ensureAlpha(liftDarkColor(col), 1));
       const changeLabel = fixedTransparentCount
-        ? `dataset${idx}: 修正${fixedTransparentCount}个透明扇区`
-        : `dataset${idx}: 标准化扇区颜色(${normalizedColors.length})`;
+        ? `dataset${idx}: fixed ${fixedTransparentCount} transparent segment colors`
+        : `dataset${idx}: normalized segment colors (${normalizedColors.length})`;
       changes.push(changeLabel);
       return;
     }
 
     if (!borderInput) {
       dataset.borderColor = liftedBase;
-      changes.push(`dataset${idx}: 补全边框色`);
+      changes.push(`dataset${idx}: added border color`);
     } else if (borderIsArray) {
       dataset.borderColor = borderInput.map(col => liftDarkColor(col));
     } else {
@@ -5614,7 +5761,7 @@ function normalizeDatasetColors(payload, chartType) {
         dataset.backgroundColor = ensureAlpha(liftDarkColor(bgSeed), typeAlpha);
       }
       if (dataset.fill || type !== 'line') {
-        changes.push(`dataset${idx}: 应用淡化填充以避免遮挡`);
+        changes.push(`dataset${idx}: applied softened fill to avoid occlusion`);
       }
     } else if (!dataset.backgroundColor) {
       dataset.backgroundColor = ensureAlpha(liftedBase, 0.85);
@@ -5706,7 +5853,7 @@ function resolveChartTypes(payload) {
 }
 
 function describeChartType(type) {
-  return CHART_TYPE_LABELS[type] || type || '图表';
+  return CHART_TYPE_LABELS[type] || type || 'Chart';
 }
 
 function setChartDegradeNote(card, fromType, toType) {
@@ -5718,7 +5865,7 @@ function setChartDegradeNote(card, fromType, toType) {
     note.className = 'chart-note';
     card.appendChild(note);
   }
-  note.textContent = `${describeChartType(fromType)}渲染失败，已自动切换为${describeChartType(toType)}以确保兼容。`;
+  note.textContent = `${describeChartType(fromType)} could not render; switched to ${describeChartType(toType)} for compatibility.`;
 }
 
 function clearChartDegradeNote(card) {
@@ -5811,7 +5958,7 @@ function wordcloudColor(category) {
 }
 
 function renderWordCloudFallback(canvas, items, reason) {
-  // 词云失败时的显示形式：隐藏 canvas，展示徽章列表（词+权重），保证“可见数据”而非空白
+  // If word cloud rendering fails, hide the canvas and show a badge list so data remains visible.
   const card = canvas.closest('.chart-card') || canvas.parentElement;
   if (!card) return;
   const wrapper = canvas.parentElement && canvas.parentElement.classList && canvas.parentElement.classList.contains('chart-container')
@@ -5858,12 +6005,12 @@ function renderWordCloudFallback(canvas, items, reason) {
   if (reason) {
     const notice = document.createElement('p');
     notice.className = 'chart-fallback__notice';
-    notice.textContent = `词云未能渲染${reason ? `（${reason}）` : ''}，已展示关键词列表。`;
+    notice.textContent = `The word cloud could not render${reason ? ` (${reason})` : ''}; showing the keyword list instead.`;
     fallback.appendChild(notice);
   }
   if (!items || !items.length) {
     const empty = document.createElement('p');
-    empty.textContent = '暂无可用数据。';
+    empty.textContent = 'No data is available.';
     fallback.appendChild(empty);
     return;
   }
@@ -5883,17 +6030,17 @@ function renderWordCloud(canvas, payload, skipRegistry) {
     ? canvas.parentElement
     : null;
   if (!items.length) {
-    renderWordCloudFallback(canvas, items, '无有效数据');
+    renderWordCloudFallback(canvas, items, 'No valid data');
     return;
   }
   if (typeof WordCloud === 'undefined') {
-    renderWordCloudFallback(canvas, items, '词云依赖未加载');
+    renderWordCloudFallback(canvas, items, 'Word cloud dependency not loaded');
     return;
   }
   const theme = resolveWordcloudTheme();
   const dpr = Math.max(1, window.devicePixelRatio || 1);
   const width = Math.max(260, (container ? container.clientWidth : canvas.clientWidth || canvas.width || 320));
-  const height = Math.max(120, Math.round(width / 5)); // 5:1 宽高比
+  const height = Math.max(120, Math.round(width / 5)); // 5:1 aspect ratio
   canvas.width = Math.round(width * dpr);
   canvas.height = Math.round(height * dpr);
   canvas.style.width = `${width}px`;
@@ -5976,7 +6123,7 @@ function renderWordCloud(canvas, payload, skipRegistry) {
       wordCloudRegistry.set(canvas, () => renderWordCloud(canvas, payload, true));
     }
   } catch (err) {
-    console.error('WordCloud 渲染失败', err);
+    console.error('WordCloud render failed', err);
     renderWordCloudFallback(canvas, items, err && err.message ? err.message : '');
   }
 }
@@ -5988,7 +6135,7 @@ function createFallbackTable(labels, datasets) {
   const primaryDataset = datasets.find(ds => Array.isArray(ds && ds.data));
   const resolvedLabels = Array.isArray(labels) && labels.length
     ? labels
-    : (primaryDataset && primaryDataset.data ? primaryDataset.data.map((_, idx) => `数据点 ${idx + 1}`) : []);
+    : (primaryDataset && primaryDataset.data ? primaryDataset.data.map((_, idx) => `Data point ${idx + 1}`) : []);
   if (!resolvedLabels.length) {
     return null;
   }
@@ -5996,11 +6143,11 @@ function createFallbackTable(labels, datasets) {
   const thead = document.createElement('thead');
   const headRow = document.createElement('tr');
   const categoryHeader = document.createElement('th');
-  categoryHeader.textContent = '类别';
+  categoryHeader.textContent = 'Category';
   headRow.appendChild(categoryHeader);
   datasets.forEach((dataset, index) => {
     const th = document.createElement('th');
-    th.textContent = dataset && dataset.label ? dataset.label : `系列${index + 1}`;
+    th.textContent = dataset && dataset.label ? dataset.label : `Series ${index + 1}`;
     headRow.appendChild(th);
   });
   thead.appendChild(headRow);
@@ -6030,7 +6177,7 @@ function createFallbackTable(labels, datasets) {
 }
 
 function renderChartFallback(canvas, payload, reason) {
-  // 图表失败时的显示形式：切换到表格数据（categories x series），并在卡片上标记 fallback 状态
+  // If a chart fails, switch to table data (categories x series) and mark fallback state on the card.
   const card = canvas.closest('.chart-card') || canvas.parentElement;
   if (!card) return;
   clearChartDegradeNote(card);
@@ -6065,14 +6212,14 @@ function renderChartFallback(canvas, payload, reason) {
     (payload && payload.props && payload.props.title) ||
     (payload && payload.widgetId) ||
     canvas.getAttribute('id') ||
-    '图表';
+    'Chart';
   const existingNotice = fallback.querySelector('.chart-fallback__notice');
   if (existingNotice) {
     existingNotice.remove();
   }
   const notice = document.createElement('p');
   notice.className = 'chart-fallback__notice';
-  notice.textContent = `${fallbackTitle}：图表未能渲染，已展示表格数据${reason ? `（${reason}）` : ''}`;
+  notice.textContent = `${fallbackTitle}: the chart could not render; showing table data${reason ? ` (${reason})` : ''}.`;
   fallback.insertBefore(notice, fallback.firstChild || null);
   if (!prebuilt) {
     const table = createFallbackTable(
@@ -6120,58 +6267,58 @@ function buildChartOptions(payload) {
 
 function validateChartData(payload, type) {
   /**
-   * 前端验证图表数据
-   * 返回: { valid: boolean, errors: string[] }
+   * Validate chart data on the frontend.
+   * Returns: { valid: boolean, errors: string[] }
    */
   const errors = [];
 
   if (!payload || typeof payload !== 'object') {
-    errors.push('无效的payload');
+    errors.push('Invalid payload');
     return { valid: false, errors };
   }
 
   const data = payload.data;
   if (!data || typeof data !== 'object') {
-    errors.push('缺少data字段');
+    errors.push('Missing data field');
     return { valid: false, errors };
   }
 
-  // 特殊图表类型（scatter, bubble）
+  // Special chart types (scatter, bubble)
   const specialTypes = { 'scatter': true, 'bubble': true };
   if (specialTypes[type]) {
-    // 这些类型需要特殊的数据格式 {x, y} 或 {x, y, r}
-    // 跳过标准验证
+    // These types need special data formats such as {x, y} or {x, y, r}.
+    // Skip standard validation.
     return { valid: true, errors };
   }
 
-  // 标准图表类型验证
+  // Standard chart type validation
   const datasets = data.datasets;
   if (!Array.isArray(datasets)) {
-    errors.push('datasets必须是数组');
+    errors.push('datasets must be an array');
     return { valid: false, errors };
   }
 
   if (datasets.length === 0) {
-    errors.push('datasets数组为空');
+    errors.push('datasets array is empty');
     return { valid: false, errors };
   }
 
-  // 验证每个dataset
+  // Validate each dataset
   for (let i = 0; i < datasets.length; i++) {
     const dataset = datasets[i];
     if (!dataset || typeof dataset !== 'object') {
-      errors.push(`datasets[${i}]不是对象`);
+      errors.push(`datasets[${i}] is not an object`);
       continue;
     }
 
     if (!Array.isArray(dataset.data)) {
-      errors.push(`datasets[${i}].data不是数组`);
+      errors.push(`datasets[${i}].data is not an array`);
     } else if (dataset.data.length === 0) {
-      errors.push(`datasets[${i}].data为空`);
+      errors.push(`datasets[${i}].data is empty`);
     }
   }
 
-  // 需要labels的图表类型
+  // Chart types that require labels
   const labelRequiredTypes = {
     'line': true, 'bar': true, 'radar': true,
     'polarArea': true, 'pie': true, 'doughnut': true
@@ -6180,9 +6327,9 @@ function validateChartData(payload, type) {
   if (labelRequiredTypes[type]) {
     const labels = data.labels;
     if (!Array.isArray(labels)) {
-      errors.push('缺少labels数组');
+      errors.push('Missing labels array');
     } else if (labels.length === 0) {
-      errors.push('labels数组为空');
+      errors.push('labels array is empty');
     }
   }
 
@@ -6227,8 +6374,8 @@ function hydrateCharts() {
     try {
       payload = JSON.parse(configScript.textContent);
     } catch (err) {
-      console.error('Widget JSON 解析失败', err);
-      renderChartFallback(canvas, { widgetId: canvas.dataset.configId }, '配置解析失败');
+      console.error('Widget JSON parse failed', err);
+      renderChartFallback(canvas, { widgetId: canvas.dataset.configId }, 'Configuration parse failed');
       return;
     }
     if (isWordCloudWidget(payload)) {
@@ -6236,17 +6383,17 @@ function hydrateCharts() {
       return;
     }
     if (typeof Chart === 'undefined') {
-      renderChartFallback(canvas, payload, 'Chart.js 未加载');
+      renderChartFallback(canvas, payload, 'Chart.js not loaded');
       return;
     }
     const chartTypes = resolveChartTypes(payload);
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      renderChartFallback(canvas, payload, 'Canvas 初始化失败');
+      renderChartFallback(canvas, payload, 'Canvas initialization failed');
       return;
     }
 
-    // 前端数据验证
+    // Frontend data validation
     const desiredType = chartTypes[0];
     const card = canvas.closest('.chart-card') || canvas.parentElement;
     const colorAdjustments = normalizeDatasetColors(payload, desiredType);
@@ -6255,8 +6402,8 @@ function hydrateCharts() {
     }
     const validation = validateChartData(payload, desiredType);
     if (!validation.valid) {
-      console.warn('图表数据验证失败:', validation.errors);
-      // 验证失败但仍然尝试渲染，因为可能会降级成功
+      console.warn('Chart data validation failed:', validation.errors);
+      // Try rendering even after validation warnings; compatibility fallback may still work.
     }
 
     const optionsTemplate = buildChartOptions(payload);
@@ -6270,7 +6417,7 @@ function hydrateCharts() {
         break;
       } catch (err) {
         lastError = err;
-        console.error('图表渲染失败', type, err);
+        console.error('Chart render failed', type, err);
       }
     }
     if (chartInstance) {
@@ -6278,7 +6425,7 @@ function hydrateCharts() {
       try {
         applyChartTheme(chartInstance);
       } catch (err) {
-        console.error('主题同步失败', selectedType || desiredType || payload && payload.widgetType || 'chart', err);
+        console.error('Theme synchronization failed', selectedType || desiredType || payload && payload.widgetType || 'chart', err);
       }
       if (selectedType && selectedType !== desiredType) {
         setChartDegradeNote(card, desiredType, selectedType);
@@ -6455,7 +6602,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }, 260);
-  // 旧版 Web Component 主题按钮（已注释）
+  // Legacy Web Component theme button (commented out)
   // const themeBtn = document.getElementById('theme-toggle');
   // if (themeBtn) {
   //   themeBtn.addEventListener('change', (e) => {
@@ -6469,7 +6616,7 @@ document.addEventListener('DOMContentLoaded', () => {
   //   });
   // }
 
-  // 新版 action-btn 风格主题按钮
+  // Current action-btn theme button
   const themeBtnNew = document.getElementById('theme-toggle-btn');
   if (themeBtnNew) {
     const sunIcon = themeBtnNew.querySelector('.sun-icon');
@@ -6501,10 +6648,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   const printBtn = document.getElementById('print-btn');
   if (printBtn) {
-    // 打印按钮：直接调用浏览器打印，依赖 @media print 控制布局
+    // Print button: use browser print and rely on @media print for layout.
     printBtn.addEventListener('click', () => window.print());
   }
-  // 为所有 action-btn 添加鼠标追踪光晕效果
+  // Add pointer-follow highlight effect to all action buttons.
   document.querySelectorAll('.action-btn').forEach(btn => {
     btn.addEventListener('mousemove', (e) => {
       const rect = btn.getBoundingClientRect();
@@ -6520,7 +6667,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   const exportBtn = document.getElementById('export-btn');
   if (exportBtn) {
-    // 导出按钮：调用 exportPdf（html2canvas + jsPDF），并驱动遮罩/进度提示
+    // Export button: call exportPdf (html2canvas + jsPDF) and drive the progress overlay.
     exportBtn.addEventListener('click', exportPdf);
   }
   window.addEventListener('resize', rerenderWordclouds);

@@ -11,7 +11,7 @@ export default function useSSE() {
     }
   };
 
-  const startReportStream = async (query, output, onReportTask, onEvents, onReportHtml) => {
+  const startReportStream = async (query, output, onReportTask, onEvents, onReportHtml, onReportIr) => {
     clearStream();
     const topic = query.trim() || 'Intelligent Public Opinion Report';
     try {
@@ -34,6 +34,7 @@ export default function useSSE() {
           const taskId = event.task_id;
           apiJson(`/api/report/result/${taskId}/json`).then((result) => {
             onReportHtml(result.html_content || reportSeedHtml(output));
+            if (onReportIr) onReportIr(result.document_ir || null);
           }).catch(() => {});
         }
       };

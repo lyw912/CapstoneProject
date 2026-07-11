@@ -47,7 +47,7 @@ export default function ConfigDrawer({ open, onClose, config, setConfig, onSaved
                 <label key={key}>
                   <span>{label}</span>
                   {type === 'select' ? (
-                    <Select value={config[key] || 'AnspireAPI'} onChange={(value) => update(key, value)} options={[{ value: 'AnspireAPI' }, { value: 'BochaAPI' }]} />
+                    <Select value={config[key] || 'TavilyAPI'} onChange={(value) => update(key, value)} options={[{ value: 'TavilyAPI' }, { value: 'BochaAPI' }, { value: 'AnspireAPI' }]} />
                   ) : type === 'boolean' ? (
                     <Switch checked={String(config[key]).toLowerCase() === 'true'} onChange={(checked) => update(key, checked ? 'True' : 'False')} />
                   ) : type === 'password' ? (
