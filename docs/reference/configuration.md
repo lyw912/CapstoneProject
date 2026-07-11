@@ -125,8 +125,12 @@ No semantic key -> deterministic hash/rule route remains active and diagnostics 
 | `LLM_STREAM_IDLE_TIMEOUT` | `240` | Stream idle watchdog window. |
 | `MEDIA_USE_LLM_REPORT_FORMAT` | `False` | Uses direct MediaEngine report assembly for throughput. |
 | `MEDIA_SEARCH_HTTP_TIMEOUT` | `60` | MediaEngine search HTTP timeout. |
-| `COORDINATOR_MEDIA_AGENT_TIMEOUT` | `10800` | Historical MediaEngine timeout for the legacy Coordinator graph. Not used by the active intelligence-layer path. |
-| `COORDINATOR_QUERY_AGENT_TIMEOUT` | `1800` | QueryEngine graph timeout for compatibility paths. The current Coordinator endpoint uses its internal provider budgets instead. |
+| `COORDINATOR_MEDIA_AGENT_TIMEOUT` | `10800` | Parent-graph deadline for each Media specialist task. |
+| `COORDINATOR_QUERY_AGENT_TIMEOUT` | `1800` | Parent-graph deadline for each Query specialist task. |
+| `COORDINATOR_MAX_RESEARCH_ROUNDS` | `1` | Maximum global sufficiency/follow-up rounds after initial Query/Media fan-out. |
+| `COORDINATOR_ENABLE_MINDSPIDER_DB` | `False` | Enables read-only QueryEngine searches over existing MindSpider crawl tables. |
+| `COORDINATOR_ENABLE_MEDIA_AGENT` | `True` | Runs MediaEngine; disable only for an explicit Query/MindSpider-only run. |
+| `COORDINATOR_ALLOW_MINDSPIDER_CRAWL_TRIGGER` | `False` | Separately permits stale/missing-data enrichment to start a crawl subprocess. Keep false for analysis-only servers. |
 
 ## MediaEngine Cache And Performance
 
@@ -180,8 +184,6 @@ JINA_EMBEDDING_BASE_URL=https://api.jina.ai/v1/embeddings
 JINA_EMBEDDING_MODEL=jina-embeddings-v5-text-small
 JINA_RERANK_BASE_URL=https://api.jina.ai/v1/rerank
 JINA_RERANK_MODEL=jina-reranker-v3
-COORDINATOR_ALLOW_REPLAY_FALLBACK=false
-
 SEARCH_TOOL_TYPE=TavilyAPI
 TAVILY_API_KEY=your_tavily_key
 
@@ -189,3 +191,5 @@ REPORT_OUTPUT_LANGUAGE=en
 ```
 
 Provider recommendations are documented in [API Evaluation](../quality/api-evaluation.md).
+
+`COORDINATOR_ALLOW_REPLAY_FALLBACK` is retained for the previous intelligence-layer test/baseline path. The active Query/Media fusion graph does not synthesize replay fixtures.

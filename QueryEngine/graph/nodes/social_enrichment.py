@@ -321,6 +321,10 @@ async def _generate_trend_summary(
 # ---------------------------------------------------------------------------
 
 
+def _crawl_trigger_enabled(settings) -> bool:
+    return bool(getattr(settings, "COORDINATOR_ALLOW_MINDSPIDER_CRAWL_TRIGGER", False))
+
+
 async def social_enrichment_node(state: QueryAgentState) -> dict:
     """
     LangGraph Node: MindSpider social media enrichment with NSDS.
@@ -329,6 +333,11 @@ async def social_enrichment_node(state: QueryAgentState) -> dict:
     temporal tracking (Ext 2), and BTE trigger (Ext 3).
     """
     query = state.get("original_query", "")
+
+    from ...utils.config import settings
+
+    if not bool(getattr(settings, "COORDINATOR_ENABLE_MINDSPIDER_DB", False)):
+        return _disabled_result()
 
     # Skip if already computed in a previous iteration (coverage loop)
     if state.get("social_sentiment") is not None:
@@ -384,7 +393,7 @@ async def social_enrichment_node(state: QueryAgentState) -> dict:
     if total_posts < _MIN_POSTS_FOR_ENRICHMENT:
         logger.info(f"[SocialEnrichment] Insufficient data ({total_posts} posts)")
         # Ext 3: trigger BTE if no data
-        triggered = _maybe_trigger_extraction(db)
+        triggered = _maybe_trigger_extraction(db) if _crawl_trigger_enabled(settings) else False
         return _disabled_result(crawl_triggered=triggered)
 
     # -- Step 2: Determine mode --
@@ -396,7 +405,7 @@ async def social_enrichment_node(state: QueryAgentState) -> dict:
     # Ext 3: trigger BTE if stale
     crawl_triggered = False
     if mode == "stale":
-        crawl_triggered = _maybe_trigger_extraction(db)
+        crawl_triggered = _maybe_trigger_extraction(db) if _crawl_trigger_enabled(settings) else False
 
     # -- Step 3: Full query --
     try:

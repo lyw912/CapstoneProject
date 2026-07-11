@@ -10,20 +10,25 @@ app.py]
 app.py] -> [AgentCoordinator
 public boundary]
 [AgentCoordinator
-public boundary] -> [Coordinator Intelligence Layer
-EvidenceGraph]
-[Coordinator Intelligence Layer
-EvidenceGraph] -> [Source Gateway
-Tavily / Bocha / Anspire / MindSpiderDB]
-[Coordinator Intelligence Layer
-EvidenceGraph] -> [Quality + Claim Audit
-clusters / spans / citations]
-[QueryEngine
-legacy/direct-use] -> [Historical evaluation + tools]
-[MediaEngine
-legacy/direct-use] -> [Optional historical media synthesis]
-[Coordinator Intelligence Layer
-EvidenceGraph] -> [Coordinator Artifact
+public boundary] -> [Fusion Parent Graph
+plan / fan-out / audit / stopping]
+[Fusion Parent Graph
+plan / fan-out / audit / stopping] -> [QueryEngine Subgraph
+breadth / stance / MindSpiderDB]
+[Fusion Parent Graph
+plan / fan-out / audit / stopping] -> [MediaEngine Subgraph
+sections / reflection / multimodal]
+[QueryEngine Subgraph
+breadth / stance / MindSpiderDB] -> [Evidence Blackboard
+canonical sources + acquisitions]
+[MediaEngine Subgraph
+sections / reflection / multimodal] -> [Evidence Blackboard
+canonical sources + acquisitions]
+[Evidence Blackboard
+canonical sources + acquisitions] -> [EvidenceCore
+quality / claims / edges / audit]
+[EvidenceCore
+quality / claims / edges / audit] -> [Coordinator Artifact
 schema 2.1 JSON cache]
 [Coordinator Artifact
 schema 2.1 JSON cache] -> [Signal Studio

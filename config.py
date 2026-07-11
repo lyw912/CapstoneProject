@@ -217,6 +217,14 @@ class Settings(BaseSettings):
         False,
         description="Enable optional MindSpiderDB source acquisition inside the Coordinator research path",
     )
+    COORDINATOR_ENABLE_MEDIA_AGENT: bool = Field(
+        True,
+        description="Run MediaEngine in the fusion graph; disable for explicit Query/MindSpider-only validation",
+    )
+    COORDINATOR_ALLOW_MINDSPIDER_CRAWL_TRIGGER: bool = Field(
+        False,
+        description="Allow QueryEngine social enrichment to trigger a MindSpider crawl subprocess; disabled by default",
+    )
     COORDINATOR_ALLOW_REPLAY_FALLBACK: bool = Field(
         False,
         description="Allow explicit local replay fallback when configured source providers are unavailable; intended for demos/tests only",

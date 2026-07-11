@@ -37,7 +37,8 @@ class DeepSearchAgent:
         self.llm_client = self._initialize_llm()
         
         # Initialize search tools
-        self.search_agency = BochaMultimodalSearch(api_key=(self.config.BOCHA_API_KEY or self.config.BOCHA_WEB_SEARCH_API_KEY))
+        bocha_key = getattr(self.config, "BOCHA_API_KEY", None) or self.config.BOCHA_WEB_SEARCH_API_KEY
+        self.search_agency = BochaMultimodalSearch(api_key=bocha_key)
         
         # Initialize nodes
         self._initialize_nodes()
@@ -128,6 +129,7 @@ class DeepSearchAgent:
             "error_log": [],
         }
         final_state = self.media_graph.invoke(initial_state)
+        self._last_media_graph_state = final_state
         self.state = final_state["pipeline_state"]
         final_report = final_state.get("final_report") or ""
 
@@ -142,6 +144,17 @@ class DeepSearchAgent:
     async def research_async(self, query: str, save_report: bool = True) -> str:
         """Async entry point: run LangGraph in thread pool to avoid blocking event loop."""
         return await asyncio.to_thread(self._run_research_graph, query, save_report)
+
+    async def research_contribution(self, task):
+        """Run the Media LangGraph and return typed dossiers plus source evidence."""
+        from .contribution import build_media_contribution
+
+        await asyncio.to_thread(self._run_research_graph, task.query, False)
+        return build_media_contribution(
+            self.state,
+            task,
+            graph_state=getattr(self, "_last_media_graph_state", None),
+        )
 
     def research(self, query: str, save_report: bool = True) -> str:
         """

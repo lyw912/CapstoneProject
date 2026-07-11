@@ -6,7 +6,8 @@ ReportAgent knows precisely what fields to consume. Every field is documented
 with its type and semantics.
 
 Active runtime note:
-    /api/coordinator/run now uses AgentCoordinator's internal intelligence layer.
+    /api/coordinator/run now uses AgentCoordinator's Query/Media fusion graph and
+    shared Evidence Blackboard.
     The active artifact schema is "2.1-coordinator-intelligence" and includes the
     top-level "coordinator_intelligence" evidence ledger. Compatibility fields
     such as source_data, synthesis, divergence_matrix, and deliberation are views

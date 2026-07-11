@@ -2,7 +2,7 @@
 Report bridge: converts AgentCoordinator artifacts into ReportEngine inputs.
 
 The bridge keeps the Coordinator/ReportEngine boundary explicit:
-- Coordinator owns evidence collection, deliberation, and structured synthesis.
+- Coordinator owns specialist fusion, evidence audit, and structured synthesis.
 - ReportEngine owns template/layout/chapter rendering.
 
 Bridge-generated labels, instructions, and report scaffolding are English.
@@ -174,15 +174,15 @@ def build_english_report_template() -> str:
 - State the language rule: all generated prose must be English only; translate any Chinese source material.
 
 ## 2. Data and Methodology
-- Explain web/news retrieval, social-media evidence, deliberation, CSSD, SCS, and TrustScore.
+- Explain Query/Media specialist contributions, acquisition provenance, canonicalization, stance coverage, divergence, and claim audit.
 - Include limitations and data coverage.
 
 ## 3. Evidence Overview
 - Present source counts, stance distribution, representative sources, and social-media voices.
 - Preserve traceability to URLs and platforms.
 
-## 4. Cross-Source Divergence and Deliberation
-- Explain CSSD hotspots, consensus points, and persistent disagreements.
+## 4. Cross-Source Divergence and Claim Audit
+- Explain divergence hotspots, accepted/weakened/rejected claims, and retained counter-evidence.
 - Distinguish verified facts from opinions.
 
 ## 5. Interpretation, Risks, and Recommendations
@@ -282,6 +282,21 @@ def _build_media_engine_report(coordinator_output: Dict[str, Any]) -> str:
         f"- Summary length: {media.get('summary_length', 0)}",
         "",
     ]
+
+    dossiers = media.get("dossiers", []) or []
+    if dossiers:
+        lines.extend(["## Media Section Dossiers", ""])
+        for dossier in dossiers:
+            lines.extend(
+                [
+                    f"### {dossier.get('title', 'Untitled section')}",
+                    str(dossier.get("summary", "")),
+                    f"- Status: {dossier.get('status', 'unknown')}",
+                    f"- Evidence spans: {len(dossier.get('evidence_span_ids', []) or [])}",
+                    f"- Multimodal assets: {dossier.get('multimodal_asset_count', 0)}",
+                    "",
+                ]
+            )
 
     if platform_interps:
         lines.extend(["## Platform-Aware Interpretations", ""])

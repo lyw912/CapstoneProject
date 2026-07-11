@@ -21,6 +21,10 @@ class Search:
     search_tool: str = ""              # Search tool used
     has_result: bool = True            # Whether result is returned
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
+    result_type: str = "webpage"
+    image_url: str = ""
+    published_at: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary format"""
@@ -33,7 +37,11 @@ class Search:
             "paragraph_title": self.paragraph_title,
             "search_tool": self.search_tool,
             "has_result": self.has_result,
-            "timestamp": self.timestamp
+            "timestamp": self.timestamp,
+            "result_type": self.result_type,
+            "image_url": self.image_url,
+            "published_at": self.published_at,
+            "metadata": self.metadata,
         }
     
     @classmethod
@@ -48,8 +56,22 @@ class Search:
             paragraph_title=data.get("paragraph_title", ""),
             search_tool=data.get("search_tool", ""),
             has_result=data.get("has_result", True),
-            timestamp=data.get("timestamp", datetime.now().isoformat())
+            timestamp=data.get("timestamp", datetime.now().isoformat()),
+            result_type=data.get("result_type", "webpage"),
+            image_url=data.get("image_url", ""),
+            published_at=data.get("published_at") or data.get("published_date"),
+            metadata=data.get("metadata", {}),
         )
+
+
+def _json_safe_metadata_value(value: Any) -> Any:
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, (list, tuple)):
+        return [_json_safe_metadata_value(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): _json_safe_metadata_value(item) for key, item in value.items()}
+    return str(value)
 
 
 @dataclass
@@ -78,6 +100,7 @@ class Research:
                     paragraph_title=paragraph_title,
                     search_tool=search_tool,
                     has_result=False,
+                    result_type="none",
                 )
             )
             return
@@ -98,9 +121,17 @@ class Research:
                     paragraph_title=paragraph_title or result.get("paragraph_title", ""),
                     search_tool=search_tool or result.get("search_tool", ""),
                     has_result=True,
+                    result_type=result.get("result_type", "webpage"),
+                    image_url=result.get("image_url") or (url if result.get("result_type") == "image" else ""),
+                    published_at=result.get("published_at") or result.get("published_date"),
+                    metadata={
+                        key: _json_safe_metadata_value(value)
+                        for key, value in result.items()
+                        if key not in {"url", "title", "content", "raw_content", "score"}
+                    },
                 )
             )
-    
+
     def get_search_count(self) -> int:
         """Get search count"""
         return len(self.search_history)

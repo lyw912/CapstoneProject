@@ -74,6 +74,7 @@ class CitationGroundedSynthesis:
         query_text = " ".join(
             [task.query for task in graph.retrieval_tasks]
             + [variant for task in graph.retrieval_tasks for variant in task.query_variants]
+            + [task.query for task in graph.research_tasks]
         ).lower()
         primary_priority = 50
         if any(token in query_text for token in ["pricing", "price", "cost", "fee", "fees", "价格", "定价", "收费"]):

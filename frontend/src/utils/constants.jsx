@@ -63,7 +63,7 @@ export const CONFIG_GROUPS = [
   },
   {
     title: 'Coordinator Runtime',
-    description: 'Jina semantic quality and Coordinator replay controls.',
+    description: 'Fusion routing, semantic quality, and MindSpider safety controls.',
     fields: [
       ['JINA_API_KEY', 'Jina key', 'password'],
       ['JINA_EMBEDDING_BASE_URL', 'Jina embedding URL', 'text'],
@@ -72,7 +72,7 @@ export const CONFIG_GROUPS = [
       ['JINA_RERANK_BASE_URL', 'Jina rerank URL', 'text'],
       ['JINA_RERANK_MODEL', 'Jina rerank model', 'text'],
       ['COORDINATOR_ENABLE_MINDSPIDER_DB', 'MindSpider DB enabled', 'boolean'],
-      ['COORDINATOR_ALLOW_REPLAY_FALLBACK', 'Replay fallback enabled', 'boolean'],
+      ['COORDINATOR_ALLOW_MINDSPIDER_CRAWL_TRIGGER', 'Allow crawl trigger', 'boolean'],
       ['COORDINATOR_MAX_RESEARCH_ROUNDS', 'Research rounds', 'text'],
       ['COORDINATOR_MAX_EMBEDDING_ITEMS', 'Embedding item cap', 'text'],
       ['COORDINATOR_MAX_RERANK_DOCUMENTS', 'Rerank document cap', 'text'],

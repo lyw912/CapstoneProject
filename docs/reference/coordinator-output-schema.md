@@ -67,7 +67,7 @@ The following top-level fields exist so older UI/report consumers do not need to
 | Field | Derived From | Notes |
 | --- | --- | --- |
 | `source_data.query_agent` | EvidenceGraph, quality features, source coverage | Includes totals, stance distribution, coverage score, top sources, knowledge gaps, and social sentiment view. |
-| `source_data.media_agent` | Runtime mode | Currently reports MediaAgent as optional/not configured in the current Coordinator endpoint. |
+| `source_data.media_agent` | Additive Media view | Reports actual specialist run status, dossier/source/asset counts, section summaries, unresolved questions, and errors. |
 | `synthesis` | Audited insights | Includes citation span ids and wording policy. |
 | `deliberation` | Audit decisions and contradiction edges | Replaces the historical multi-perspective graph output with claim-level audit evidence. |
 | `divergence_matrix` | Canonical cluster stance labels by platform/domain | Computes CSSD-like divergence over available evidence groups. |

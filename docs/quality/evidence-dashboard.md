@@ -24,7 +24,7 @@ The current provider benchmark is stored under `api_evaluation/results_full_r3/s
 | `deepseek-chat` for QueryEngine | Highest QueryEngine LLM score with lower latency than reasoning models. | Default for evidence planning and stance work. |
 | `qwen-plus-compatible` for MediaEngine | Highest MediaEngine LLM score in the stored full run. | Default when media synthesis quality matters. |
 | `deepseek-chat` for ReportEngine | Highest ReportEngine score and lower latency than the alternatives in the stored run. | Default for report generation. |
-| `TavilyAPI` for the active Coordinator path | Current `.env.example` and Coordinator source gateway default to Tavily; Bocha remains benchmarked and selectable. | Default search provider in `.env.example`. |
+| `TavilyAPI` for Query breadth | Current `.env.example` and Query dispatcher default to Tavily; Media can use Bocha or Anspire and MindSpiderDB remains separately gated. | Default Query search provider in `.env.example`. |
 
 ## Regression Evidence
 
@@ -32,6 +32,7 @@ The current provider benchmark is stored under `api_evaluation/results_full_r3/s
 | --- | --- | --- |
 | Sensitive input safety | `tests/test_sensitive_input_filter.py` | Route-level checks around Coordinator and ReportEngine APIs. |
 | Coordinator intelligence layer | `tests/test_coordinator_intelligence_layer.py` | Provider routing, local replay, MindSpider samples, Jina semantic scoring, and EvidenceGraph projection. |
+| Query/Media fusion contracts | `tests/test_evidence_fusion_contract.py` | Canonical-source/acquisition separation, evidence-bound claim proposals, parent graph compatibility, Media dossier handoff, and no duplicate rerun on operational `RuntimeError`. Server execution is pending. |
 | Coordinator-to-report bridge | `tests/test_coordinator_report_bridge.py` | Historical schema fixture compatibility checks. |
 | Report IR sanitization | `tests/test_report_engine_sanitization.py` | Full Document IR renderer fixtures. |
 | MediaAgent cache/config behavior | `tests/test_media_agent_node_optional.py` | Additional timeout and cache-path scenarios. |
@@ -49,7 +50,9 @@ The current provider benchmark is stored under `api_evaluation/results_full_r3/s
 
 ## Reviewer Interpretation
 
-The project is strongest where it combines architecture and implementation evidence: the EvidenceGraph-centered Coordinator intelligence layer, a stable Coordinator artifact, a structured ReportEngine IR, provider evaluation, and a final React operator interface. The evidence set supports a defense review of scope, implementation, API contracts, generated artifacts, and quality controls.
+The project is strongest where it combines architecture and implementation evidence: active Query/Media specialist graphs, the shared Evidence Blackboard, a stable Coordinator artifact, a structured ReportEngine IR, and a final React operator interface. Existing provider evaluation predates the fusion path. It supports provider-selection discussion but not a claim that fusion improves end-to-end quality; that requires the deferred server experiment matrix.
+
+The controlled variants, labels, metrics, public baselines, and minimum defense package are specified in [Fusion Evaluation Plan](fusion-evaluation-plan.md).
 
 ## Rebuild Commands
 

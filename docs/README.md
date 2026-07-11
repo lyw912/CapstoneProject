@@ -45,8 +45,8 @@ This is the authoritative documentation library for CapstoneProject: product ove
 
 | Diagram | Purpose |
 | --- | --- |
-| <img src="assets/diagrams/exported/final-runtime.png" alt="Final runtime" width="320"> | Runtime path across Signal Studio, Flask, AgentCoordinator, internal intelligence layer, Coordinator artifact projection, and ReportEngine. |
-| <img src="assets/diagrams/exported/coordinator-graph.png" alt="Coordinator graph" width="320"> | Coordinator graph and current endpoint details are documented in [AgentCoordinator](components/agent-coordinator.md). |
+| [Current runtime diagram](architecture/runtime-flow.md) | Mermaid and DSL source for Signal Studio, Flask, Query/Media fusion, Evidence Blackboard, Coordinator artifact, and ReportEngine. |
+| [Active Coordinator graph](components/agent-coordinator.md) | Current parent fusion graph and Evidence Blackboard path. The exported legacy Coordinator PNG is historical. |
 | <img src="assets/diagrams/exported/report-engine-pipeline.png" alt="ReportEngine pipeline" width="320"> | ReportEngine planning, chapter generation, finalization, and export pipeline. |
 
 All diagram sources are versioned under `docs/assets/diagrams/source/`; exported PNGs are under `docs/assets/diagrams/exported/`.

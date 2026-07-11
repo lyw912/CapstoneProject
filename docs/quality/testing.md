@@ -10,6 +10,7 @@ The repository contains focused regression tests for parsing, safety, report IR 
 | `tests/test_sensitive_input_filter.py` | Sensitive input matching, fullwidth variants, payload shape. |
 | `tests/test_report_engine_sanitization.py` | ReportEngine table repair, engine quote validation, sanitization rules. |
 | `tests/test_coordinator_report_bridge.py` | Coordinator output adapter, ReportEngine bridge, English report directives. |
+| `tests/test_evidence_fusion_contract.py` | Evidence Blackboard, specialist contribution, parent fusion graph, external artifact, and ReportEngine handoff contracts. |
 | `tests/test_media_agent_node_optional.py` | MediaAgent cache/config behavior in Coordinator integration. |
 | `tests/run_tests.py` | Simple runner for ForumEngine parser tests. |
 | `QueryEngine/evaluation/` | QueryAgent evaluation utilities. |
@@ -23,8 +24,11 @@ Run the focused unit/regression suite:
 python -m unittest tests.test_sensitive_input_filter
 python -m unittest tests.test_report_engine_sanitization
 python -m unittest tests.test_coordinator_report_bridge
+python -m unittest tests.test_evidence_fusion_contract
 python -m unittest tests.test_media_agent_node_optional
 ```
+
+The fusion contract suite was added with the implementation but was not executed on the unconfigured local workstation. Run it on the project server before treating it as passed evidence.
 
 Run ForumEngine parser tests with pytest:
 
@@ -38,9 +42,18 @@ If `python` is not available on `PATH`, run the same checks through `uv`:
 uv run --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_sensitive_input_filter
 uv run --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_report_engine_sanitization
 uv run --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_coordinator_report_bridge
+uv run --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_evidence_fusion_contract
 uv run --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_media_agent_node_optional
 uv run --python 3.11 --with-requirements requirements.txt pytest tests/test_monitor.py -v
 ```
+
+Focused live Query/Media/Coordinator/HTML-report runtime without crawler, training, or PDF dependencies:
+
+```powershell
+uv run --python 3.11 --with-requirements requirements-e2e.txt python scripts/run_e2e_validation.py "DeepSeek API pricing"
+```
+
+Use `COORDINATOR_ENABLE_MEDIA_AGENT=false` only for an explicit Query/MindSpider-only acceptance run. Controlled variants and claim boundaries are defined in [Fusion Evaluation Plan](fusion-evaluation-plan.md).
 
 Conda equivalent:
 
@@ -49,6 +62,7 @@ conda activate capstone-project
 python -m unittest tests.test_sensitive_input_filter
 python -m unittest tests.test_report_engine_sanitization
 python -m unittest tests.test_coordinator_report_bridge
+python -m unittest tests.test_evidence_fusion_contract
 python -m unittest tests.test_media_agent_node_optional
 pytest tests/test_monitor.py -v
 ```
@@ -73,6 +87,7 @@ python run_evaluation.py --providers providers.local.json --out results_smoke_re
 | Sensitive input safety | Unit tests cover matching, disabled mode, fullwidth variants, response payload. | Route-level tests for `/api/coordinator/run` and `/api/report/generate`. |
 | Report IR validation | Tests cover tables and engine quotes. | Full Document IR fixture tests for HTML/Markdown/PDF renderers. |
 | Coordinator bridge | Tests cover adapter inputs and language directives. | Schema compatibility tests against `coordinator_output_latest.json` fixtures. |
+| Query/Media fusion | Contract tests cover source/acquisition identity, claim binding, Media dossiers, compatibility projection, and runtime-error retry behavior. | Run live-provider failure injection and ablation experiments on the server. |
 | MediaAgent cache/config behavior | Tests cover configured output paths and Coordinator state integration. | Timeout and cache-hit scenarios. |
 | Forum parser | Broad parser regression tests. | Compatibility coverage for new log formats. |
 | Frontend | Acceptance walkthrough and screenshots document the main workflow. | Playwright flow for topic -> run -> latest -> report. |
@@ -104,5 +119,6 @@ python run_evaluation.py --providers providers.local.json --out results_smoke_re
 ## Related Documents
 
 - [API Evaluation](api-evaluation.md)
+- [Fusion Evaluation Plan](fusion-evaluation-plan.md)
 - [Security And Safety](security-and-safety.md)
 - [Troubleshooting](../operations/troubleshooting.md)

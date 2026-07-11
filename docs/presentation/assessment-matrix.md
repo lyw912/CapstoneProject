@@ -9,13 +9,13 @@ This matrix maps project goals to implemented evidence, acceptance proof, and op
 | Run integrated public-opinion analysis from a topic | Implemented | `/api/coordinator/run`, Signal Studio Home | Uses the configured provider profile. |
 | Retrieve and score evidence | Implemented | QueryEngine graph and Proof page | Search provider quality affects output. |
 | Compare stance and divergence | Implemented | QueryEngine stance output, Coordinator divergence matrix | Visualized in Proof. |
-| Integrate media-oriented synthesis | Implemented | MediaEngine, Coordinator media node, cached media artifacts | Runs live with configured keys and reuses cached media output for matching topics. |
-| Perform structured deliberation | Implemented | AgentCoordinator graph | Includes CRAG-style targeted search loop. |
-| Separate facts, opinions, and bias signals | Implemented | Coordinator graph nodes | Output quality depends on upstream evidence and LLM. |
+| Integrate media-oriented research | Implemented, evaluation pending | MediaEngine subgraph, `MediaContribution`, `SectionDossier`, Coordinator artifact | Active path preserves source-bound dossiers/assets; server-side quality and latency comparison has not yet been run. |
+| Perform structured claim review | Implemented, evaluation pending | Parent fusion graph, Evidence Blackboard, `AuditDecision` | Proposals, counter-evidence, methodology checks, and judge decisions are evidence-ID-bound; this is not free-form agent debate. |
+| Separate facts, opinions, and bias signals | Implemented, evaluation pending | EvidenceCore quality/claim/audit kernels | Output quality still depends on retrieval and must be measured on the server test set. |
 | Generate reports | Implemented | ReportEngine graph and `/api/report/*` | Uses the Coordinator artifact contract in the final path. |
 | Export HTML, Markdown, PDF | Implemented | ReportEngine endpoints | PDF requires system dependencies. |
 | Provide monitoring and traceability | Implemented | Monitor view, Coordinator trace, LangSmith API | Local trace is always available; LangSmith is configurable. |
-| Evaluate provider choices | Implemented | `api_evaluation/` | Stored benchmark drives the recommended runtime profile. |
+| Evaluate provider choices | Existing limited evidence | `api_evaluation/` | Existing provider benchmark is not evidence for the new fusion architecture; fusion experiments are deferred. |
 
 ## Architecture Assessment
 
@@ -25,7 +25,7 @@ This matrix maps project goals to implemented evidence, acceptance proof, and op
 | Traceability | Strong | Coordinator trace, task status, artifact metadata, configurable LangSmith. |
 | Maintainability | Good | Typed graph state, centralized settings, documented API. |
 | Operability | Good | Setup/runbook/troubleshooting, runtime APIs. |
-| Test coverage | Focused | Backend regression tests, provider evaluation harness, manual UI acceptance path. |
+| Test coverage | Contract-focused | Fusion contract tests plus existing backend regression tests; live provider and end-to-end server tests remain pending. |
 | Deployment readiness | Defined | Dockerfile, Compose config, environment template, dependency setup, runbook. |
 
 ## Operational Controls
@@ -54,4 +54,4 @@ This matrix maps project goals to implemented evidence, acceptance proof, and op
 
 ## Overall Assessment
 
-The project is functionally complete as an integrated analysis and reporting system. The strongest engineering areas are the explicit multi-agent graph architecture, the stable Coordinator artifact, the structured ReportEngine IR, provider evaluation, and the final Signal Studio workflow. The evolution plan focuses on shared-environment controls: authentication, durable task persistence, artifact retention, and broader automated UI coverage.
+The repository now contains an integrated Query/Media execution architecture rather than only disconnected specialist code. The strongest engineering areas are the explicit contribution contracts, single-writer evidence provenance, stable external artifact, and structured ReportEngine IR. A high mark should not be claimed from implementation alone: live server experiments, latency/cost instrumentation, ablation against Query-only/Media-only/previous-intelligence paths, and multiple-topic qualitative error analysis remain required evidence.

@@ -11,10 +11,19 @@ for Signal Studio] -> [Initialize ReportEngine]
 [Runtime ready] -> [Run analysis
 /api/coordinator/run]
 [Run analysis
-/api/coordinator/run] -> [Coordinator Intelligence Layer
-EvidenceGraph + provider diagnostics]
-[Coordinator Intelligence Layer
-EvidenceGraph + provider diagnostics] -> [Poll coordinator task
+/api/coordinator/run] -> [Fusion Parent Graph
+typed plan + budgets]
+[Fusion Parent Graph
+typed plan + budgets] -> [Query + Media Subgraphs
+parallel specialist contributions]
+[Query + Media Subgraphs
+parallel specialist contributions] -> [Evidence Blackboard
+single reducer + provenance]
+[Evidence Blackboard
+single reducer + provenance] -> [Global Audit Loop
+typed follow-up + cited synthesis]
+[Global Audit Loop
+typed follow-up + cited synthesis] -> [Poll coordinator task
 /api/coordinator/task/{id}]
 [Poll coordinator task
 /api/coordinator/task/{id}] -> [Write coordinator_output_latest.json

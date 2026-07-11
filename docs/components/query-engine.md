@@ -1,31 +1,23 @@
 # QueryEngine
 
-QueryEngine remains the evidence and stance component in the project architecture. The current `/api/coordinator/run` endpoint does not instantiate the QueryEngine LangGraph directly; AgentCoordinator carries the active query-layer responsibilities through `AgentCoordinator/intelligence/` and keeps QueryAgent-shaped compatibility fields in the Coordinator artifact. The QueryEngine graph, tools, evaluation utilities, provider connectors, MindSpider integration ideas, stance/coverage concepts, and output contract remain part of the codebase and design reference.
+QueryEngine is the active breadth and stance specialist. The `/api/coordinator/run` parent graph invokes `DeepSearchAgent.research_contribution()`, which executes the QueryEngine LangGraph and emits a typed `QueryContribution` containing sources, independent acquisition observations, addressable evidence excerpts, stance coverage, opinion-cluster claim proposals, gaps, trace, and errors.
 
-The current Coordinator endpoint runs these query-layer responsibilities inside the Coordinator intelligence layer:
+The active Query subgraph remains:
 
 ```text
-query_understanding
--> retrieval_planner
--> source_acquisition
--> quality_pipeline
--> claim_miner
--> adaptive_research_loop
--> evidence_audit
--> citation_grounded_synthesis
+query_planner -> unified_search -> dedup_filter -> trust_scorer
+-> stance_classify -> social_enrichment -> coverage_check
+-> gap_filler (bounded loop) -> output_assemble -> QueryContribution
 ```
 
 ## Runtime Mapping
 
-| Former QueryEngine Responsibility | Active Runtime Location |
+| Responsibility | Active Runtime Location |
 | --- | --- |
-| Query planning | `AgentCoordinator/intelligence/reasoning/planner.py` |
-| Search provider dispatch | `AgentCoordinator/intelligence/acquisition/source_gateway.py` |
-| Deduplication | `AgentCoordinator/intelligence/quality/pipeline.py` canonical clustering |
-| Trust scoring | `QualityFeatures.source_authority_score` and `persuasiveness_score` |
-| Stance classification | `QualityFeatures.stance`, `sentiment`, and `aspect` |
-| Gap filling | `AgentCoordinator/intelligence/reasoning/adaptive_loop.py` |
-| Output assembly | `CoordinatorIntelligenceArtifact` plus ReportEngine projection |
+| Stance-aware planning/search/coverage | `QueryEngine/graph/` |
+| Query contribution contract | `QueryEngine/contribution.py` |
+| Cross-agent canonicalization and quality | `AgentCoordinator/intelligence/evidence_core/` |
+| Global follow-up routing | `AgentCoordinator/fusion/supervisor.py` |
 
 ## Existing QueryEngine Implementation
 
@@ -48,16 +40,16 @@ The active runtime emits these fields inside `coordinator_intelligence`:
 | `quality_summary` | Raw source counts, distinct evidence counts, duplicate ratios, low-quality ratios, and quality warnings. |
 | `freshness_summary` | Newest/oldest published timestamps, median age, and stale-source ratio. |
 | `source_coverage` | Web domain counts, observable social-platform counts, MindSpider sample availability, replay fixture counts, and the active coverage mode. |
-| `source_coverage_limitations` | Explicit limits such as query-time search, no firehose, and local replay usage. |
+| `source_coverage_limitations` | Explicit limits such as query-time search, no firehose, missing specialist configuration, or provider failure. |
 
 ## Provider Dependencies
 
 | Layer | Providers |
 | --- | --- |
-| Source acquisition | Tavily, Bocha, or Anspire for web sources; optional MindSpiderDB for platform samples; optional local replay fixture. |
+| Source acquisition | Tavily, Bocha, or Anspire for web sources; optional read-only MindSpiderDB platform samples. |
 | Semantic quality | Jina embeddings and rerank, with deterministic rules when Jina is not configured. |
 | Structured reasoning | Existing QueryEngine LLM settings: `QUERY_ENGINE_API_KEY`, `QUERY_ENGINE_BASE_URL`, and `QUERY_ENGINE_MODEL_NAME`. |
 
-MindSpiderDB is not a presentation-only feature. When `COORDINATOR_ENABLE_MINDSPIDER_DB=true`, the planner emits a `target_source=mindspider_db` retrieval task. Returned platform samples are normalized, clustered, scored, audited, and cited through the same `QualityPipeline` as web search results. External social-platform hits from web search, such as Reddit or X/Twitter, are also normalized to platform keys, but provider diagnostics still distinguish them from MindSpiderDB samples. The Coordinator artifact then exposes the platform view through `source_data.query_agent.social_sentiment`, `platform_interpretations`, `divergence_matrix`, and `bias_analysis`.
+MindSpiderDB is optional and read-only by default. `COORDINATOR_ENABLE_MINDSPIDER_DB=true` enables QueryEngine database routes against the existing crawl tables. `COORDINATOR_ALLOW_MINDSPIDER_CRAWL_TRIGGER=false` prevents a Coordinator request from implicitly starting BroadTopicExtraction; enabling crawling is a separate operational decision. Each database hit records its query, task, provider, source table metadata, and retrieval time as an `AcquisitionObservation` before EvidenceCore canonicalization.
 
-See [Configuration](../reference/configuration.md) and [AgentCoordinator](agent-coordinator.md).
+See [MindSpider Data Contract](../reference/mindspider-data-contract.md), [Configuration](../reference/configuration.md), and [AgentCoordinator](agent-coordinator.md).

@@ -1,6 +1,6 @@
 # MediaEngine
 
-MediaEngine produces media-oriented deep research when invoked directly or through legacy compatibility utilities. The final `/api/coordinator/run` path does not require MediaEngine; multimodal research is marked `not_configured` in the Coordinator artifact unless a future adapter explicitly connects it as an evidence source.
+MediaEngine is the active narrative and multimodal specialist. The parent Coordinator invokes its LangGraph in parallel with QueryEngine. It returns `MediaContribution` and `SectionDossier` records rather than handing Markdown directly to synthesis. ReportEngine remains the only final-document renderer.
 
 ## Implementation
 
@@ -30,6 +30,7 @@ The paragraph router processes planned paragraphs sequentially or through `proce
 | Method | Usage |
 | --- | --- |
 | `research_async(query, save_report=True)` | Async entry point for direct or legacy use; internally runs graph work in a thread. |
+| `research_contribution(task)` | Active Coordinator entry point; returns typed dossiers, sources, acquisitions, spans, assets, trace, and errors. |
 | `research(query, save_report=True)` | Synchronous research flow. |
 | `create_agent(config_file=None)` | Factory function. |
 
@@ -50,14 +51,14 @@ MediaEngine also uses `MEDIA_ENGINE_API_KEY`, `MEDIA_ENGINE_BASE_URL`, and `MEDI
 | Sequential recovery pass | `MEDIA_PARAGRAPH_RETRY_PASSES` | Reprocesses paragraphs that need another pass after parallel execution. |
 | Reflection context cap | `MEDIA_REFLECTION_STATE_MAX_CHARS` | Keeps reflection prompts bounded. |
 | Search timeout | `MEDIA_SEARCH_HTTP_TIMEOUT` | Controls Bocha/Anspire search request duration. |
-| Legacy Coordinator budget | `COORDINATOR_MEDIA_AGENT_TIMEOUT` | Historical timeout used by the legacy Coordinator path. |
+| Coordinator task budget | `COORDINATOR_MEDIA_AGENT_TIMEOUT` | Parent-graph deadline for each Media specialist task. |
 | Topic cache | `AgentCoordinator/cache/media_agent_<hash>.md` | Reuses MediaEngine Markdown output for matching topics. |
 
 ## Runtime Boundary
 
 | Situation | Expected Behavior |
 | --- | --- |
-| Final Coordinator path | Multimodal evidence is not required and is projected as `media_agent.available=false` unless configured later. |
+| Final Coordinator path | Runs MediaEngine and projects actual dossier/source/asset counts; failures remain explicit in diagnostics. |
 | Direct MediaEngine invocation | Runs the MediaEngine graph and writes its own output. |
 | Legacy cache files | `AgentCoordinator/cache/media_agent_<hash>.md` files are runtime cache artifacts and are ignored. |
 

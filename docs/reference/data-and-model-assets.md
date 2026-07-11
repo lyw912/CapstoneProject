@@ -14,7 +14,7 @@ The repository contains sentiment, topic-detection, cached-analysis, and generat
 | `static/v2_report_example/` | Curated generated report examples. | Review artifact. |
 | `AgentCoordinator/cache/coordinator_output_latest.json` | Cached analysis artifact for UI/report handoff. | Review and runtime artifact. |
 
-The final live path uses external search, semantic, and LLM providers through the Coordinator runtime, then exports a Coordinator-compatible artifact for Signal Studio and ReportEngine. QueryEngine and MediaEngine assets remain part of the project architecture and can be used directly or through Coordinator adapters.
+The final live path runs QueryEngine and MediaEngine as active specialists, applies optional semantic quality providers in EvidenceCore, and exports the stable Coordinator artifact for Signal Studio and ReportEngine. MindSpider crawl data is an optional read-only Query source unless crawling is separately enabled.
 
 ## Clone And Storage Impact
 

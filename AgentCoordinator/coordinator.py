@@ -1,15 +1,15 @@
 """AgentCoordinator entry point.
 
 External callers still import ``AgentCoordinator`` and still receive a
-coordinator_output_latest.json artifact. Internally, the active path uses the
-Coordinator intelligence layer as shared evidence state, then exports the
-legacy Coordinator fields as views over that state.
+coordinator_output_latest.json artifact. Internally, a parent LangGraph runs
+the Query and Media specialist subgraphs against a shared evidence blackboard.
 """
 
 from __future__ import annotations
 
 import asyncio
 import json
+import os
 import time
 import uuid
 from pathlib import Path
@@ -23,14 +23,15 @@ class AgentCoordinator:
 
     def __init__(self, use_checkpointing: bool = True):
         self.use_checkpointing = use_checkpointing
-        self._graph = None
+        self._fusion = None
 
     @property
     def graph(self):
-        raise RuntimeError(
-            "The active AgentCoordinator path uses the internal intelligence layer. "
-            "The legacy LangGraph nodes remain in AgentCoordinator/graph for compatibility and reference."
-        )
+        if self._fusion is None:
+            from .fusion import FusionCoordinator
+
+            self._fusion = FusionCoordinator(use_checkpointing=self.use_checkpointing)
+        return self._fusion.graph
 
     async def run(
         self,
@@ -38,17 +39,18 @@ class AgentCoordinator:
         thread_id: Optional[str] = None,
         progress_callback: Optional[Callable[[str, Dict[str, Any], Dict[str, Any], float], None]] = None,
     ) -> Dict[str, Any]:
-        """Execute the Coordinator intelligence layer asynchronously."""
+        """Execute the Query/Media evidence-fusion graph asynchronously."""
         if thread_id is None:
             thread_id = str(uuid.uuid4())
 
-        from .intelligence import CoordinatorIntelligenceLayer, CoordinatorIntelligenceRequest
+        from .fusion import FusionCoordinator
 
-        logger.info("[AgentCoordinator] Starting intelligence layer for: {!r} (thread_id={})", query, thread_id)
+        logger.info("[AgentCoordinator] Starting Query/Media fusion for: {!r} (thread_id={})", query, thread_id)
         started = time.time()
-        layer = CoordinatorIntelligenceLayer()
-        artifact = layer.run(
-            CoordinatorIntelligenceRequest(query=query, thread_id=thread_id),
+        self._fusion = FusionCoordinator(use_checkpointing=self.use_checkpointing)
+        artifact = await self._fusion.run(
+            query=query,
+            run_id=thread_id,
             progress_callback=progress_callback,
         )
         duration = time.time() - started
@@ -79,25 +81,23 @@ class AgentCoordinator:
             "duration_seconds": duration,
             "coordinator_output_path": output.get("_coordinator_output_path", ""),
         }
-        logger.info("[AgentCoordinator] intelligence layer complete in {:.1f}s", duration)
+        logger.info("[AgentCoordinator] Query/Media fusion complete in {:.1f}s", duration)
         return result
 
     def _export_coordinator_output(self, artifact, duration_seconds: float) -> Dict[str, Any]:
         from .intelligence.projection import build_coordinator_output_from_artifact
 
-        ts = time.strftime("%Y%m%d_%H%M%S")
+        ts = f"{time.strftime('%Y%m%d_%H%M%S')}_{time.time_ns() % 1_000_000_000:09d}"
         cache_dir = Path(__file__).parent / "cache"
         cache_dir.mkdir(exist_ok=True)
 
         structured = build_coordinator_output_from_artifact(artifact, duration_seconds=duration_seconds)
 
         timestamped_path = cache_dir / f"coordinator_output_{ts}.json"
-        with open(timestamped_path, "w", encoding="utf-8") as handle:
-            json.dump(structured, handle, ensure_ascii=False, indent=2)
+        self._write_json_atomic(timestamped_path, structured)
 
         latest_path = cache_dir / "coordinator_output_latest.json"
-        with open(latest_path, "w", encoding="utf-8") as handle:
-            json.dump(structured, handle, ensure_ascii=False, indent=2)
+        self._write_json_atomic(latest_path, structured)
 
         structured["_coordinator_output_path"] = str(timestamped_path)
         logger.info("[AgentCoordinator] coordinator_output saved -> {}", timestamped_path)
@@ -112,19 +112,30 @@ class AgentCoordinator:
     ) -> Dict[str, Any]:
         """Synchronous wrapper for run()."""
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                import concurrent.futures
-
-                with concurrent.futures.ThreadPoolExecutor() as pool:
-                    future = pool.submit(
-                        asyncio.run,
-                        self.run(query, thread_id=thread_id, progress_callback=progress_callback),
-                    )
-                    return future.result()
-            return loop.run_until_complete(self.run(query, thread_id=thread_id, progress_callback=progress_callback))
+            asyncio.get_running_loop()
         except RuntimeError:
             return asyncio.run(self.run(query, thread_id=thread_id, progress_callback=progress_callback))
+        import concurrent.futures
+
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            future = pool.submit(
+                asyncio.run,
+                self.run(query, thread_id=thread_id, progress_callback=progress_callback),
+            )
+            return future.result()
+
+    @staticmethod
+    def _write_json_atomic(path: Path, payload: Dict[str, Any]) -> None:
+        temp_path = path.with_name(f".{path.name}.{time.time_ns()}.tmp")
+        try:
+            with open(temp_path, "w", encoding="utf-8") as handle:
+                json.dump(payload, handle, ensure_ascii=False, indent=2)
+                handle.flush()
+                os.fsync(handle.fileno())
+            temp_path.replace(path)
+        finally:
+            if temp_path.exists():
+                temp_path.unlink()
 
     def save_result(self, result: Dict[str, Any], output_path: Optional[str] = None) -> str:
         """Save a coordinator result to disk for manual inspection."""

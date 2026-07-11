@@ -13,6 +13,7 @@ Key Changes (Phase 2):
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import uuid
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
@@ -148,6 +149,17 @@ def _mindspiderdb_to_source_items(response, sq: Dict) -> List[Dict]:
         url = r.url or ""
         title = r.title_or_content[:100] if r.title_or_content else ""
         snippet = r.title_or_content[:500] if r.title_or_content else ""
+        if not url:
+            identity = "\x1f".join(
+                [
+                    str(r.platform or ""),
+                    str(r.source_table or ""),
+                    str(r.title_or_content or ""),
+                    r.publish_time.isoformat() if r.publish_time else "",
+                ]
+            )
+            digest = hashlib.sha1(identity.encode("utf-8", errors="ignore")).hexdigest()[:16]
+            url = f"mindspider://{r.platform}/{r.source_table}/{digest}"
 
         items.append(dict(
             source_id=str(uuid.uuid4()),
@@ -164,6 +176,8 @@ def _mindspiderdb_to_source_items(response, sq: Dict) -> List[Dict]:
             sub_query_ref=sq["query"],
             rrf_score=r.hotness_score / 100.0 if r.hotness_score else 0.0,
             _target_stance=sq.get("target_stance", ""),
+            _source_table=r.source_table,
+            _source_keyword=r.source_keyword,
         ))
     return items
 
@@ -232,8 +246,12 @@ class UnifiedSearchDispatcher:
         if target == "anspire" and _ANSPIRE_AVAILABLE:
             return await self._search_anspire(sq)
 
-        if target == "mindspider_db" and _MINDSPIDERDB_AVAILABLE:
+        mindspider_enabled = bool(getattr(settings, "COORDINATOR_ENABLE_MINDSPIDER_DB", False))
+        if target == "mindspider_db" and _MINDSPIDERDB_AVAILABLE and mindspider_enabled:
             return await self._search_mindspider_db(sq)
+
+        if target == "mindspider_db" and not mindspider_enabled:
+            logger.info("[Dispatcher] MindSpiderDB route disabled; using web search for this stance query")
 
         return await self._search_tavily(sq)
 

@@ -80,10 +80,10 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
         else f"This report synthesizes {total_sources} web search sources"
     )
     write(
-        f"{data_sentence}. The Coordinator ran a structured deliberation across "
-        f"{len(deliberation.get('perspectives_used', []) or [])} analytical perspectives, "
-        f"identified {consensus_count} cross-perspective consensus points and "
-        f"{dissent_count} persistent disagreements, extracted {fact_count} verifiable facts, "
+        f"{data_sentence}. The Coordinator ran evidence-bound review across "
+        f"{len(deliberation.get('perspectives_used', []) or [])} executed specialist/audit roles, "
+        f"identified {consensus_count} accepted insight groups and "
+        f"{dissent_count} retained evidence disagreements, extracted {fact_count} auditable facts, "
         f"and calculated {pairs_count} source-pair divergence scores with "
         f"{hotspot_count} notable hotspots."
     )
@@ -95,14 +95,14 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
     write("")
     write(
         f"This report analyzes the public-opinion landscape around **{query}** through "
-        "multi-source retrieval, structured deliberation, source divergence measurement, "
+        "Query/Media specialist research, evidence canonicalization, source divergence measurement, "
         "fact-opinion separation, and evidence-traced reporting."
     )
     write("")
     write("The analysis pipeline contributes five capabilities:")
     write("")
     write("1. **Cross-source triangulation:** compares web/media evidence with available social discussion.")
-    write("2. **Structured multi-perspective deliberation:** separates analytical viewpoints before synthesis.")
+    write("2. **Evidence-bound specialist review:** separates breadth, narrative depth, methodology, skepticism, and claim judging.")
     write("3. **Cross-Source Sentiment Difference (CSSD):** quantifies stance divergence among sources.")
     write("4. **Fact-opinion separation:** distinguishes verifiable claims from interpretations and sentiment.")
     write("5. **Bias and echo-chamber review:** flags unusually narrow or coordinated evidence patterns.")
@@ -118,13 +118,13 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
     write("|---|---|---|")
     write("| Web and news retrieval | Tavily and Anspire | Broad, traceable coverage of media and institutional narratives |")
     write("| Social-media retrieval | MindSpider database when available | Native platform posts, comments, and public reactions |")
-    write("| Media analysis | MediaAgent | Chinese media framing and multimodal context |")
+    write("| Media research | MediaAgent | Source-bound section dossiers, media framing, and multimodal context |")
     write("")
     write("### 2.2 Core Metrics")
     write("")
-    write("**CSSD (Cross-Source Sentiment Difference).** CSSD measures the distance between two normalized stance distributions. A higher value indicates stronger divergence.")
+    write("**Cross-source stance divergence (CSSD compatibility field).** The runtime uses total-variation distance between two normalized stance distributions. A higher value indicates stronger divergence.")
     write("")
-    write("`CSSD(A, B) = 1 - cosine(stance_vector_A, stance_vector_B)`")
+    write("`divergence(A, B) = 0.5 * sum_i |A_i - B_i|`")
     write("")
     write("| CSSD Range | Interpretation |")
     write("|---|---|")
@@ -139,14 +139,14 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
     write("")
     write(f"Current SCS: **{coverage:.2f}** ({_scs_label(coverage)}).")
     write("")
-    write("**TrustScore.** TrustScore combines domain authority, timeliness, content quality, and retrieval relevance into a 0-1 source reliability score.")
+    write("**Source quality score.** The compatibility `trust_score` view combines authority and evidence usefulness; it is not a calibrated probability of truth.")
     write("")
-    write("### 2.3 Deliberation Protocol")
+    write("### 2.3 Specialist and Claim-Audit Protocol")
     write("")
     perspectives_used = deliberation.get("perspectives_used", []) or []
     write(
-        f"For this `{analysis_type}` query, the Coordinator selected "
-        f"{len(perspectives_used)} analytical perspectives:"
+        f"For this `{analysis_type}` query, the Coordinator executed "
+        f"{len(perspectives_used)} specialist/audit roles:"
     )
     write("")
     for perspective in perspectives_used:
@@ -154,7 +154,7 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
     if not perspectives_used:
         write("- General evidence review")
     write("")
-    write("The deliberation proceeds through independent analysis, cross-examination, and synthesis arbitration. The design preserves meaningful disagreement instead of forcing artificial consensus.")
+    write("Query and Media submit typed evidence batches. EvidenceCore binds proposals to source spans, preserves counter-evidence, and lets the claim judge accept, weaken, reject, or request follow-up under a bounded budget.")
     write("")
     write("---")
     write("")
@@ -271,7 +271,7 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
                 title = source.get("title", "(untitled)")
                 url = source.get("url", "")
                 trust_score = float(source.get("trust_score", 0) or 0)
-                write(f"- [{title}]({url}) - TrustScore: {trust_score:.2f}")
+                write(f"- [{title}]({url}) - source quality: {trust_score:.2f}")
             write("")
 
     voices = social.get("top_social_voices", []) if social else []
@@ -321,9 +321,9 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
     write("---")
     write("")
 
-    write("## 5. Multi-Perspective Deliberation")
+    write("## 5. Evidence-Bound Claim Review")
     write("")
-    write("`[INTERACTIVE PLACEHOLDER: Collapsible deliberation timeline]`")
+    write("`[INTERACTIVE PLACEHOLDER: Collapsible claim-audit timeline]`")
     write("")
     phases = deliberation.get("phases", []) or []
     for phase_data in phases:
@@ -362,7 +362,7 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
         for idx, point in enumerate(final_dissents, 1):
             write(f"{idx}. {point}")
         write("")
-    write(f"Deliberation confidence: **{float(deliberation.get('confidence', 0) or 0):.0%}**")
+    write(f"Audited synthesis confidence: **{float(deliberation.get('confidence', 0) or 0):.0%}**")
     write("")
     write("---")
     write("")
@@ -430,7 +430,7 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
     write("")
     limitations = [
         f"The retained web evidence contains {total_sources} sources, so rare or low-visibility views may remain underrepresented.",
-        "LLM-based classification and deliberation may introduce model bias despite structured prompts and evidence constraints.",
+        "LLM-based specialist planning and summarization may introduce model bias despite typed contracts and evidence constraints.",
     ]
     if total_posts or total_comments:
         limitations.append(
@@ -463,7 +463,7 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
         write("<details>")
         write(f"<summary>Show {len(top_sources)} top sources</summary>")
         write("")
-        write("| # | Stance | TrustScore | Title | Link |")
+        write("| # | Stance | Source quality | Title | Link |")
         write("|---:|---|---:|---|---|")
         for idx, source in enumerate(top_sources, 1):
             title = (source.get("title", "") or "")[:80]
@@ -507,7 +507,7 @@ def generate_academic_report(coordinator_output: Dict[str, Any]) -> str:
     write("### Appendix D: Planned ReportEngine Enhancements")
     write("")
     write("- Render the CSSD matrix as an interactive heatmap.")
-    write("- Render deliberation phases as collapsible timeline sections.")
+    write("- Render claim-audit decisions and follow-up rounds as collapsible timeline sections.")
     write("- Surface confidence annotations at chapter level.")
     write("")
     write("---")

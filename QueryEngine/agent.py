@@ -510,12 +510,21 @@ class DeepSearchAgent:
         }
         logger.info(f"[QueryAgent] research_structured started: {query!r}")
         final_state = await self.query_graph.ainvoke(initial_state)
-        output = final_state.get("query_agent_output")
+        output = dict(final_state.get("query_agent_output") or {})
+        output["runtime_errors"] = list(final_state.get("error_log") or [])
+        output["runtime_trace"] = list(final_state.get("trace_log") or [])
         logger.info(
             f"[QueryAgent] Completed: sources={output.get('total_sources_kept', 0)}, "
             f"coverage={output.get('coverage_score', 0):.2f}"
         )
         return output
+
+    async def research_contribution(self, task):
+        """Run the Query LangGraph and return a typed specialist contribution."""
+        from .contribution import build_query_contribution
+
+        output = await self.research_structured(task.query)
+        return build_query_contribution(output, task)
 
     def research_structured_sync(self, query: str) -> Dict:
         """

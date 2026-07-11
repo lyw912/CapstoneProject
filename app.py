@@ -125,6 +125,7 @@ CONFIG_KEYS = [
     'COORDINATOR_MEDIA_AGENT_TIMEOUT',
     'COORDINATOR_QUERY_AGENT_TIMEOUT',
     'COORDINATOR_ENABLE_MINDSPIDER_DB',
+    'COORDINATOR_ALLOW_MINDSPIDER_CRAWL_TRIGGER',
     'COORDINATOR_ALLOW_REPLAY_FALLBACK',
     'COORDINATOR_MAX_RESEARCH_ROUNDS',
     'COORDINATOR_MAX_EMBEDDING_ITEMS',
@@ -1246,6 +1247,11 @@ def _set_coordinator_task(task_id, **updates):
         return task.copy()
 
 COORDINATOR_NODE_PROGRESS = {
+    'investigation_plan': (18, 'brief', 'Scope'),
+    'specialist_fanout': (36, 'collect', 'Search'),
+    'evidence_reduce': (58, 'reason', 'Claims'),
+    'global_sufficiency_audit': (74, 'verify', 'Audit'),
+    'final_audit_synthesis': (96, 'write', 'Synthesis'),
     'query_understanding': (18, 'brief', 'Intent'),
     'retrieval_planner': (24, 'brief', 'Scope'),
     'source_acquisition': (36, 'collect', 'Search'),
@@ -1270,6 +1276,32 @@ def _pct_dict_text(values):
 
 
 def _coordinator_progress_detail(node_name, update, state):
+    if node_name == 'investigation_plan':
+        tasks = update.get('tasks') or []
+        evidence = [f"{item.get('agent')}: {item.get('task_type')}" for item in tasks if isinstance(item, dict)]
+        return {'message': f"Delegated {len(tasks)} typed specialist task(s)", 'evidence': evidence[:4]}
+    if node_name == 'specialist_fanout':
+        agents = update.get('completed_agents') or []
+        return {'message': f"Collected {len(agents)} specialist contribution(s)", 'evidence': agents}
+    if node_name == 'evidence_reduce':
+        summary = update.get('evidence_graph_summary') or {}
+        evidence = [
+            f"sources={summary.get('canonical_count', 0)}",
+            f"observations={summary.get('acquisition_observations', 0)}",
+            f"claims={summary.get('claims_count', 0)}",
+            f"blackboard=v{summary.get('blackboard_version', 0)}",
+        ]
+        return {'message': 'Reduced specialist batches into the evidence ledger', 'evidence': evidence}
+    if node_name == 'global_sufficiency_audit':
+        tasks = update.get('follow_up_tasks') or []
+        evidence = [f"{item.get('agent')}: {item.get('objective', '')}"[:160] for item in tasks if isinstance(item, dict)]
+        message = f"Routed {len(tasks)} follow-up task(s)" if tasks else 'Evidence sufficient or research budget exhausted'
+        return {'message': message, 'evidence': evidence[:4]}
+    if node_name == 'final_audit_synthesis':
+        summary = update.get('audit_summary') or {}
+        insight_count = int(update.get('insights') or 0)
+        evidence = [f"{key}: {value}" for key, value in summary.items()]
+        return {'message': f"Produced {insight_count} audited cited insight(s)", 'evidence': evidence}
     if node_name == 'query_understanding':
         target = update.get('target_entity') or 'target'
         analysis_type = update.get('analysis_type') or 'general'
@@ -1360,23 +1392,23 @@ def _run_coordinator_task(task_id, query, feedback=''):
         if feedback:
             run_query = f"{query}\n\nOperator refinement request:\n{feedback}"
             _set_coordinator_task(task_id, progress=16, stage='brief', micro_stage='Scope', message='Revision request attached')
-        _set_coordinator_task(task_id, progress=22, stage='brief', micro_stage='Scope', message='Preparing Signal Intelligence engine')
+        _set_coordinator_task(task_id, progress=14, stage='brief', micro_stage='Scope', message='Preparing Query and Media fusion plan')
         from AgentCoordinator.coordinator import AgentCoordinator
         coordinator = AgentCoordinator(use_checkpointing=True)
-        _set_coordinator_task(task_id, progress=28, stage='collect', micro_stage='Search', message='Starting evidence acquisition')
+        _set_coordinator_task(task_id, progress=16, stage='collect', micro_stage='Search', message='Starting specialist research')
 
         def progress_callback(node_name, update, state, elapsed):
             _update_coordinator_progress_from_node(task_id, node_name, update, state, elapsed)
 
         result = coordinator.run_sync(run_query, progress_callback=progress_callback)
-        _set_coordinator_task(task_id, progress=99, stage='write', micro_stage='Export', message='Signal intelligence artifact written')
+        _set_coordinator_task(task_id, progress=99, stage='write', micro_stage='Export', message='Evidence-fusion artifact written')
         _set_coordinator_task(
             task_id,
             status='completed',
             progress=100,
             stage='write',
             micro_stage='Export',
-            message='Signal intelligence pipeline completed',
+            message='Query and Media evidence fusion completed',
             duration_seconds=round(time.time() - started, 2),
             coordinator_output_path=result.get('coordinator_output_path'),
             thread_id=result.get('thread_id'),
@@ -1388,7 +1420,7 @@ def _run_coordinator_task(task_id, query, feedback=''):
             task_id,
             status='error',
             progress=100,
-            message='Signal intelligence pipeline failed',
+            message='Query and Media evidence fusion failed',
             error=str(exc),
             duration_seconds=round(time.time() - started, 2),
         )

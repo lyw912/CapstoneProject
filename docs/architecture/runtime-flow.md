@@ -2,9 +2,23 @@
 
 The final runtime path starts with Signal Studio and uses Flask as the unified operator/API boundary. `initialize_system_components()` stops compatibility Streamlit apps and the Forum monitor before initializing ReportEngine.
 
-![Final runtime](../assets/diagrams/exported/final-runtime.png)
+```mermaid
+flowchart TD
+    UI[Signal Studio] --> API[POST /api/coordinator/run]
+    API --> PLAN[Parent fusion graph: typed plan and budgets]
+    PLAN --> Q[QueryEngine subgraph]
+    PLAN --> M[MediaEngine subgraph]
+    Q --> BB[Single-writer Evidence Blackboard]
+    M --> BB
+    BB --> CORE[EvidenceCore: quality, claims, edges]
+    CORE --> AUDIT{Global sufficiency audit}
+    AUDIT -->|typed follow-up| Q
+    AUDIT -->|typed follow-up| M
+    AUDIT -->|sufficient or budget exhausted| OUT[Coordinator artifact schema 2.1]
+    OUT --> REPORT[ReportEngine]
+```
 
-Read this diagram vertically with one update: analysis now runs through AgentCoordinator's internal intelligence layer before writing the Coordinator artifact. Open the full-size image at [`docs/assets/diagrams/exported/final-runtime.png`](../assets/diagrams/exported/final-runtime.png) for node-level labels.
+The Mermaid diagram and [`final-runtime.dsl`](../assets/diagrams/source/final-runtime.dsl) are authoritative for the current fusion path. The previously exported PNG predates this implementation and must be regenerated before it is used in a defense deck.
 
 ## Startup Flow
 
@@ -26,11 +40,12 @@ Read this diagram vertically with one update: analysis now runs through AgentCoo
 | 1 | `POST /api/coordinator/run` | Body contains `query` and reviewer feedback when refinement is requested. |
 | 2 | Flask task registry | Creates `coord_<timestamp>_<suffix>` task with queued/running/completed/error state. |
 | 3 | `_run_coordinator_task()` | Runs `AgentCoordinator.run_sync()` in a background thread. |
-| 4 | AgentCoordinator | Calls the internal intelligence layer. |
-| 5 | Progress callback | Updates task progress for internal intelligence-layer nodes. |
-| 6 | Artifact export | Writes timestamped and latest Coordinator JSON files. |
-| 7 | `GET /api/coordinator/task/{task_id}` | UI polls until `completed` or `error`. |
-| 8 | `GET /api/coordinator/latest` | UI loads output, metadata, feedback, and observability settings. |
+| 4 | AgentCoordinator | Plans typed Query/Media tasks and runs both specialist subgraphs in parallel. |
+| 5 | Evidence reducer | Canonicalizes sources while preserving every acquisition observation, then builds quality features and the claim ledger. |
+| 6 | Global audit loop | Routes bounded follow-ups to Query or Media and performs final evidence-bound audit/synthesis. |
+| 7 | Artifact export | Writes timestamped and latest Coordinator JSON files. |
+| 8 | `GET /api/coordinator/task/{task_id}` | UI polls until `completed` or `error`. |
+| 9 | `GET /api/coordinator/latest` | UI loads output, metadata, feedback, and observability settings. |
 
 ## Report Flow
 
@@ -58,7 +73,7 @@ Read this diagram vertically with one update: analysis now runs through AgentCoo
 
 | Source | Behavior |
 | --- | --- |
-| Local intelligence-layer trace | Stored in the Coordinator artifact and replayed in Monitor. |
+| Local fusion trace | Stores planning, specialist fan-out, blackboard reduction, sufficiency routing, and final audit nodes in the Coordinator artifact. |
 | LangSmith configured | `/api/observability/langsmith` loads recent root runs and child runs. |
 | Local trace mode | API returns local Coordinator trace data for Monitor replay. |
 

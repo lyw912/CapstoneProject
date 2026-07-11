@@ -54,7 +54,7 @@ def build_coordinator_output_from_artifact(artifact: CoordinatorIntelligenceArti
                 {
                     "phase": "claim_level_audit",
                     "summary": (
-                        "Legacy deliberation is fused into claim-level review: proposer claims, "
+                        "Claim-level review combines specialist proposals, "
                         "skeptical counter-evidence, methodological quality checks, and judge decisions "
                         "all point back to cited source spans."
                     ),
@@ -77,8 +77,20 @@ def build_coordinator_output_from_artifact(artifact: CoordinatorIntelligenceArti
                 }
                 for task in graph.retrieval_tasks
                 if task.parent_claim_id
+            ]
+            + [
+                {
+                    "description": task.objective,
+                    "source": task.agent,
+                    "query": task.query,
+                }
+                for task in graph.research_tasks
+                if task.round_index > 0
             ],
-            "results_found": sum(result.items_returned for result in graph.retrieval_results),
+            "results_found": max(
+                sum(result.items_returned for result in graph.retrieval_results),
+                len(graph.acquisition_observations),
+            ),
         },
         "platform_interpretations": _platform_interpretations(graph, quality_by_item),
         "bias_analysis": bias,
@@ -158,6 +170,13 @@ def _source_data(
 ) -> Dict[str, Any]:
     """Build the legacy source_data contract as a view over the evidence ledger."""
     social_sentiment = _social_sentiment(graph, quality_by_item, divergence)
+    dossiers = list(graph.section_dossiers)
+    multimodal_assets = sum(len(item.multimodal_assets) for item in dossiers)
+    media_runs = [item for item in graph.agent_runs if item.agent == "media_agent"]
+    media_errors = [error for item in media_runs for error in item.errors]
+    media_available = bool(dossiers or any(item.status == "complete" for item in media_runs))
+    query_coverage = [item for item in graph.coverage_assessments if item.agent == "query_agent"]
+    query_coverage_score = query_coverage[-1].score if query_coverage else _coverage_score(artifact)
     return {
         "query_agent": {
             "derived_from": "coordinator_intelligence.evidence_graph",
@@ -166,7 +185,11 @@ def _source_data(
             "total_sources_kept": artifact.evidence_graph_summary.get("canonical_count", 0),
             "canonical_sources": artifact.evidence_graph_summary.get("canonical_count", 0),
             "stance_distribution": _stance_distribution(graph, quality_by_item),
-            "coverage_score": _coverage_score(artifact),
+            "coverage_score": query_coverage_score,
+            "coverage_assessments": [item.to_dict() for item in query_coverage],
+            "acquisition_observations": sum(
+                1 for item in graph.acquisition_observations if item.agent == "query_agent"
+            ),
             "top_sources": top_sources,
             "opinion_clusters": _opinion_clusters(graph, quality_by_item),
             "knowledge_gaps": _knowledge_gaps(artifact),
@@ -176,12 +199,33 @@ def _source_data(
             "social_sentiment": social_sentiment,
         },
         "media_agent": {
-            "available": False,
-            "mode": "not_configured",
-            "summary_length": 0,
+            "available": media_available,
+            "mode": "live" if media_available else "failed_or_unavailable",
+            "summary_length": sum(len(item.summary) for item in dossiers),
+            "section_dossiers": len(dossiers),
+            "completed_dossiers": sum(1 for item in dossiers if item.status == "complete"),
+            "multimodal_assets": multimodal_assets,
+            "source_observations": sum(
+                1 for item in graph.acquisition_observations if item.agent == "media_agent"
+            ),
+            "dossiers": [
+                {
+                    "section_id": item.section_id,
+                    "title": item.title,
+                    "objective": item.objective,
+                    "summary": item.summary,
+                    "status": item.status,
+                    "source_ids": item.source_ids,
+                    "evidence_span_ids": item.evidence_span_ids,
+                    "multimodal_asset_count": len(item.multimodal_assets),
+                    "unresolved_questions": item.unresolved_questions,
+                }
+                for item in dossiers
+            ],
+            "errors": media_errors,
             "note": (
-                "Multimodal analysis is not configured in this Coordinator path. "
-                "MediaAgent remains an optional future evidence source, not a second synthesis path."
+                "MediaAgent contributes source-bound section dossiers and multimodal observations; "
+                "ReportEngine remains the sole final-document renderer."
             ),
         },
     }
@@ -551,8 +595,9 @@ def _coverage_score(artifact: CoordinatorIntelligenceArtifact) -> float:
 
 
 def _research_rounds(graph: EvidenceGraph) -> int:
-    rounds = {task.parent_claim_id for task in graph.retrieval_tasks if task.parent_claim_id}
-    return len(rounds)
+    fusion_round = max((task.round_index for task in graph.research_tasks), default=0)
+    legacy_claim_rounds = {task.parent_claim_id for task in graph.retrieval_tasks if task.parent_claim_id}
+    return max(fusion_round, len(legacy_claim_rounds))
 
 
 def _recommendations(artifact: CoordinatorIntelligenceArtifact) -> List[str]:
@@ -576,14 +621,14 @@ def _recommendations(artifact: CoordinatorIntelligenceArtifact) -> List[str]:
 
 
 def _perspectives_used(analysis_type: str) -> List[str]:
-    try:
-        from AgentCoordinator.utils.perspective_templates import get_perspectives
-
-        perspective_names = [name for name, _role in get_perspectives(analysis_type)]
-    except Exception:
-        perspective_names = []
-    audit_roles = ["Proposer", "Skeptic", "Methodologist", "Judge"]
-    return list(dict.fromkeys(perspective_names + audit_roles))
+    return [
+        "Query breadth and stance specialist",
+        "Media narrative and multimodal specialist",
+        "Evidence-bound proposer",
+        "Counter-evidence skeptic",
+        "Evidence methodologist",
+        "Claim judge",
+    ]
 
 
 def _insight_confidence(strength: str) -> float:

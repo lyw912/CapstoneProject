@@ -9,7 +9,7 @@ This roadmap records completed scope and the engineering evolution path for shar
 | Final operator UI | Implemented | Signal Studio, screenshots, Flask-served build. |
 | Integrated analysis path | Implemented | `/api/coordinator/run`, AgentCoordinator runtime and artifact export. |
 | Evidence engine integration | Implemented | QueryEngine and MediaEngine under Coordinator. |
-| Divergence and deliberation | Implemented | Coordinator graph nodes. |
+| Divergence and claim audit | Implemented, evaluation pending | Fusion graph, EvidenceCore, compatibility audit projection. |
 | Report generation | Implemented | ReportEngine graph, Document IR, HTML/Markdown/PDF export. |
 | Runtime API docs | Implemented | API Reference and OpenAPI YAML. |
 | Operations docs | Implemented | Setup, artifact review, runbook, deployment, troubleshooting. |

@@ -28,7 +28,7 @@ The repository is organized around a Flask orchestrator, multiple agent engines,
 | --- | --- | --- |
 | QueryEngine | `graph/builder.py`, `graph/state.py`, `graph/nodes/*`, `agent.py` | Query planning, search, deduplication, trust scoring, stance classification, social enrichment, coverage loop. |
 | MediaEngine | `graph/builder.py`, `state/state.py`, `agent.py`, `tools/search.py` | Report structure, paragraph processing, search-backed media synthesis. |
-| AgentCoordinator | `graph/builder.py`, `coordinator.py`, `coordinator_output_schema.py`, `utils/report_bridge.py` | Fan-out/fan-in orchestration, divergence matrix, deliberation, CRAG gap filling, report bridge. |
+| AgentCoordinator | `fusion/`, `intelligence/evidence_core/`, `coordinator.py`, `utils/report_bridge.py` | Typed Query/Media fan-out, evidence reduction, global audit routing, stable artifact, report bridge. |
 | ReportEngine | `flask_interface.py`, `agent.py`, `ir/schema.py`, `renderers/*`, `graph/*` | Async report tasks, SSE, Document IR, HTML/Markdown/PDF output. |
 | Frontend | `src/App.jsx`, `src/views/*`, `src/hooks/*`, `src/components/*` | Signal Studio shell, API hooks, report editor, evidence views, trace monitors. |
 
