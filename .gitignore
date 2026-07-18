@@ -366,6 +366,13 @@ AgentCoordinator/cache/media_agent_*.md
 AgentCoordinator/cache/test_results_*.json
 AgentCoordinator/cache/coordinator_output_2*.json
 
+# Local agent and academic report workspaces (not project runtime deliverables)
+.agents/
+report_work_*/
+Project Report Guidelines*.md
+abstract_introduction_frontend.md
+msp25037.pdf
+
 # Cookie file (contains platform login secrets)
 cookie.txt
 

@@ -11,6 +11,7 @@ import {
   YAxis
 } from 'recharts';
 import SectionTitle from '../components/SectionTitle';
+import DebateInspector from '../components/DebateInspector';
 import Heatmap from '../components/Heatmap';
 import MarkdownText from '../components/MarkdownText';
 import { STANCE_COLORS } from '../utils/constants';
@@ -199,7 +200,7 @@ Original excerpt:
 ${original}`;
 }
 
-export default function EvidenceView({ output, theme }) {
+export default function EvidenceView({ output, theme, coordinatorTask }) {
   const sourceData = output.source_data || {};
   const queryAgent = sourceData.query_agent || {};
   const graph = signalEvidenceGraph(output);
@@ -376,6 +377,7 @@ export default function EvidenceView({ output, theme }) {
 
   return (
     <motion.section key="evidence" className="page-grid" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+      <DebateInspector output={output} coordinatorTask={coordinatorTask} />
       <div className="span-5 studio-card chart-card">
         <SectionTitle eyebrow="Stance" title="Signal mix" />
         <ResponsiveContainer width="100%" height={260}>

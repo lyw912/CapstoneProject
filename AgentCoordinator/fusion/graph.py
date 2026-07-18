@@ -12,13 +12,19 @@ def build_fusion_graph(supervisor):
     graph.add_node("investigation_plan", supervisor.plan_node)
     graph.add_node("specialist_fanout", supervisor.specialist_fanout_node)
     graph.add_node("evidence_reduce", supervisor.evidence_reduce_node)
+    graph.add_node("perspective_deliberation", supervisor.perspective_deliberation_node)
+    graph.add_node("evidence_review", supervisor.evidence_review_node)
+    graph.add_node("proposer_response", supervisor.proposer_response_node)
     graph.add_node("global_sufficiency_audit", supervisor.global_audit_node)
     graph.add_node("final_audit_synthesis", supervisor.finalize_node)
 
     graph.add_edge(START, "investigation_plan")
     graph.add_edge("investigation_plan", "specialist_fanout")
     graph.add_edge("specialist_fanout", "evidence_reduce")
-    graph.add_edge("evidence_reduce", "global_sufficiency_audit")
+    graph.add_edge("evidence_reduce", "perspective_deliberation")
+    graph.add_edge("perspective_deliberation", "evidence_review")
+    graph.add_edge("evidence_review", "proposer_response")
+    graph.add_edge("proposer_response", "global_sufficiency_audit")
     graph.add_conditional_edges(
         "global_sufficiency_audit",
         supervisor.audit_router,

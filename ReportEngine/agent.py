@@ -511,6 +511,7 @@ class ReportAgent:
             saved_files = final_state.get("saved_files") or {}
             return {
                 "html_content": html_report,
+                "document_ir": final_state.get("document_ir") or {},
                 "report_id": report_id,
                 **saved_files,
             }

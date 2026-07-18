@@ -23,6 +23,8 @@ def build_coordinator_output_from_artifact(artifact: CoordinatorIntelligenceArti
     source_data = _source_data(artifact, graph, quality_by_item, top_sources, divergence)
     fact_opinion = _fact_opinion_separation(graph, quality_by_item)
     bias = _bias_analysis(artifact, graph, quality_by_item)
+    brief = artifact.investigation_brief.to_dict() if artifact.investigation_brief else {}
+    debate = artifact.debate_session.to_dict() if artifact.debate_session else {}
 
     return {
         "schema_version": "2.1-coordinator-intelligence",
@@ -37,6 +39,7 @@ def build_coordinator_output_from_artifact(artifact: CoordinatorIntelligenceArti
                 "source_data",
                 "divergence_matrix",
                 "deliberation",
+                "debate",
                 "gap_filling",
                 "platform_interpretations",
                 "bias_analysis",
@@ -48,27 +51,10 @@ def build_coordinator_output_from_artifact(artifact: CoordinatorIntelligenceArti
             ),
         },
         "coordinator_intelligence": artifact.to_dict(),
+        "investigation_brief": brief,
+        "debate": debate,
         "divergence_matrix": divergence,
-        "deliberation": {
-            "analysis_type": artifact.analysis_type,
-            "perspectives_used": _perspectives_used(artifact.analysis_type),
-            "phases": [
-                {
-                    "phase": "claim_level_audit",
-                    "summary": (
-                        "Claim-level review combines specialist proposals, "
-                        "skeptical counter-evidence, methodological quality checks, and judge decisions "
-                        "all point back to cited source spans."
-                    ),
-                    "consensus_points": [insight.title for insight in artifact.insights[:5]],
-                    "dissent_points": [edge.explanation for edge in graph.contradiction_edges[:5]],
-                    "audit_decisions": [decision.to_dict() for decision in graph.audit_decisions[:12]],
-                }
-            ],
-            "final_consensus": [insight.title for insight in artifact.insights[:5]],
-            "final_dissents": [edge.explanation for edge in graph.contradiction_edges[:5]],
-            "confidence": synthesis["overall_confidence"],
-        },
+        "deliberation": _deliberation_projection(artifact, graph, synthesis),
         "gap_filling": {
             "rounds_performed": _research_rounds(graph),
             "gaps_detected": [
@@ -230,6 +216,71 @@ def _source_data(
                 "ReportEngine remains the sole final-document renderer."
             ),
         },
+    }
+
+
+def _deliberation_projection(
+    artifact: CoordinatorIntelligenceArtifact,
+    graph: EvidenceGraph,
+    synthesis: Dict[str, Any],
+) -> Dict[str, Any]:
+    session = artifact.debate_session
+    if not session:
+        return {
+            "analysis_type": artifact.analysis_type,
+            "perspectives_used": _perspectives_used(artifact.analysis_type),
+            "phases": [],
+            "final_consensus": [insight.title for insight in artifact.insights[:5]],
+            "final_dissents": [edge.explanation for edge in graph.contradiction_edges[:5]],
+            "confidence": synthesis["overall_confidence"],
+            "status": "not_available",
+        }
+
+    claim_index = graph.claim_index()
+
+    def claim_texts(group: str) -> List[str]:
+        return [
+            claim_index[claim_id].claim_text
+            for claim_id in session.output_groups.get(group, [])
+            if claim_id in claim_index
+        ]
+
+    perspectives = [profile.name for profile in session.profiles if profile.chamber == "perspective"]
+    phases = [
+        {
+            "phase": "sealed_perspective_openings",
+            "summary": "Role-selected agents formed positions in isolated contexts against versioned EvidenceViews.",
+            "records": [item.to_dict() for item in session.positions],
+        },
+        {
+            "phase": "evidence_review",
+            "summary": "Independent Skeptic and Methodologist reviewed only routed material claims.",
+            "records": [item.to_dict() for item in session.argument_acts if item.actor_id in {"skeptic", "methodologist"}],
+        },
+        {
+            "phase": "proposer_response",
+            "summary": "Original perspective agents rebutted, revised, conceded, abstained, or requested evidence themselves.",
+            "records": [item.to_dict() for item in session.revisions],
+        },
+        {
+            "phase": "paired_blind_adjudication",
+            "summary": "Primary and Review Judges evaluated anonymous claim subgraphs under different argument order.",
+            "records": [item.to_dict() for item in session.verdicts],
+            "audit_decisions": [decision.to_dict() for decision in graph.audit_decisions],
+        },
+    ]
+    return {
+        "analysis_type": artifact.analysis_type,
+        "perspectives_used": perspectives,
+        "phases": phases,
+        "final_consensus": claim_texts("audited_findings"),
+        "final_dissents": claim_texts("contested_findings") + claim_texts("perspective_tensions"),
+        "confidence": synthesis["overall_confidence"],
+        "status": session.status,
+        "output_groups": dict(session.output_groups),
+        "independence_summary": dict(session.independence_summary),
+        "budget_summary": dict(session.budget_summary),
+        "protocol_failures": [item.to_dict() for item in session.protocol_failures],
     }
 
 

@@ -19,6 +19,11 @@ from AgentCoordinator.intelligence.contracts import (
     RunBudget,
     utc_now,
 )
+from AgentCoordinator.intelligence.deliberation import (
+    DebateRunner,
+    DualChamberDeliberation,
+    build_investigation_brief,
+)
 from AgentCoordinator.intelligence.evidence_core import AuditKernel, EvidenceBlackboard, EvidenceCorePipeline
 from AgentCoordinator.intelligence.reasoning.planner import RetrievalPlanner, task_id
 from AgentCoordinator.utils.platform_profiles import canonical_social_platform
@@ -38,6 +43,7 @@ class FusionCoordinator:
         settings: Optional[Any] = None,
         query_runner: Optional[SpecialistRunner] = None,
         media_runner: Optional[SpecialistRunner] = None,
+        debate_runner: Optional[DebateRunner] = None,
         use_checkpointing: bool = True,
         evaluation_hook: Optional[Callable[[CoordinatorIntelligenceArtifact], None]] = None,
     ):
@@ -55,12 +61,14 @@ class FusionCoordinator:
         self.audit_kernel = AuditKernel()
         self.query_runner = query_runner or self._default_query_runner
         self.media_runner = media_runner or self._default_media_runner
+        self.debate_runner = debate_runner
         self.progress_callback: Optional[ProgressCallback] = None
         self._graph = None
         self._blackboards: Dict[str, EvidenceBlackboard] = {}
         self._pending_batches: Dict[str, Tuple[List[AgentContribution], List[AgentRunRecord]]] = {}
         self._core_results: Dict[str, Any] = {}
         self._artifacts: Dict[str, CoordinatorIntelligenceArtifact] = {}
+        self._debates: Dict[str, DualChamberDeliberation] = {}
 
     @property
     def graph(self):
@@ -100,10 +108,22 @@ class FusionCoordinator:
             self._pending_batches.pop(run_id, None)
             self._core_results.pop(run_id, None)
             self._artifacts.pop(run_id, None)
+            self._debates.pop(run_id, None)
 
     async def plan_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
         started = time.time()
         understanding = self.planner.understand(state["query"])
+        brief = build_investigation_brief(
+            query=state["query"],
+            target_entity=understanding.target_entity,
+            analysis_type=understanding.analysis_type,
+        )
+        self._debates[state["run_id"]] = DualChamberDeliberation(
+            run_id=state["run_id"],
+            brief=brief,
+            settings=self.settings,
+            runner=self.debate_runner,
+        )
         tasks = [
             ResearchTask(
                 task_id=task_id(f"{state['run_id']}:query:breadth"),
@@ -149,9 +169,12 @@ class FusionCoordinator:
         return {
             "target_entity": understanding.target_entity,
             "analysis_type": understanding.analysis_type,
+            "investigation_brief": brief.to_dict(),
             "blackboard_version": blackboard.version,
             "pending_tasks": tasks,
             "pending_contribution_count": 0,
+            "debate_follow_up_claim_ids": [],
+            "debate_status": "planned",
             "provider_diagnostics": self._readiness_diagnostics(),
             "research_trace": [trace],
         }
@@ -234,15 +257,93 @@ class FusionCoordinator:
             "research_trace": list(state.get("research_trace") or []) + [trace],
         }
 
+    async def perspective_deliberation_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        started = time.time()
+        protocol = self._debates[state["run_id"]]
+        core_result = self._core_results[state["run_id"]]
+        affected = list(state.get("debate_follow_up_claim_ids") or []) if int(state.get("research_round") or 0) > 0 else []
+        await protocol.open_or_reassess(
+            core_result.graph,
+            quality_warnings=list(core_result.quality_summary.get("quality_warnings") or []),
+            affected_claim_ids=affected,
+        )
+        trace = self._trace(
+            "perspective_deliberation",
+            "affected_claim_reassessment" if affected else "four_sealed_role_selected_openings",
+            len(core_result.graph.claims),
+            len(protocol.session.positions) + len(protocol.session.revisions),
+            started,
+            notes=[
+                f"evidence_version={core_result.graph.blackboard_version}",
+                f"model_mode={protocol.session.independence_summary.get('configured_mode', 'unknown')}",
+            ],
+        )
+        summary = self._debate_summary(protocol)
+        self._emit(state, trace, {"debate": summary})
+        return {
+            "debate_status": protocol.session.status,
+            "debate_summary": summary,
+            "debate_follow_up_claim_ids": [],
+            "research_trace": list(state.get("research_trace") or []) + [trace],
+        }
+
+    async def evidence_review_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        started = time.time()
+        protocol = self._debates[state["run_id"]]
+        graph = self._core_results[state["run_id"]].graph
+        before = len(protocol.session.argument_acts)
+        await protocol.review_material_claims(graph)
+        added = len(protocol.session.argument_acts) - before
+        trace = self._trace(
+            "evidence_review",
+            "independent_skeptic_and_methodologist",
+            len(protocol.session.material_claims),
+            max(0, added),
+            started,
+        )
+        summary = self._debate_summary(protocol)
+        self._emit(state, trace, {"debate": summary})
+        return {
+            "debate_status": protocol.session.status,
+            "debate_summary": summary,
+            "research_trace": list(state.get("research_trace") or []) + [trace],
+        }
+
+    async def proposer_response_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        started = time.time()
+        protocol = self._debates[state["run_id"]]
+        graph = self._core_results[state["run_id"]].graph
+        before = len(protocol.session.argument_acts)
+        await protocol.collect_proposer_responses(graph)
+        added = len(protocol.session.argument_acts) - before
+        trace = self._trace(
+            "proposer_response",
+            "original_agents_rebut_revise_or_request_evidence",
+            len(protocol.session.material_claims),
+            max(0, added),
+            started,
+            notes=[f"revisions={len(protocol.session.revisions)}"],
+        )
+        summary = self._debate_summary(protocol)
+        self._emit(state, trace, {"debate": summary})
+        return {
+            "debate_status": protocol.session.status,
+            "debate_summary": summary,
+            "research_trace": list(state.get("research_trace") or []) + [trace],
+        }
+
     async def global_audit_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
         started = time.time()
         graph = self._core_results[state["run_id"]].graph
+        protocol = self._debates[state["run_id"]]
+        requested_claim_ids = protocol.requested_evidence_claim_ids()
         next_round = int(state.get("research_round") or 0) + 1
         tasks: List[ResearchTask] = []
         if next_round <= int(state.get("max_research_rounds") or 0):
-            tasks = self._follow_up_tasks(state, graph)
+            tasks = self._follow_up_tasks(state, graph, requested_claim_ids=requested_claim_ids)
             blackboard = self._blackboards[state["run_id"]]
             blackboard.register_tasks(tasks)
+        follow_up_claim_ids = list(dict.fromkeys(task.target_claim_id for task in tasks if task.target_claim_id))
         trace = self._trace(
             "global_sufficiency_audit",
             "typed_follow_up_router" if tasks else "sufficient_or_budget_exhausted",
@@ -254,6 +355,7 @@ class FusionCoordinator:
         self._emit(state, trace, {"follow_up_tasks": [task.to_dict() for task in tasks]})
         return {
             "pending_tasks": tasks,
+            "debate_follow_up_claim_ids": follow_up_claim_ids,
             "research_round": next_round,
             "research_trace": list(state.get("research_trace") or []) + [trace],
         }
@@ -264,14 +366,36 @@ class FusionCoordinator:
     async def finalize_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
         started = time.time()
         core_result = self._core_results[state["run_id"]]
-        graph, synthesis_markdown = self.audit_kernel.finalize(core_result.graph, core_result.freshness_summary)
-        trace = self._trace("final_audit_synthesis", "evidence_bound_audit_and_projection", len(graph.claims), len(graph.insights), started)
+        protocol = self._debates[state["run_id"]]
+        graph = self.audit_kernel.auditor.run(core_result.graph)
+        graph.audit_decisions = await protocol.adjudicate(graph, graph.audit_decisions)
+        graph, synthesis_markdown = self.audit_kernel.synthesizer.run(graph, core_result.freshness_summary)
+        trace = self._trace(
+            "final_audit_synthesis",
+            "deterministic_gate_paired_blind_judges_and_projection",
+            len(graph.claims),
+            len(graph.insights),
+            started,
+            notes=[
+                f"debate_status={protocol.session.status}",
+                f"judge_verdicts={len(protocol.session.verdicts)}",
+            ],
+        )
         traces = list(state.get("research_trace") or []) + [trace]
-        diagnostics = self._dedupe_diagnostics(state.get("provider_diagnostics") or [])
+        diagnostics = self._dedupe_diagnostics(
+            list(state.get("provider_diagnostics") or []) + self._debate_provider_diagnostics(protocol)
+        )
         audit_summary = self._audit_summary(graph)
         source_limitations = self._source_limitations(diagnostics)
-        warnings = list(dict.fromkeys((core_result.quality_summary.get("quality_warnings") or []) + source_limitations))
+        warnings = list(
+            dict.fromkeys(
+                (core_result.quality_summary.get("quality_warnings") or [])
+                + source_limitations
+                + protocol.diagnostics()
+            )
+        )
         snapshot = self._blackboards[state["run_id"]].snapshot()
+        debate_calls = int(protocol.session.budget_summary.get("llm_calls") or 0)
         artifact = CoordinatorIntelligenceArtifact(
             run_id=state["run_id"],
             query=state["query"],
@@ -295,6 +419,7 @@ class FusionCoordinator:
             report_engine_projection={
                 "coordinator_output_latest_json_supported": True,
                 "runtime_mode": "query_media_evidence_fusion",
+                "deliberation_mode": "dual_chamber_evidence_debate",
             },
             budget_summary={
                 "max_research_rounds": state["max_research_rounds"],
@@ -306,10 +431,15 @@ class FusionCoordinator:
                 "specialist_runs": len(snapshot.agent_runs),
                 "acquisition_observations": len(snapshot.acquisitions),
                 "llm_calls": None,
+                "debate_llm_calls": debate_calls,
+                "debate_call_cap": protocol.session.budget_summary.get("max_llm_calls"),
+                "debate_termination_reason": protocol.session.budget_summary.get("termination_reason"),
                 "api_calls": None,
-                "measurement_status": "specialist_call_counters_pending_server_instrumentation",
-                "evaluation_status": "deferred_until_server_demonstration",
+                "measurement_status": "debate_calls_measured_specialist_call_counters_pending",
+                "evaluation_status": "engineering_acceptance_only",
             },
+            investigation_brief=protocol.session.investigation_brief,
+            debate_session=protocol.session,
         )
         if self.evaluation_hook:
             try:
@@ -354,7 +484,12 @@ class FusionCoordinator:
         )
         return contribution, run
 
-    def _follow_up_tasks(self, state: Dict[str, Any], graph) -> List[ResearchTask]:
+    def _follow_up_tasks(
+        self,
+        state: Dict[str, Any],
+        graph,
+        requested_claim_ids: Optional[List[str]] = None,
+    ) -> List[ResearchTask]:
         tasks: List[ResearchTask] = []
         existing = {
             task.task_id
@@ -395,11 +530,44 @@ class FusionCoordinator:
             if task.task_id not in existing:
                 tasks.append(task)
                 existing.add(task.task_id)
-        for claim in graph.claims[:12]:
+        requested = set(requested_claim_ids or [])
+        ordered_claims = sorted(
+            graph.claims[:12],
+            key=lambda claim: (claim.claim_id in requested, claim.confidence),
+            reverse=True,
+        )
+        for claim in ordered_claims:
             decision = self.audit_kernel.sufficiency.evaluate(claim)
-            if decision.sufficiency == "high":
+            if decision.sufficiency == "high" and claim.claim_id not in requested:
                 continue
-            for retrieval in self.planner.follow_up_tasks(claim, decision.reason_codes):
+            retrievals = self.planner.follow_up_tasks(claim, decision.reason_codes)
+            if claim.claim_id in requested and not retrievals:
+                task = ResearchTask(
+                    task_id=task_id(f"{state['run_id']}:debate_request:{claim.claim_id}:{state.get('research_round', 0)}"),
+                    agent="query_agent",
+                    objective="Resolve an evidence request raised by the Evidence Review Chamber.",
+                    query=f"{state['query']} {claim.aspect.replace('_', ' ')} primary source counter evidence",
+                    task_type="debate_evidence_request",
+                    output_contract="QueryContribution",
+                    round_index=int(state.get("research_round") or 0) + 1,
+                    target_claim_id=claim.claim_id,
+                    required_stances=["official", "oppose"],
+                    source_scope=["web", "mindspider_db"],
+                    priority=1,
+                    budget=RunBudget(
+                        max_rounds=0,
+                        max_tasks=1,
+                        max_sources=20,
+                        max_api_calls=2,
+                        max_llm_calls=4,
+                        deadline_sec=min(120, self._task_timeout("query_agent")),
+                    ),
+                    created_by="evidence_review_chamber",
+                )
+                if task.task_id not in existing:
+                    tasks.append(task)
+                    existing.add(task.task_id)
+            for retrieval in retrievals:
                 task = ResearchTask(
                     task_id=task_id(f"fusion:{retrieval.task_id}"),
                     agent="query_agent",
@@ -497,6 +665,48 @@ class FusionCoordinator:
             return max(0, int(override))
         return max(0, int(getattr(self.settings, "COORDINATOR_MAX_RESEARCH_ROUNDS", 1) if self.settings else 1))
 
+    @staticmethod
+    def _debate_summary(protocol: DualChamberDeliberation) -> Dict[str, Any]:
+        session = protocol.session
+        return {
+            "status": session.status,
+            "perspective_agents": sum(1 for item in session.profiles if item.chamber == "perspective"),
+            "positions": len(session.positions),
+            "material_claims": len(session.material_claims),
+            "argument_acts": len(session.argument_acts),
+            "revisions": len(session.revisions),
+            "verdicts": len(session.verdicts),
+            "failures": len(session.protocol_failures),
+            "llm_calls": int(session.budget_summary.get("llm_calls") or 0),
+            "model_mode": session.independence_summary.get("configured_mode", "unknown"),
+        }
+
+    @staticmethod
+    def _debate_provider_diagnostics(protocol: DualChamberDeliberation) -> List[ProviderDiagnostic]:
+        session = protocol.session
+        models = dict(session.independence_summary.get("models_by_agent") or {})
+        failures_by_agent: Dict[str, List[str]] = {}
+        for failure in session.protocol_failures:
+            failures_by_agent.setdefault(failure.agent_id, []).append(f"{failure.failure_type}: {failure.message}")
+        rows: List[ProviderDiagnostic] = []
+        for profile in session.profiles:
+            if profile.role_id not in models and profile.role_id not in failures_by_agent:
+                continue
+            errors = failures_by_agent.get(profile.role_id, [])
+            rows.append(
+                ProviderDiagnostic(
+                    provider=profile.role_id,
+                    capability=f"debate_{profile.chamber}",
+                    status="error" if errors and profile.role_id not in models else ("used_with_diagnostics" if errors else "used"),
+                    route=profile.model_route,
+                    configured=profile.role_id in models,
+                    model=models.get(profile.role_id),
+                    errors=errors,
+                    metadata={"profile_version": profile.profile_version},
+                )
+            )
+        return rows
+
     def _readiness_diagnostics(self) -> List[ProviderDiagnostic]:
         settings = self.settings
         media_enabled = bool(getattr(settings, "COORDINATOR_ENABLE_MEDIA_AGENT", True)) if settings else True
@@ -581,6 +791,7 @@ class FusionCoordinator:
             "weakened": counts.get("weaken", 0),
             "rejected": counts.get("reject", 0),
             "needs_search_but_budget_exhausted": counts.get("needs_search", 0),
+            "unresolved": counts.get("unresolved", 0),
         }
 
     @staticmethod

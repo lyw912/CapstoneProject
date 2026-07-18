@@ -123,10 +123,124 @@ class CoordinatorReportBridgeTestCase(unittest.TestCase):
 
         self.assertEqual(inputs["query"], output["query"])
         self.assertEqual(len(inputs["reports"]), 2)
-        self.assertIn("Structured Coordinator Output", inputs["reports"][0])
+        self.assertIn("Binding Evidence Policy", inputs["reports"][0])
+        self.assertNotIn("Structured Coordinator Output", inputs["reports"][0])
+        self.assertLessEqual(len(inputs["reports"][0]), 30000)
         self.assertIn("Representative Social Voices", inputs["reports"][1])
         self.assertIn(ENGLISH_OUTPUT_CONSTRAINT, inputs["forum_logs"])
         self.assertIn("Multi-Source Public Opinion Analysis Report", inputs["custom_template"])
+
+    def test_evidence_bound_package_uses_strictest_paired_wording(self):
+        output = self._sample_output()
+        output["investigation_brief"] = {
+            "original_query": output["query"],
+            "factual_question": "What changed?",
+            "discourse_question": "What does the observed sample support?",
+            "time_scope": "retrieval window",
+            "sample_boundary": "Observed sources are not population estimates.",
+        }
+        output["coordinator_intelligence"] = {
+            "provider_diagnostics": [
+                {
+                    "provider": "media_agent",
+                    "capability": "specialist_llm",
+                    "status": "disabled",
+                    "model": "deepseek-chat",
+                }
+            ],
+            "evidence_graph": {
+                "claims": [
+                    {
+                        "claim_id": "claim_material",
+                        "claim_text": "Pricing is always lower than every competitor.",
+                        "supporting_spans": ["span_1"],
+                        "contradicting_spans": [],
+                    },
+                    {
+                        "claim_id": "claim_rejected",
+                        "claim_text": "A rejected assertion.",
+                        "supporting_spans": ["span_1"],
+                        "contradicting_spans": [],
+                    },
+                ],
+                "audit_decisions": [],
+                "evidence_items": [
+                    {
+                        "title": "Authoritative pricing source",
+                        "url": "https://example.com/pricing",
+                        "platform": "example.com",
+                        "source_type": "official",
+                        "spans": [{"span_id": "span_1", "text": "A bounded price observation."}],
+                    }
+                ],
+            },
+        }
+        output["debate"] = {
+            "material_claims": [
+                {"claim_id": "claim_material", "score": 6.5, "reason_codes": ["high_inference_claim"]},
+                {"claim_id": "claim_rejected", "score": 5.5, "reason_codes": ["missing_evidence"]},
+            ],
+            "positions": [
+                {"claim_id": "claim_material", "agent_id": "technical", "stance": "support"}
+            ],
+            "argument_acts": [
+                {
+                    "target_claim_id": "claim_material",
+                    "actor_id": "skeptic",
+                    "reason_codes": ["missing_evidence"],
+                }
+            ],
+            "revisions": [
+                {"claim_id": "claim_material", "revision_type": "revise"}
+            ],
+            "verdicts": [
+                {
+                    "claim_id": "claim_material",
+                    "judge_id": "review_judge",
+                    "decision": "accept",
+                    "final_wording": "Observed sources report lower pricing at specific points.",
+                    "required_edit": "accept_revision",
+                    "confidence": 0.8,
+                    "evidence_span_ids": ["span_1"],
+                },
+                {
+                    "claim_id": "claim_material",
+                    "judge_id": "primary_judge",
+                    "decision": "weaken",
+                    "final_wording": "Observed sources report lower pricing at specific points.",
+                    "required_edit": "Remove the universal comparison.",
+                    "confidence": 0.9,
+                    "evidence_span_ids": ["span_1"],
+                },
+                {
+                    "claim_id": "claim_rejected",
+                    "judge_id": "primary_judge",
+                    "decision": "reject",
+                    "final_wording": None,
+                    "required_edit": "remove",
+                    "confidence": 0.95,
+                    "evidence_span_ids": ["span_1"],
+                },
+            ],
+            "output_groups": {
+                "audited_findings": ["claim_material"],
+                "contested_findings": [],
+                "perspective_tensions": [],
+                "rejected_claims": ["claim_rejected"],
+                "evidence_gaps": [],
+            },
+        }
+
+        inputs = coordinator_output_to_report_engine_inputs(output)
+        query_report = inputs["reports"][0]
+
+        self.assertIn("Observed sources report lower pricing at specific points.", query_report)
+        self.assertNotIn("Pricing is always lower than every competitor.", query_report)
+        self.assertIn("primary_judge=weaken", query_report)
+        self.assertIn("DO NOT REPORT AS A FACT", query_report)
+        self.assertIn("[Authoritative pricing source](https://example.com/pricing)", query_report)
+        self.assertIn("media_agent: status=disabled", query_report)
+        self.assertLessEqual(len(query_report), 30000)
 
     def test_report_engine_runner_forwards_adapter_inputs(self):
         fake = FakeReportAgent()
@@ -138,6 +252,95 @@ class CoordinatorReportBridgeTestCase(unittest.TestCase):
         self.assertIn(ENGLISH_OUTPUT_CONSTRAINT, fake.kwargs["forum_logs"])
         self.assertIn("Multi-Source Public Opinion Analysis Report", fake.kwargs["custom_template"])
         self.assertEqual(result["adapter_metadata"]["language_constraint"], ENGLISH_OUTPUT_CONSTRAINT)
+
+    def test_binding_policy_blocks_report_without_final_wording_and_citation(self):
+        output = self._sample_output()
+        output["coordinator_intelligence"] = {
+            "provider_diagnostics": [],
+            "evidence_graph": {
+                "claims": [
+                    {
+                        "claim_id": "claim_material",
+                        "claim_text": "Observed sources report a bounded price change.",
+                        "supporting_spans": ["span_1"],
+                        "contradicting_spans": [],
+                    }
+                ],
+                "audit_decisions": [],
+                "evidence_items": [
+                    {
+                        "title": "Bound source",
+                        "url": "https://example.com/bound",
+                        "spans": [{"span_id": "span_1", "text": "Bound excerpt"}],
+                    }
+                ],
+            },
+        }
+        output["debate"] = {
+            "material_claims": [{"claim_id": "claim_material"}],
+            "verdicts": [
+                {
+                    "claim_id": "claim_material",
+                    "judge_id": "primary_judge",
+                    "decision": "weaken",
+                    "final_wording": "Observed sources report a bounded price change.",
+                    "evidence_span_ids": ["span_1"],
+                }
+            ],
+            "output_groups": {"audited_findings": ["claim_material"]},
+        }
+        fake = FakeReportAgent()
+
+        with self.assertRaises(report_bridge_module.EvidencePolicyViolation):
+            generate_report_engine_html(output, report_agent=fake, save_report=True)
+
+        self.assertFalse(fake.kwargs["save_report"])
+
+    def test_binding_policy_accepts_exact_wording_with_bound_link(self):
+        output = self._sample_output()
+        output["coordinator_intelligence"] = {
+            "provider_diagnostics": [],
+            "evidence_graph": {
+                "claims": [
+                    {
+                        "claim_id": "claim_material",
+                        "claim_text": "Observed sources report a bounded price change.",
+                        "supporting_spans": ["span_1"],
+                        "contradicting_spans": [],
+                    }
+                ],
+                "audit_decisions": [],
+                "evidence_items": [
+                    {
+                        "title": "Bound source",
+                        "url": "https://example.com/bound",
+                        "spans": [{"span_id": "span_1", "text": "Bound excerpt"}],
+                    }
+                ],
+            },
+        }
+        output["debate"] = {
+            "material_claims": [{"claim_id": "claim_material"}],
+            "verdicts": [
+                {
+                    "claim_id": "claim_material",
+                    "judge_id": "primary_judge",
+                    "decision": "weaken",
+                    "final_wording": "Observed sources report a bounded price change.",
+                    "evidence_span_ids": ["span_1"],
+                }
+            ],
+            "output_groups": {"audited_findings": ["claim_material"]},
+        }
+        html = (
+            "<html><body><p>Observed sources report a bounded price change.</p>"
+            "<a href=\"https://example.com/bound\">Bound source</a></body></html>"
+        )
+
+        compliance = report_bridge_module._validate_generated_report(output, html)
+
+        self.assertTrue(compliance["passed"])
+        self.assertEqual(compliance["checked_reportable_claims"], 1)
 
     def test_report_agent_node_uses_canonical_schema_builder(self):
         source = (PROJECT_ROOT / "AgentCoordinator/graph/nodes/report_agent_node.py").read_text(encoding="utf-8")

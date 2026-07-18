@@ -318,7 +318,7 @@ export default function App() {
 
             {active === 'evidence' && (
               <ErrorBoundary key="evidence-boundary">
-                <EvidenceView output={output} theme={theme} />
+                <EvidenceView output={output} theme={theme} coordinatorTask={coordinatorTask} />
               </ErrorBoundary>
             )}
 

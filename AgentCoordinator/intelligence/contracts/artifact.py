@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+
+from .deliberation import DebateSession, InvestigationBrief
 
 from .evidence import (
     AuditDecision,
@@ -40,6 +42,8 @@ class CoordinatorIntelligenceArtifact:
     report_engine_projection: Dict[str, Any]
     schema_version: str = "coordinator_intelligence_v1"
     budget_summary: Dict[str, Any] = field(default_factory=dict)
+    investigation_brief: Optional[InvestigationBrief] = None
+    debate_session: Optional[DebateSession] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return jsonable(self)

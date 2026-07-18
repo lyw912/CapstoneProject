@@ -261,6 +261,7 @@ Language rule: {ENGLISH_REPORT_LANGUAGE_RULE}
 2. Combine mutual discussion data between the two engines during analysis (forum_logs), analyzing content from different perspectives
 3. Organize content according to the selected template structure
 4. Generate a complete HTML report with data visualization, no less than 30,000 words
+5. If the input contains a "Binding Evidence Policy", it is non-negotiable: never strengthen paired-judge final wording, never use rejected claims as facts, and cite supplied URLs for factual assertions
 
 **HTML Report Requirements:**
 
@@ -348,6 +349,7 @@ global data and style directives, and you need to:
 19. All widget blocks must provide `data` or `dataRef` at top level (can move `data` from props up), ensure Chart.js can render directly; when data missing would rather output table or paragraph, never leave empty.
 20. Any block must declare valid `type` (heading/paragraph/list/...); if need plain text please use `paragraph` and give `inlines`, prohibited from returning `type:null` or unknown values.
 21. blockquote content restrictions: blockquote internal blocks only allow paragraph type blocks, strictly prohibited from nesting tables (table), lists (list), charts (widget), headings (heading), code blocks (code), formulas (math), nested quotes (blockquote) or any non-paragraph blocks in blockquote; if quote content needs complex structures like tables/lists to present, must move them outside blockquote.
+22. Evidence policy is binding: when reports or forumLogs contain a "Binding Evidence Policy", use only Audited Findings as assertions; paired-judge final wording may be quoted verbatim or narrowed but never strengthened; rejected claims cannot appear as facts; contested findings, perspective tensions, and evidence gaps must stay explicitly qualified; disabled agents/providers cannot be credited as contributors; factual material claims must include supplied source URLs using link marks.
 
 <CHAPTER JSON SCHEMA>
 {CHAPTER_JSON_SCHEMA_TEXT}
@@ -423,6 +425,8 @@ Goals:
    - PEST block suitable for "Industry Environment Analysis", "Macro Background", "External Environment Assessment" and other chapters analyzing macro factors;
    - If report topic unrelated to macro-environment analysis (e.g., specific incident crisis PR reports), then no chapters set `allowPest: true`;
    - SWOT and PEST should not appear in same chapter, they focus on internal capabilities vs external environment respectively.
+
+9. If reports or forumLogs contain a "Binding Evidence Policy", it outranks narrative impact: cover summary, highlights, actions, and KPIs must not strengthen paired-judge wording, use rejected claims, or credit disabled contributors.
 
 **tocPlan description field special requirements:**
 - description field must be plain text description, used to display chapter summary in TOC

@@ -28,8 +28,10 @@ Timestamped artifacts are runtime outputs. Keep only intentional sample fixtures
 | `pipeline_duration_seconds` | number | Coordinator runtime duration. |
 | `artifact_derivation` | object | Declares `coordinator_intelligence` as the primary record and compatibility fields as derived views. |
 | `coordinator_intelligence` | object | Internal EvidenceGraph ledger, provider diagnostics, trace, quality summaries, audit decisions, insights, and source coverage. |
+| `investigation_brief` | object | Planner-derived, versioned execution contract preserving the broad input topic plus factual/discourse questions, scope, sample boundary, claim modes, and role obligations. |
+| `debate` | object | Full `DebateSession`: profiles, sealed EvidenceViews/positions, material-claim assignments, argument acts, revisions, paired verdicts, failures, output groups, independence dimensions, and debate budget. |
 | `divergence_matrix` | object | Pairwise TVD over eligible channel-level content-stance distributions. |
-| `deliberation` | object | Compatibility view over claim-level audit, contradiction edges, consensus, and dissents. |
+| `deliberation` | object | Report/UI compatibility projection over the full dual-chamber DebateSession and layered outcomes. |
 | `gap_filling` | object | Adaptive follow-up retrieval tasks and results. |
 | `platform_interpretations` | object | Platform-aware interpretation only when observable platform samples exist. |
 | `bias_analysis` | object | Echo warnings and silent-majority boundary statement. |
@@ -59,6 +61,40 @@ Timestamped artifacts are runtime outputs. Keep only intentional sample fixtures
 | `provider_diagnostics` | Search, semantic, structured-LLM, MindSpider, and fixture diagnostics. |
 | `research_trace` | Structured internal node trace. |
 | `budget_summary` | Research-round and provider-call budget summary. |
+| `investigation_brief` | Same versioned execution contract as the top-level convenience field. |
+| `debate_session` | Canonical deliberation record joined to the EvidenceGraph by claim and evidence-span IDs. |
+
+## `investigation_brief`
+
+| Field | Description |
+| --- | --- |
+| `original_query` | Broad topic entered in Signal Studio, such as `DeepSeek API pricing`. |
+| `target_entity`, `analysis_type` | Deterministically derived entity and role-catalog selector. |
+| `factual_question` | Bounded empirical question executed by the evidence and debate stages. |
+| `discourse_question` | Bounded interpretation question that retains the observed-sample limitation. |
+| `claim_modes` | Permitted fact, discourse, causal, risk, opinion, or value modes for this run. |
+| `time_scope`, `sample_boundary` | Explicit temporal and population-inference limits. |
+| `role_obligations` | Required evidence dimensions for each selected perspective role. |
+| `brief_version` | Version of the deterministic brief policy. |
+
+## `debate`
+
+`debate` and `coordinator_intelligence.debate_session` contain the same canonical session data. The top-level field is the stable convenience surface for Signal Studio and downstream compatibility consumers.
+
+| Field | Description |
+| --- | --- |
+| `session_id`, `run_id`, `schema_version`, `status` | Versioned run identity and protocol state. |
+| `profiles` | Versioned Perspective, Skeptic, Methodologist, Primary Judge, and Review Judge profiles, including model routes and evidence obligations. |
+| `evidence_views` | Frozen shared-core plus role-slice views with visible claim/span IDs, EvidenceCore version, warnings, and selection reasons. |
+| `material_claims` | At most six sparse-review assignments with score, reason codes, and assigned reviewers. |
+| `positions` | Independently executed, sealed opening positions bound to claim IDs, span IDs, and evidence versions. |
+| `argument_acts` | Typed support, challenge, qualification, rebuttal, revision, concession, abstention, or evidence-request acts. |
+| `revisions` | Proposer-owned revision lineage: prior position, triggering acts, revised wording, reason, cited spans, and evidence version. |
+| `verdicts` | Primary and Review Judge decisions with order variant, decisive acts/spans, required edit, final wording, and confidence. |
+| `protocol_failures` | Invalid-reference, provider/schema, missing-response, deadline, or other stage diagnostics; failures are not replaced with fabricated agent opinions. |
+| `output_groups` | Claim IDs separated into audited, contested, perspective-tension, rejected, and evidence-gap categories. |
+| `independence_summary` | Separately records context isolation, objective diversity, model-family diversity, configured mode, and actual model routes. |
+| `budget_summary` | Debate call cap, calls by phase, deadline, elapsed time, and termination reason. |
 
 ## Compatibility Views
 
@@ -69,7 +105,7 @@ The following top-level fields exist so older UI/report consumers do not need to
 | `source_data.query_agent` | EvidenceGraph, quality features, source coverage | Includes totals, stance distribution, coverage score, top sources, knowledge gaps, and social sentiment view. |
 | `source_data.media_agent` | Additive Media view | Reports actual specialist run status, dossier/source/asset counts, section summaries, unresolved questions, and errors. |
 | `synthesis` | Audited insights | Includes citation span ids and wording policy. |
-| `deliberation` | Audit decisions and contradiction edges | Replaces the historical multi-perspective graph output with claim-level audit evidence. |
+| `deliberation` | `debate`, EvidenceGraph audit decisions | Summarizes sealed openings, evidence review, proposer response, and paired blind adjudication while retaining the full records under `phases`. |
 | `divergence_matrix` | Canonical clusters and content-stance labels by channel | Groups web evidence into official/institutional or web/media channels, keeps native social platforms, excludes groups below three canonical clusters, and computes TVD over Laplace-smoothed support/neutral/oppose distributions. |
 | `gap_filling` | Retrieval tasks/results | Shows adaptive follow-up work triggered by weak or one-sided claims. |
 | `fact_opinion_separation` | Supported claims and evidence items | Preserves source span ids for traceability. |
@@ -97,7 +133,7 @@ The following top-level fields exist so older UI/report consumers do not need to
 | --- | --- |
 | Signal Studio Home | `synthesis.overall_confidence`, `source_data.query_agent.total_sources`, `pipeline_duration_seconds`, `synthesis.key_tensions` |
 | Signal Studio Readout | `synthesis.summary`, `top_insights`, `key_tensions`, `recommended_investigation` |
-| Signal Studio Proof | `coordinator_intelligence`, `source_data.query_agent`, `divergence_matrix`, `platform_interpretations`, provider diagnostics |
+| Signal Studio Proof | `investigation_brief`, `debate`, `coordinator_intelligence.evidence_graph`, `source_data.query_agent`, `divergence_matrix`, `platform_interpretations`, provider diagnostics |
 | Signal Studio Monitor | `coordinator_trace`, `agent_errors`, metadata, feedback, local trace summary |
 | ReportEngine bridge | Full artifact projected into report input and Document IR generation |
 

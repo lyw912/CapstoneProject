@@ -213,9 +213,25 @@ Minimal successful shape:
     "coordinator_intelligence": {
       "schema_version": "coordinator_intelligence_v1",
       "provider_diagnostics": [],
-      "evidence_graph": {}
+      "evidence_graph": {},
+      "debate_session": {}
     },
     "query": "Public reaction to a new AI policy",
+    "investigation_brief": {
+      "original_query": "Public reaction to a new AI policy",
+      "factual_question": "...",
+      "discourse_question": "...",
+      "brief_version": "investigation_brief_v1"
+    },
+    "debate": {
+      "schema_version": "evidence_debate_v1",
+      "status": "complete",
+      "positions": [],
+      "argument_acts": [],
+      "revisions": [],
+      "verdicts": [],
+      "output_groups": {}
+    },
     "synthesis": {
       "summary": "...",
       "top_insights": [],

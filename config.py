@@ -233,6 +233,33 @@ class Settings(BaseSettings):
         1,
         description="Maximum claim-driven follow-up retrieval rounds inside the Coordinator research path",
     )
+    COORDINATOR_ENABLE_DEBATE: bool = Field(
+        True,
+        description="Run the evidence-bound dual-chamber deliberation protocol after EvidenceCore reduction",
+    )
+    COORDINATOR_DEBATE_MAX_MATERIAL_CLAIMS: int = Field(
+        6,
+        description="Maximum high-risk/high-impact claims admitted to LLM evidence review per run",
+    )
+    COORDINATOR_DEBATE_MAX_LLM_CALLS: int = Field(
+        18,
+        description="Hard cap for new debate-layer LLM calls, excluding Query/Media specialist internals",
+    )
+    COORDINATOR_DEBATE_TIMEOUT: int = Field(
+        600,
+        description="Hard deadline in seconds for the debate layer",
+    )
+    COORDINATOR_DEBATE_SCHEMA_RETRIES: int = Field(
+        1,
+        description="Maximum repair retries for a non-JSON or schema-invalid debate response",
+    )
+    COORDINATOR_DEBATE_ROLE_ROUTES: str = Field(
+        '{"*":"query"}',
+        description=(
+            "JSON role-to-engine profile map. Routes are query/media/insight/report/mindspider/forum; "
+            "the current single-model deployment maps every role to query."
+        ),
+    )
     COORDINATOR_QUERY_MAX_SOURCES: int = Field(
         120,
         description="Maximum combined web and MindSpider sources accepted from the primary QueryAgent task",

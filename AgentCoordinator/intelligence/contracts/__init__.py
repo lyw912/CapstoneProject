@@ -1,6 +1,18 @@
 """Public contract exports for the AgentCoordinator intelligence layer."""
 
 from .artifact import CoordinatorIntelligenceArtifact
+from .deliberation import (
+    AgentPosition,
+    ArgumentAct,
+    DebateAgentProfile,
+    DebateSession,
+    EvidenceView,
+    InvestigationBrief,
+    JudgeVerdict,
+    MaterialClaimAssignment,
+    PositionRevision,
+    ProtocolFailure,
+)
 from .evidence import (
     AcquisitionObservation,
     AgentContribution,
@@ -36,24 +48,34 @@ from .evidence import (
 
 __all__ = [
     "AcquisitionObservation",
+    "AgentPosition",
     "AgentContribution",
     "AgentRunRecord",
+    "ArgumentAct",
     "AuditDecision",
     "CanonicalCluster",
     "Claim",
     "ClaimProposal",
     "ContradictionEdge",
     "CoverageAssessment",
+    "DebateAgentProfile",
+    "DebateSession",
     "EvidenceCandidate",
     "EvidenceGraph",
     "EvidenceItem",
     "EvidenceRelationEdge",
     "EvidenceSpan",
+    "EvidenceView",
     "FreshnessSummary",
     "Insight",
+    "InvestigationBrief",
+    "JudgeVerdict",
+    "MaterialClaimAssignment",
     "MediaContribution",
     "NormalizedItem",
     "ProviderDiagnostic",
+    "PositionRevision",
+    "ProtocolFailure",
     "QualityFeatures",
     "QueryContribution",
     "ResearchTask",

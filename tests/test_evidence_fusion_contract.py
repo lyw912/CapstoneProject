@@ -1,4 +1,6 @@
+import importlib.util
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 
 from AgentCoordinator.fusion import FusionCoordinator
@@ -16,10 +18,99 @@ from AgentCoordinator.intelligence.contracts import (
     SectionDossier,
 )
 from AgentCoordinator.intelligence.evidence_core import EvidenceBlackboard, EvidenceCorePipeline
+from AgentCoordinator.intelligence.deliberation import DebateRunner
 from AgentCoordinator.intelligence.projection import build_coordinator_output_from_artifact
 from AgentCoordinator.intelligence.projection.report_engine_contract import _divergence_matrix
 from AgentCoordinator.utils.report_bridge import coordinator_output_to_report_engine_inputs
-from QueryEngine.contribution import build_query_contribution
+
+
+def _load_query_contribution_builder():
+    path = Path(__file__).resolve().parents[1] / "QueryEngine" / "contribution.py"
+    spec = importlib.util.spec_from_file_location("query_contribution_contract", path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module.build_query_contribution
+
+
+build_query_contribution = _load_query_contribution_builder()
+
+
+class FakeDebateRunner(DebateRunner):
+    def __init__(self):
+        self.calls = []
+
+    async def invoke(self, profile, phase, system_prompt, payload):
+        self.calls.append((profile.role_id, phase))
+        if phase == "sealed_opening":
+            claim = payload["evidence"]["claims"][0]
+            span_id = payload["evidence"]["spans"][0]["span_id"]
+            stance = "qualify" if "public" in profile.name.lower() else "support"
+            return {
+                "positions": [
+                    {
+                        "claim_id": claim["claim_id"],
+                        "stance": stance,
+                        "argument": f"{profile.name} independently evaluates the cited claim.",
+                        "evidence_span_ids": [span_id],
+                        "assumptions": [],
+                        "uncertainties": ["sample boundary"] if stance == "qualify" else [],
+                        "confidence": 0.72,
+                    }
+                ]
+            }
+        if phase == "evidence_review":
+            subgraph = payload["material_claims"][0]
+            position = subgraph["positions"][0]
+            span_id = subgraph["evidence_spans"][0]["span_id"]
+            return {
+                "acts": [
+                    {
+                        "act_type": "challenge" if profile.role_id == "skeptic" else "qualify",
+                        "target_claim_id": subgraph["claim"]["claim_id"],
+                        "target_position_id": position["position_id"],
+                        "content": "The claim requires counter-evidence or narrower sample wording.",
+                        "evidence_span_ids": [span_id],
+                        "reason_codes": ["alternative_explanation"] if profile.role_id == "skeptic" else ["sample_boundary"],
+                    }
+                ]
+            }
+        if phase == "proposer_response":
+            rows = []
+            for challenge in payload["challenges"]:
+                subgraph = next(item for item in payload["claim_subgraphs"] if item["claim"]["claim_id"] == challenge["target_claim_id"])
+                rows.append(
+                    {
+                        "act_type": "revise",
+                        "target_claim_id": challenge["target_claim_id"],
+                        "target_act_id": challenge["act_id"],
+                        "content": "I narrow the claim to the observable sampled evidence.",
+                        "evidence_span_ids": [subgraph["evidence_spans"][0]["span_id"]],
+                        "reason_codes": ["sample_boundary"],
+                        "revised_claim_text": "The sampled sources contain an official response.",
+                    }
+                )
+            return {"responses": rows}
+        if phase == "post_retrieval_reassessment":
+            return {"responses": []}
+        if phase == "paired_blind_adjudication":
+            verdicts = []
+            for subgraph in payload["claim_subgraphs"]:
+                verdicts.append(
+                    {
+                        "claim_id": subgraph["claim"]["claim_id"],
+                        "decision": "weaken",
+                        "reason_codes": ["sample_boundary"],
+                        "explanation": "The span supports a bounded observation, not a population claim.",
+                        "required_edit": "Use sampled-source wording.",
+                        "final_wording": "The sampled sources contain an official response.",
+                        "decisive_act_ids": [item["act_id"] for item in subgraph["argument_acts"]],
+                        "evidence_span_ids": [item["span_id"] for item in subgraph["evidence_spans"]],
+                        "confidence": 0.74,
+                    }
+                )
+            return {"verdicts": verdicts}
+        raise AssertionError(f"Unexpected debate phase: {phase}")
 
 
 def source(source_id, text):
@@ -270,6 +361,67 @@ class EvidenceBlackboardContractTestCase(unittest.TestCase):
 
 
 class FusionCoordinatorContractTestCase(unittest.IsolatedAsyncioTestCase):
+    async def test_dual_chamber_executes_independent_roles_and_paired_judges(self):
+        settings = SimpleNamespace(
+            JINA_API_KEY=None,
+            COORDINATOR_ENABLE_DEBATE=True,
+            COORDINATOR_DEBATE_MAX_MATERIAL_CLAIMS=6,
+            COORDINATOR_DEBATE_MAX_LLM_CALLS=18,
+            COORDINATOR_DEBATE_TIMEOUT=30,
+            COORDINATOR_DEBATE_SCHEMA_RETRIES=0,
+            COORDINATOR_DEBATE_ROLE_ROUTES='{"*":"query"}',
+            COORDINATOR_ENABLE_MEDIA_AGENT=True,
+            COORDINATOR_MAX_EMBEDDING_ITEMS=0,
+            COORDINATOR_MAX_RERANK_DOCUMENTS=0,
+            COORDINATOR_QUERY_AGENT_TIMEOUT=5,
+            COORDINATOR_MEDIA_AGENT_TIMEOUT=5,
+            COORDINATOR_MAX_RESEARCH_ROUNDS=0,
+        )
+
+        async def query_runner(task):
+            return fake_query(task)
+
+        async def media_runner(task):
+            return fake_media(task)
+
+        debate_runner = FakeDebateRunner()
+        coordinator = FusionCoordinator(
+            settings=settings,
+            query_runner=query_runner,
+            media_runner=media_runner,
+            debate_runner=debate_runner,
+            use_checkpointing=False,
+        )
+        artifact = await coordinator.run(
+            query="Example public response",
+            run_id="dual_chamber_contract",
+            max_research_rounds=0,
+        )
+
+        session = artifact.debate_session
+        self.assertIsNotNone(session)
+        self.assertEqual(len(session.positions), 4)
+        self.assertEqual(len({item.agent_id for item in session.positions}), 4)
+        self.assertEqual({item.actor_id for item in session.argument_acts if item.actor_id in {"skeptic", "methodologist"}}, {"skeptic", "methodologist"})
+        self.assertTrue(session.revisions)
+        self.assertEqual({item.judge_id for item in session.verdicts}, {"primary_judge", "review_judge"})
+        self.assertEqual(session.independence_summary["configured_mode"], "same_model_fallback")
+        self.assertTrue(session.output_groups["audited_findings"])
+        self.assertGreaterEqual(artifact.budget_summary["debate_llm_calls"], 9)
+        self.assertEqual(artifact.report_engine_projection["deliberation_mode"], "dual_chamber_evidence_debate")
+        output = build_coordinator_output_from_artifact(artifact, duration_seconds=0.1)
+        report_inputs = coordinator_output_to_report_engine_inputs(output)
+        self.assertEqual(output["investigation_brief"]["original_query"], "Example public response")
+        self.assertEqual(output["deliberation"]["status"], session.status)
+        self.assertIn("[Audited Findings]", report_inputs["forum_logs"])
+        self.assertIn("[Investigation Brief]", report_inputs["forum_logs"])
+        self.assertIn("[Binding Evidence Policy]", report_inputs["forum_logs"])
+        self.assertIn("Binding Evidence Policy", report_inputs["reports"][0])
+        self.assertNotIn("Structured Coordinator Output", report_inputs["reports"][0])
+        self.assertLessEqual(len(report_inputs["reports"][0]), 30000)
+        opening_agents = {agent for agent, phase in debate_runner.calls if phase == "sealed_opening"}
+        self.assertEqual(len(opening_agents), 4)
+
     async def test_media_specialist_can_be_explicitly_disabled(self):
         settings = SimpleNamespace(
             JINA_API_KEY=None,
@@ -338,7 +490,7 @@ class FusionCoordinatorContractTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Media Section Dossiers", report_inputs["reports"][1])
         self.assertGreaterEqual(artifact.evidence_graph_summary["acquisition_observations"], 2)
         self.assertEqual(artifact.report_engine_projection["runtime_mode"], "query_media_evidence_fusion")
-        self.assertEqual(artifact.budget_summary["evaluation_status"], "deferred_until_server_demonstration")
+        self.assertEqual(artifact.budget_summary["evaluation_status"], "engineering_acceptance_only")
 
 
 if __name__ == "__main__":

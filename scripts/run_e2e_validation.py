@@ -33,10 +33,17 @@ def _progress(node: str, update: Dict[str, Any], _state: Dict[str, Any], elapsed
 def _artifact_summary(artifact: Dict[str, Any]) -> Dict[str, Any]:
     intelligence = artifact.get("coordinator_intelligence") or {}
     graph = intelligence.get("evidence_graph") or {}
+    brief = artifact.get("investigation_brief") or intelligence.get("investigation_brief") or {}
+    debate = artifact.get("debate") or intelligence.get("debate_session") or {}
     source_data = artifact.get("source_data") or {}
     query_data = source_data.get("query_agent") or {}
     media_data = source_data.get("media_agent") or {}
     diagnostics = intelligence.get("provider_diagnostics") or []
+    positions = debate.get("positions") or []
+    acts = debate.get("argument_acts") or []
+    revisions = debate.get("revisions") or []
+    verdicts = debate.get("verdicts") or []
+    reviewer_ids = {"skeptic", "methodologist"}
     return {
         "schema_version": artifact.get("schema_version"),
         "query": artifact.get("query"),
@@ -49,6 +56,31 @@ def _artifact_summary(artifact: Dict[str, Any]) -> Dict[str, Any]:
         "mindspider_posts": (query_data.get("social_sentiment") or {}).get("total_posts", 0),
         "media_available": bool(media_data.get("available")),
         "media_dossiers": media_data.get("section_dossiers", 0),
+        "investigation_brief": {
+            "original_query": brief.get("original_query"),
+            "analysis_type": brief.get("analysis_type"),
+            "factual_question": brief.get("factual_question"),
+            "discourse_question": brief.get("discourse_question"),
+            "time_scope": brief.get("time_scope"),
+            "sample_boundary": brief.get("sample_boundary"),
+            "brief_version": brief.get("brief_version"),
+        },
+        "debate": {
+            "schema_version": debate.get("schema_version"),
+            "status": debate.get("status"),
+            "perspective_agents": sorted({item.get("agent_id") for item in positions if item.get("agent_id")}),
+            "positions": len(positions),
+            "review_agents": sorted({item.get("actor_id") for item in acts if item.get("actor_id") in reviewer_ids}),
+            "review_acts": sum(1 for item in acts if item.get("actor_id") in reviewer_ids),
+            "proposer_acts": sum(1 for item in acts if item.get("actor_id") not in reviewer_ids),
+            "revisions": len(revisions),
+            "judges": sorted({item.get("judge_id") for item in verdicts if item.get("judge_id")}),
+            "verdicts": len(verdicts),
+            "output_groups": debate.get("output_groups") or {},
+            "independence_summary": debate.get("independence_summary") or {},
+            "budget_summary": debate.get("budget_summary") or {},
+            "protocol_failures": debate.get("protocol_failures") or [],
+        },
         "provider_diagnostics": diagnostics,
         "agent_errors": artifact.get("agent_errors") or [],
     }
